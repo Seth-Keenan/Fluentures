@@ -1,0 +1,14 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+@plugin "daisyui"
+{
+  themes: retro
+}
+
+.container {
+  display :flex;
+  flex-direction: column;
+  width: 300;
+  margin: auto;
+  justify-content: center;
+}

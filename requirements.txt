@@ -1,0 +1,7 @@
+Currently using tailwindcss and daisyui for simple ui formatting
+
+
+Using axios to handel the HTTP request library
+npm install axios
+
+npm install react-hook-form
