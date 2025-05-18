@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link'
-import { useForm } from 'react-hook-form';
+import { useForm } from "react-hook-form";
 
 const SignUp = () => {
 

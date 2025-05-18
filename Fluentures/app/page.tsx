@@ -15,7 +15,9 @@ export default function Home() {
       <Link href="/login" className="btn">
         Go to login
       </Link>
-      
+      <Link href="/testing" className="btn">
+        Testing page
+      </Link>
     </main>
   );
 }
