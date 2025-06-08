@@ -1,32 +1,90 @@
 "use client";
 import { useState } from 'react';
 
+interface HistoryItem {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
 export default function StoryPage() {
   const [language, setLanguage] = useState('Japanese');
   const [story, setStory] = useState('');
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
   const generateStory = async () => {
+    setStory('Generating...');
+    setChatLog([]); 
+
     const res = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'generate', input: language }),
+      // V-- THIS IS THE ONLY LINE THAT CHANGES --V
+      body: JSON.stringify({ language: language }),
     });
     const data = await res.json();
     setStory(data.story);
   };
 
-  const sendChat = async () => {
+
+const sendChat = async () => {
+  if (!chatInput.trim() || isLoading) return;
+
+  setIsLoading(true);
+  const currentInput = chatInput;
+  setChatLog(prev => [...prev, `You: ${currentInput}`]);
+  setChatInput(''); // Clear input immediately for better UX
+
+  // This is the CRUCIAL part for conversational context
+  const storyContext: HistoryItem = {
+      role: 'user',
+      parts: [{ text: `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""` }]
+  };
+  
+  const modelContextConfirmation: HistoryItem = {
+      role: 'model',
+      parts: [{ text: "Okay, I have the story. I will answer your questions about it."}]
+  }
+
+  const historyForApi = (apiHistory.length === 0) 
+    ? [storyContext, modelContextConfirmation] 
+    : apiHistory;
+
+  try {
     const res = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'chat', input: chatInput }),
+      body: JSON.stringify({ 
+        input: currentInput,
+        history: historyForApi 
+      }),
     });
+
+    // ERROR HANDLING LOGIC
     const data = await res.json();
-    setChatLog([...chatLog, `You: ${chatInput}`, `Gemini: ${data.reply}`]);
-    setChatInput('');
-  };
+    if (!res.ok) {
+      throw new Error(data.error || 'An unknown error occurred on the server.');
+    }
+
+    const modelReply = data.reply || 'Sorry, I could not respond.';
+
+    setChatLog(prev => [...prev, `Camel: ${modelReply}`]);
+    setApiHistory(prev => [
+        ...prev,
+        { role: 'user', parts: [{ text: currentInput }] },
+        { role: 'model', parts: [{ text: modelReply }] }
+    ]);
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+    console.error("Chat error:", errorMessage);
+    setChatLog(prev => [...prev, `Error: ${errorMessage}`]);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="p-6">

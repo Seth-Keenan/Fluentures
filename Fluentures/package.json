@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4.0.12",
     "axios": "^1.8.4",
     "daisyui": "^5.0.0",
