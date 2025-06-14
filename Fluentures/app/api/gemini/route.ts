@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json(); // Parse the JSON body of the request
     console.log("Received request body:", body);
-    
+
   // Check for the API Key 
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'API key is missing' }, { status: 500 });
@@ -22,9 +22,41 @@ export async function POST(req: NextRequest) {
   try {
 
     // SCENARIO 1: GENERATE A NEW STORY
-    if (body.language) {
-      const prompt = `Generate a complete story in the ${body.language} language. The story should be suitable for a beginner learning the language. Make it 8-16 sentences long. No preamble or summary, just the story. No translations or other extras.`;
-      const result = await model.generateContent(prompt);
+
+    const language = body.language //<<|| await getLanguageFromDB(body.userId);
+    const difficulty = body.difficulty //<<|| await getDifficultyFromDB(body.userId);
+
+    // Prompt set up
+    if (language) {
+      //Configuration for the story generation
+      const generationConfig = {
+        temperature: 0.9, //Higher creativity (0.0-1.0)
+        topK: 2, //Top-K sampling to limit the number of tokens considered at each step (1-40)
+        topP: 1, //Top-P sampling to control diversity (0.0-1.0)
+        maxOutputTokens: 2048,
+      }
+
+    let instruction = '';
+    switch (difficulty) {
+      case 'Beginner':
+        instruction = 'Use very simple vocabulary and sentence structures.';
+        break;
+      case 'Intermediate':
+        instruction = 'Use moderately complex vocabulary and grammar.';
+        break;
+      case 'Advanced':
+        instruction = 'Use natural and idiomatic expressions, with some advanced grammar.';
+        break;
+    }
+
+      // Prompt for generating a story
+      const prompt = `Generate a complete story in the ${language} language. 
+                      The story should be suitable for a ${difficulty.toLowerCase()} learning the language. 
+                      ${instruction} The story should be at least 10 sentences long. Do not include explanations or translations.`;
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: generationConfig,
+      });
       const response = result.response;
       return NextResponse.json({ story: response.text() });
     }

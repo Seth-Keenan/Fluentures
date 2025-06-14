@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import { useSettings } from "@/lib/hooks/useSettings";
 
 interface HistoryItem {
   role: 'user' | 'model';
@@ -7,13 +8,19 @@ interface HistoryItem {
 }
 
 export default function StoryPage() {
-  const [language, setLanguage] = useState('Japanese');
+  const { language, difficulty } = useSettings();
   const [story, setStory] = useState('');
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
+
+  if (!language || !difficulty) {
+    return <p className="p-6">Loading your settings...</p>;
+  }
+
+  // Function to generate a new story based on the selected language and difficulty
   const generateStory = async () => {
     setStory('Generating...');
     setChatLog([]); 
@@ -21,8 +28,11 @@ export default function StoryPage() {
     const res = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // V-- THIS IS THE ONLY LINE THAT CHANGES --V
-      body: JSON.stringify({ language: language }),
+      body: JSON.stringify({ 
+        action: "generate",
+        language: language,
+        difficulty: difficulty
+      }),
     });
     const data = await res.json();
     setStory(data.story);
@@ -37,7 +47,7 @@ const sendChat = async () => {
   setChatLog(prev => [...prev, `You: ${currentInput}`]);
   setChatInput(''); // Clear input immediately for better UX
 
-  // This is the CRUCIAL part for conversational context
+  // Conversational context
   const storyContext: HistoryItem = {
       role: 'user',
       parts: [{ text: `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""` }]
@@ -90,10 +100,6 @@ const sendChat = async () => {
     <div className="p-6">
       <h1 className="text-xl font-bold">Story Generator</h1>
 
-      <select value={language} onChange={e => setLanguage(e.target.value)} className="border p-2 m-2">
-        <option value="Japanese">Japanese</option>
-        <option value="English">English</option>
-      </select>
       <button onClick={generateStory} className="bg-blue-500 text-white px-4 py-2 rounded">Generate</button>
 
       <textarea className="w-full mt-4 border p-2" rows={6} value={story} readOnly />
