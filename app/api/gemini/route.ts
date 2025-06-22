@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, Content } from "@google/generative-ai";
 
 // Initialize the Google AI client
-// It's best practice to initialize it once outside of the request handler
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 /* Handles POST requests to the Gemini API.
   * Stateless endpoint that generates a story or answers a question based on the input.*/
@@ -23,6 +22,7 @@ export async function POST(req: NextRequest) {
 
     // SCENARIO 1: GENERATE A NEW STORY
 
+    //TODO: Replace with actual logic to get user preferences from a database or session
     const language = body.language //<<|| await getLanguageFromDB(body.userId);
     const difficulty = body.difficulty //<<|| await getDifficultyFromDB(body.userId);
 
