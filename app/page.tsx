@@ -17,6 +17,9 @@ export default function Home() {
         <Link href="/signup" className="btn">
           Signup
         </Link>
+        <Link href="/settings" className="btn">
+          Settings
+        </Link>
         <Link href="/home" className="btn">
           Account Home
         </Link>
