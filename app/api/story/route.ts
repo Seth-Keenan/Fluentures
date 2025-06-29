@@ -4,30 +4,59 @@ import { GoogleGenerativeAI, Content } from "@google/generative-ai";
 
 // Initialize the Google AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
 /* Handles POST requests to the Gemini API.
   * Stateless endpoint that generates a story or answers a question based on the input.*/
 export async function POST(req: NextRequest) {
+    let body;
+    try {
+      body = await req.json();
+      console.log("✅ Parsed request body:", body);
+    } catch (err) {
+      console.error("❌ Failed to parse JSON body:", err);
+      return NextResponse.json({ error: "Invalid JSON format" }, { status: 400 });
+    }
 
-    const body = await req.json(); // Parse the JSON body of the request
-    console.log("Received request body:", body);
+  // Extract relevant fields from the parsed body
+  const { action, word, language, difficulty, input, history } = body;  
 
-  // Check for the API Key 
-  if (!process.env.GEMINI_API_KEY) {
-    return NextResponse.json({ error: 'API key is missing' }, { status: 500 });
+  let model;
+  try 
+  {
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  } 
+  catch (err) 
+  {
+    console.error("❌ Error initializing Gemini model:", err);
+    return NextResponse.json({ error: "Model initialization failed" }, { status: 500 });
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Get the Gemini model
-
   try {
+    
+    // SCENARIO 1: GENERATE A SENTENCE USING A WORD
+    if (action === "sentence" && word && language) {
+      console.log("🟣 Generating sentence with:", word, "in", language);
 
-    // SCENARIO 1: GENERATE A NEW STORY
+      const prompt = `In ${language}, give me a single natural sentence that uses the word "${word}". Replace the word with a blank line. For example, "私は______を食べました。" Do not include any explanations, just the sentence.`;
 
-    //TODO: Replace with actual logic to get user preferences from a database or session
-    const language = body.language //<<|| await getLanguageFromDB(body.userId);
-    const difficulty = body.difficulty //<<|| await getDifficultyFromDB(body.userId);
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.9,
+          topK: 2,
+          topP: 1,
+          maxOutputTokens: 100,
+        },
+      });
+
+    const response = result.response;
+    return NextResponse.json({ sentence: response.text() });
+    }
+
+    // SCENARIO 2: GENERATE A NEW STORY   
 
     // Prompt set up
-    if (language) {
+    if (language && difficulty) {
       //Configuration for the story generation
       const generationConfig = {
         temperature: 0.9, //Higher creativity (0.0-1.0)
@@ -61,38 +90,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ story: response.text() });
     }
 
-    // SCENARIO 2: HANDLE A CHAT MESSAGE
-    else if (body.input && body.history) {
+    // SCENARIO 3: HANDLE A CHAT MESSAGE
+    else if (input && history) {
       const chat = model.startChat({
-        history: body.history as Content[],
+        history: history as Content[],
       });
 
-    // SCENARIO 3: GENERATE A SENTENCE USING A WORD
-    if (body.action === "sentence" && body.word && body.language) {
-      const prompt = `In ${body.language}, give me a single natural sentence that uses the word "${body.word}". Replace the word with a blank line. For example, "私は______を食べました。" Do not include any explanations, just the sentence.`;
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.8,
-          topK: 2,
-          topP: 1,
-          maxOutputTokens: 100,
-        },
-      });
-
-  const response = result.response;
-  return NextResponse.json({ sentence: response.text() });
-    }
-      const result = await chat.sendMessage(body.input);
+      const result = await chat.sendMessage(input);
       const response = result.response;
       return NextResponse.json({ reply: response.text() });
     }
+
     // If the request doesn't match any scenario
     else {
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
-
   }
 catch (error){
     console.error('Gemini API error: ', error);

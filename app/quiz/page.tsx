@@ -66,7 +66,7 @@ export default function QuizPage() {
   const word = correctAnswer;
   const language = mode === "en-to-target" ? "Japanese" : "English";
 
-  const res = await fetch("/api/gemini", {
+  const res = await fetch("/api/story", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
