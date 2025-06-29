@@ -66,16 +66,35 @@ export async function POST(req: NextRequest) {
       const chat = model.startChat({
         history: body.history as Content[],
       });
+
+    // SCENARIO 3: GENERATE A SENTENCE USING A WORD
+    if (body.action === "sentence" && body.word && body.language) {
+      const prompt = `In ${body.language}, give me a single natural sentence that uses the word "${body.word}". Replace the word with a blank line. For example, "私は______を食べました。" Do not include any explanations, just the sentence.`;
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          topK: 2,
+          topP: 1,
+          maxOutputTokens: 100,
+        },
+      });
+
+  const response = result.response;
+  return NextResponse.json({ sentence: response.text() });
+    }
       const result = await chat.sendMessage(body.input);
       const response = result.response;
       return NextResponse.json({ reply: response.text() });
     }
-    // If the request doesn't match either scenario
+    // If the request doesn't match any scenario
     else {
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
+
   }
-  catch (error){
+catch (error){
     console.error('Gemini API error: ', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });

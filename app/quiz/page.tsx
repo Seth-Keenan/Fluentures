@@ -13,16 +13,93 @@ const wordList = [
 
 type Mode = "en-to-target" | "target-to-en";
 
+// QuizPage component
+// This component allows users to select quiz settings and start a quiz.
 export default function QuizPage() {
-  const [mode, setMode] = useState<Mode>("en-to-target");
-  const [questionCount, setQuestionCount] = useState(5);
-  const [quizStarted, setQuizStarted] = useState(false);
+    const [mode, setMode] = useState<Mode>("en-to-target");
+    const [questionCount, setQuestionCount] = useState(5);
+    const [quizStarted, setQuizStarted] = useState(false);
 
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [input, setInput] = useState("");
+    const [answerSubmitted, setAnswerSubmitted] = useState(false);
+    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [score, setScore] = useState(0);
+
+    const [quizWords, setQuizWords] = useState<typeof wordList>([]);
+
+    const [exampleSentence, setExampleSentence] = useState<string | null>(null);
+    const [sentenceLoading, setSentenceLoading] = useState(false);
+
+  // Function to start the quiz with selected settings
   const startQuiz = () => {
+    const shuffled = [...wordList].sort(() => Math.random() - 0.5);
+    setQuizWords(shuffled.slice(0, questionCount));
+    setCurrentQuestion(0);
+    setScore(0);
+    setInput("");
+    setAnswerSubmitted(false);
+    setIsCorrect(null);
     setQuizStarted(true);
-    // Quiz state will be handled in the next step
   };
 
+  const checkAnswer = () => {
+    const current = quizWords[currentQuestion];
+    const correctAnswer = mode === "en-to-target" ? current.target : current.english;
+    const isRight = input.trim() === correctAnswer;
+    setIsCorrect(isRight);
+    setAnswerSubmitted(true);
+    if (isRight) setScore((prev) => prev + 1);
+  };
+
+  const nextQuestion = () => {
+    setCurrentQuestion((prev) => prev + 1);
+    setInput("");
+    setAnswerSubmitted(false);
+    setIsCorrect(null);
+  };
+
+  const getSentence = async () => {
+  setSentenceLoading(true);
+  setExampleSentence(null);
+
+  const word = correctAnswer;
+  const language = mode === "en-to-target" ? "Japanese" : "English";
+
+  const res = await fetch("/api/gemini", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "sentence",
+      word,
+      language,
+    }),
+  });
+
+  const data = await res.json();
+  setExampleSentence(data.sentence);
+  setSentenceLoading(false);
+};
+
+
+  // Reset quiz to initial state
+  const restartQuiz = () => {
+    setQuizStarted(false);
+  };
+
+  // When quiz is finished
+  if (quizStarted && currentQuestion >= quizWords.length) {
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold mb-4">Quiz Complete!</h2>
+        <p className="mb-4">Your score: {score} / {quizWords.length}</p>
+        <button onClick={restartQuiz} className="bg-blue-500 text-white px-4 py-2 mr-2 rounded">Restart</button>
+        <button onClick={() => window.location.href = "/"} className="bg-gray-500 text-white px-4 py-2 rounded">Quit</button>
+      </div>
+    );
+  }
+
+  // If quiz hasn't started yet, show settings
   if (!quizStarted) {
     return (
       <div className="p-6">
@@ -59,6 +136,67 @@ export default function QuizPage() {
     );
   }
 
-  // TODO: Quiz logic goes here
-  return <div className="p-6">[Quiz UI coming next]</div>;
+  // If quiz is in progress, show current question
+  // Set the prompt and correct answer based on the selected mode
+  const current = quizWords[currentQuestion];
+  const prompt = mode === "en-to-target" ? current.english : current.target;
+  const correctAnswer = mode === "en-to-target" ? current.target : current.english;
+
+  return (
+    <div className="p-6">
+      <h2 className="text-xl font-bold mb-4">Question {currentQuestion + 1} / {quizWords.length}</h2>
+      <p className="mb-2">Translate: <span className="font-semibold">{prompt}</span></p>
+
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={answerSubmitted}
+        className={`border p-2 w-full mb-2 ${answerSubmitted && !isCorrect ? "border-red-500" : ""}`}
+      />
+
+      <div className="mb-4">
+        <button
+          onClick={checkAnswer}
+          disabled={answerSubmitted}
+          className="bg-green-500 text-white px-4 py-2 mr-2 rounded"
+        >
+          Submit
+        </button>
+
+        <button
+          disabled={!answerSubmitted}
+          onClick={nextQuestion}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Next
+        </button>
+
+        <button
+            onClick={getSentence}
+            disabled={sentenceLoading}
+            className="bg-purple-500 text-white px-4 py-2 rounded"
+        >
+            {sentenceLoading ? "Generating..." : "Sentence"}
+        </button>
+      </div>
+
+      {answerSubmitted && (
+        <div className="mb-4">
+          {isCorrect ? (
+            <p className="text-green-600 font-semibold">Correct!</p>
+          ) : (
+            <p className="text-red-600">Incorrect. The correct answer is: <strong>{correctAnswer}</strong></p>
+          )}
+        </div>
+      )}
+
+      {exampleSentence && (
+        <p className="italic text-gray-700 mb-4">Example: {exampleSentence}</p>
+      )}
+
+      <p>Score: {score} / {quizWords.length}</p>
+    </div>
+  );
+
 }
