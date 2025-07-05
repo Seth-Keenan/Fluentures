@@ -18,11 +18,10 @@ export async function POST(req: NextRequest) {
     }
 
   // Extract relevant fields from the parsed body
-  const { action, word, language, difficulty, input, history } = body;  
+  const { language, difficulty, input, history } = body;  
 
   let model;
-  try 
-  {
+  try {
     model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
   } 
   catch (err) 
@@ -32,39 +31,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    
-    // SCENARIO 1: GENERATE A SENTENCE USING A WORD
-    if (action === "sentence" && word && language) {
-      console.log("🟣 Generating sentence with:", word, "in", language);
-
-    let instruction = "";
-    switch (difficulty) {
-      case "Beginner":
-        instruction = "Use simple grammar and vocabulary.";
-        break;
-      case "Intermediate":
-        instruction = "Use moderately complex grammar and vocabulary.";
-        break;
-      case "Advanced":
-        instruction = "Use more natural, idiomatic language.";
-        break;
-    }
-
-    const prompt = `In ${language}, give me a single natural sentence that uses the word "${word}". ${instruction} Replace the word with a blank line. Do not include any explanations. Example format: "私は______を食べました。"`
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.9,
-          topK: 2,
-          topP: 1,
-          maxOutputTokens: 100,
-        },
-      });
-
-    const response = result.response;
-    return NextResponse.json({ sentence: response.text() });
-    }
 
     // SCENARIO 2: GENERATE A NEW STORY   
 
@@ -95,15 +61,20 @@ export async function POST(req: NextRequest) {
       const prompt = `Generate a complete story in the ${language} language. 
                       The story should be suitable for a ${difficulty.toLowerCase()} learning the language. 
                       ${instruction} The story should be at least 10 sentences long. Do not include explanations or translations.`;
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: generationConfig,
-      });
-      const response = result.response;
-      return NextResponse.json({ story: response.text() });
+      try {
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig,
+        });
+
+        return NextResponse.json({ story: result.response.text() });
+      } catch (error) {
+        console.error("❌ Story generation error:", error);
+        return NextResponse.json({ error: "Failed to generate story" }, { status: 500 });
+      }
     }
 
-    // SCENARIO 3: HANDLE A CHAT MESSAGE
+    // HANDLE A CHAT MESSAGE
     else if (input && history) {
       const chat = model.startChat({
         history: history as Content[],

@@ -70,6 +70,7 @@ export default function QuizPage() {
     setInput("");
     setAnswerSubmitted(false);
     setIsCorrect(null);
+    setExampleSentence(null);
   };
 
   const getSentence = async () => {
@@ -81,7 +82,7 @@ export default function QuizPage() {
 
     const word = quizWords[currentQuestion].target;
 
-    const res = await fetch("/api/story", {
+    const res = await fetch("/api/quiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
