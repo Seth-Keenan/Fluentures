@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Simulated word list (target language: Japanese)
 const wordList = [
@@ -10,6 +10,9 @@ const wordList = [
   { target: "いぬ", english: "dog" },
   { target: "やま", english: "mountain" },
 ];
+
+const language = "Japanese";
+const difficulty = "Beginner";
 
 type Mode = "en-to-target" | "target-to-en";
 
@@ -30,6 +33,16 @@ export default function QuizPage() {
 
     const [exampleSentence, setExampleSentence] = useState<string | null>(null);
     const [sentenceLoading, setSentenceLoading] = useState(false);
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    if (!mounted) {
+      return <p className="p-6">Loading...</p>;
+    }
 
   // Function to start the quiz with selected settings
   const startQuiz = () => {
@@ -60,26 +73,29 @@ export default function QuizPage() {
   };
 
   const getSentence = async () => {
-  setSentenceLoading(true);
-  setExampleSentence(null);
+    setSentenceLoading(true);
+    setExampleSentence(null);
 
-  const word = correctAnswer;
-  const language = mode === "en-to-target" ? "Japanese" : "English";
+    // Updated log to reflect manual settings
+    console.log("✅ Using settings:", language, difficulty);
 
-  const res = await fetch("/api/story", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "sentence",
-      word,
-      language,
-    }),
-  });
+    const word = quizWords[currentQuestion].target;
 
-  const data = await res.json();
-  setExampleSentence(data.sentence);
-  setSentenceLoading(false);
-};
+    const res = await fetch("/api/story", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sentence",
+        word,
+        language,
+        difficulty,
+      }),
+    });
+
+    const data = await res.json();
+    setExampleSentence(data.sentence);
+    setSentenceLoading(false);
+  };
 
 
   // Reset quiz to initial state
@@ -136,11 +152,13 @@ export default function QuizPage() {
     );
   }
 
-  // If quiz is in progress, show current question
-  // Set the prompt and correct answer based on the selected mode
-  const current = quizWords[currentQuestion];
-  const prompt = mode === "en-to-target" ? current.english : current.target;
-  const correctAnswer = mode === "en-to-target" ? current.target : current.english;
+
+    let current, prompt, correctAnswer;
+    if (quizStarted) {
+      current = quizWords[currentQuestion];
+      prompt = mode === "en-to-target" ? current.english : current.target;
+      correctAnswer = mode === "en-to-target" ? current.target : current.english;
+    }
 
   return (
     <div className="p-6">

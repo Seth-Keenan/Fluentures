@@ -37,7 +37,20 @@ export async function POST(req: NextRequest) {
     if (action === "sentence" && word && language) {
       console.log("🟣 Generating sentence with:", word, "in", language);
 
-      const prompt = `In ${language}, give me a single natural sentence that uses the word "${word}". Replace the word with a blank line. For example, "私は______を食べました。" Do not include any explanations, just the sentence.`;
+    let instruction = "";
+    switch (difficulty) {
+      case "Beginner":
+        instruction = "Use simple grammar and vocabulary.";
+        break;
+      case "Intermediate":
+        instruction = "Use moderately complex grammar and vocabulary.";
+        break;
+      case "Advanced":
+        instruction = "Use more natural, idiomatic language.";
+        break;
+    }
+
+    const prompt = `In ${language}, give me a single natural sentence that uses the word "${word}". ${instruction} Replace the word with a blank line. Do not include any explanations. Example format: "私は______を食べました。"`
 
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
