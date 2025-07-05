@@ -6,9 +6,19 @@ export function useSettings() {
   const [difficulty, setDifficulty] = useState<string | null>(null);
 
   useEffect(() => {
-    setLanguage(localStorage.getItem("targetLanguage"));
-    setDifficulty(localStorage.getItem("difficultyLevel"));
+    const storedLanguage = localStorage.getItem("targetLanguage");
+    const storedDifficulty = localStorage.getItem("difficultyLevel");
+
+    if (storedLanguage) setLanguage(storedLanguage);
+    if (storedDifficulty) setDifficulty(storedDifficulty);
   }, []);
 
-  return { language, difficulty };
+  const saveSettings = (newLanguage: string, newDifficulty: string) => {
+    localStorage.setItem("targetLanguage", newLanguage);
+    localStorage.setItem("difficultyLevel", newDifficulty);
+    setLanguage(newLanguage);
+    setDifficulty(newDifficulty);
+  };
+
+  return { language, difficulty, saveSettings };
 }

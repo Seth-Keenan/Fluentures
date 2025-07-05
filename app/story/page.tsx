@@ -25,7 +25,7 @@ export default function StoryPage() {
     setStory('Generating...');
     setChatLog([]); 
 
-    const res = await fetch('/api/gemini', {
+    const res = await fetch('/api/story', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -45,7 +45,7 @@ const sendChat = async () => {
   setIsLoading(true);
   const currentInput = chatInput;
   setChatLog(prev => [...prev, `You: ${currentInput}`]);
-  setChatInput(''); // Clear input immediately for better UX
+  setChatInput('');
 
   // Conversational context
   const storyContext: HistoryItem = {
@@ -63,7 +63,7 @@ const sendChat = async () => {
     : apiHistory;
 
   try {
-    const res = await fetch('/api/gemini', {
+    const res = await fetch('/api/story', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
