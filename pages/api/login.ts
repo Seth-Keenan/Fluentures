@@ -1,4 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import supabase
+
+async function signInWithEmail() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'valid.email@supabase.io',
+    password: 'example-password',
+  })
+}
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
