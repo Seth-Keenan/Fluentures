@@ -1,5 +1,8 @@
 @import "tailwindcss/preflight";
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
+
 @plugin "daisyui"
 {
   themes: retro
@@ -11,4 +14,13 @@
   width: 300;
   margin: auto;
   justify-content: center;
+}
+
+h1 {
+  font-size: 40
+}
+
+label {
+  font-size: 20;
+  font-weight: bold;
 }
