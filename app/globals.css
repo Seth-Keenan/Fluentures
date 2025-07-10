@@ -16,6 +16,7 @@
   justify-content: center;
 }
 
+/* Temporary until tailwind is configured  */
 h1 {
   font-size: 40
 }
