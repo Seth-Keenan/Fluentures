@@ -21,25 +21,32 @@ const SignUp = () => {
     }
 
   return (
-    <main>
-      <form>
-        <div className='container'>
-            <label>Username</label>
-            <input {...register("username", { required: true})} placeholder='Enter username' />
-             
-            
-            <label>Password</label>
-            <input {...register("password", {required: true})} placeholder='Enter password' /> 
-            
-            <button className="btn btn-success w-full" type='button' onClick={() => SignUpOnClick()}>Signup</button>   
-            
-            <Link href="/login" className='btn btn-soft btn-warning w-full'>
-              Already a user? Log in
-            </Link>
-        </div>
-      </form>
-    </main>
-  )
+      <div className='flex flex-col justify-center items-center h-screen'>
+        <p className='text-4xl font-bold mb-4'>Sign Up</p>
+          <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded">
+            <div className='container flex flex-col justify-center gap-4'>
+              <div className='flex flex-col'>
+                <label>First Name</label>
+                <input className="border border-black rounded-[.5vw] p-[5px]" placeholder="First name" name="username" type="text" required />
+              </div>
+              <div className='flex flex-col'>
+                <label>Username</label>
+                <input className="border border-black rounded-[.5vw] p-[5px]" placeholder="Enter username" name="username" type="text" required />
+              </div>
+              <div className='flex flex-col'>
+                <label>Password</label>
+                <input className="border border-black rounded-[.5vw] p-[5px]" placeholder='Enter password' name="password" type="password" required />
+              </div>
+              <div className='flex flex-col items-center gap-4'>
+                <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Login</button>
+                <Link href="/login" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
+                  Have an account? Log in.
+                </Link>
+              </div>
+            </div>
+          </form>
+      </div>
+    );
 }
 
 export default SignUp

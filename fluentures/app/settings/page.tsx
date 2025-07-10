@@ -1,5 +1,6 @@
 "use client";
 
+import { redirect } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function SettingsPage() {
@@ -17,11 +18,12 @@ export default function SettingsPage() {
   const saveSettings = () => {
     localStorage.setItem("targetLanguage", language);
     localStorage.setItem("difficultyLevel", difficulty);
-    alert("Settings saved!");
+    alert("Settings saved! Close to continue.");
+    redirect("/");
   };
 
   return (
-    <div className="p-6">
+    <div className="flex flex-col justify-center items-center h-screen">
       <h1 className="text-xl font-bold mb-4">Settings</h1>
 
       <div className="mb-4">

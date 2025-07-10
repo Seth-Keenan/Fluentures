@@ -1,22 +1,23 @@
 import Link from 'next/link'
 import React from 'react'
+import { LinkAsButton } from "@/app/components/LinkAsButton";
 
 const page = () => {
   return (
-    <div>
-      <Link href="/social" className="btn">
+    <div className='flex flex-col justify-center items-center h-screen'>
+      <LinkAsButton href="/social" className="btn">
         Social
-      </Link>
-      <Link href="/map" className="btn">
+      </LinkAsButton>
+      <LinkAsButton href="/map" className="btn">
         Map
-      </Link>
-      <Link href="/logbook" className="btn">
+      </LinkAsButton>
+      <LinkAsButton href="/logbook" className="btn">
         Log Book
-      </Link>
+      </LinkAsButton>
       {/* For now just have this go back but in the future have a log out */}
-      <Link href="/" className="btn">
+      <LinkAsButton href="/" className="btn">
         Back
-      </Link>
+      </LinkAsButton>
     </div>
   )
 }

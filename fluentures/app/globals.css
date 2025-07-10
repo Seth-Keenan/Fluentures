@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+#LandingPage {
+    background-image: "url('/ChatGPT Image Mar 31, 2025 at 12_13_22 PM.png')";
+}
