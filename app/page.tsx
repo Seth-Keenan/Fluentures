@@ -1,4 +1,3 @@
-import Logo from "next/image";
 import { LinkAsButton } from "./components/LinkAsButton";
 
 export default function Home() {

@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/app/components/Button";
-import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useEffect, useState } from "react";
 
 // Simulated word list (target language: Japanese)
