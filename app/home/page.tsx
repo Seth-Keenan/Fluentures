@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import React from 'react'
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 
@@ -17,7 +16,7 @@ const page = () => {
       {/* For now just have this go back but in the future have a log out */}
       <LinkAsButton href="/" className="btn">
         Back
-      </LinkAsButton>
+      </LinkAsButton>      
     </div>
   )
 }

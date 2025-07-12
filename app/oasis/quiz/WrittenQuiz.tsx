@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/app/components/Button";
-import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useEffect, useState } from "react";
 
 // Simulated word list (target language: Japanese)
@@ -83,6 +82,8 @@ export default function QuizPage() {
     console.log("✅ Using settings:", language, difficulty);
 
     const word = quizWords[currentQuestion].target;
+
+    const response = await geminiPostFetch()
 
     const res = await fetch("/api/quiz", {
       method: "POST",
