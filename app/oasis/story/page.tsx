@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { useSettings } from "@/lib/hooks/useSettings";
+import { useSettings } from "@/app/lib/hooks/useSettings";
 import { Button } from '@/app/components/Button';
 import { LinkAsButton } from '@/app/components/LinkAsButton';
 
