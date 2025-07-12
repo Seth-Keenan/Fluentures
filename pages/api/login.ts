@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { supabase } from '../../lib/hooks/supabaseClient' // make sure path is correct
+import { supabase } from '../../app/lib/hooks/supabaseClient' 
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
