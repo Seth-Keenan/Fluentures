@@ -1,28 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import supabase
+import { supabase } from '../../lib/hooks/supabaseClient' // make sure path is correct
 
-async function signInWithEmail() {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'valid.email@supabase.io',
-    password: 'example-password',
-  })
-}
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    const { username, password } = req.body;
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method === 'POST') {
-        const username = req.body.username;
-        const password = req.body.password;
-        console.log("Username:", username);
-        console.log("Password:", password);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: username,
+      password: password,
+    });
 
-        // TODO: Talk to Supabase
-        if (1) {
-            res.status(200).json({ message: "Login successful" });
-        }
-    } 
-    
-    // Login failed
-    else {
-        res.status(401).json({ message: "Login failed. Please try again" });
+    if (error) {
+      console.error(error.message);
+      return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    return res.status(200).json({ message: "Login successful", data });
+  }
+
+  res.status(405).json({ message: "Method not allowed" });
 }
