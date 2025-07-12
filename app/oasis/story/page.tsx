@@ -1,6 +1,8 @@
 "use client";
 import { useState } from 'react';
 import { useSettings } from "@/lib/hooks/useSettings";
+import { Button } from '@/app/components/Button';
+import { LinkAsButton } from '@/app/components/LinkAsButton';
 
 interface HistoryItem {
   role: 'user' | 'model';
@@ -97,23 +99,29 @@ const sendChat = async () => {
 };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold">Story Generator</h1>
+    <div className="p-6 min-h-screen">
+      <LinkAsButton href='/oasis'>
+        Back
+      </LinkAsButton>
+      <div className='flex flex-row'>
+        <div className='flex flex-col flex-1'>
+          <h1 className="text-xl font-bold">Story Generator</h1>
+          <textarea className="p-2 border resize-none" value={story} readOnly />
+          <Button onClick={generateStory} >Generate</Button>
+        </div>
 
-      <button onClick={generateStory} className="bg-blue-500 text-white px-4 py-2 rounded">Generate</button>
-
-      <textarea className="w-full mt-4 border p-2" rows={6} value={story} readOnly />
-
-      <h2 className="mt-6 font-semibold">Chat</h2>
-      <div className="border p-2 mb-2 h-40 overflow-y-scroll">
-        {chatLog.map((line, i) => <div key={i}>{line}</div>)}
+        <div className='flex flex-col flex-1'>
+          <h1 className="text-xl font-semibold">Chat</h1>
+          <textarea className="p-2 border resize-none" value={chatLog.join('\n')} readOnly />
+          <input
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            className="border p-2"
+          />
+          <Button onClick={sendChat}>Send</Button>
+        </div>
       </div>
-      <input
-        value={chatInput}
-        onChange={e => setChatInput(e.target.value)}
-        className="border p-2 w-3/4"
-      />
-      <button onClick={sendChat} className="bg-green-500 text-white px-4 py-2 ml-2 rounded">Send</button>
+
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useEffect, useState } from "react";
 
@@ -120,10 +121,10 @@ export default function QuizPage() {
   // If quiz hasn't started yet, show settings
   if (!quizStarted) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Start Your Quiz</h1>
+      <div className="flex flex-col p-6">
+        <h1 className="text-4xl font-bold mb-4">Start Your Quiz</h1>
 
-        <label className="block mb-2">Number of Questions:</label>
+        <label className="block mb-2 font-bold">Number of Questions:</label>
         <select
           value={questionCount}
           onChange={(e) => setQuestionCount(Number(e.target.value))}
@@ -134,7 +135,7 @@ export default function QuizPage() {
           ))}
         </select>
 
-        <label className="block mb-2">Mode:</label>
+        <label className="block mb-2 font-bold">Mode:</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as Mode)}
@@ -144,12 +145,10 @@ export default function QuizPage() {
           <option value="target-to-en">Target Language → English</option>
         </select>
 
-        <button
-          onClick={startQuiz}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
+        <Button
+          onClick={startQuiz}>
           Start Quiz
-        </button>
+        </Button>
       </div>
     );
   }
@@ -216,9 +215,6 @@ export default function QuizPage() {
       )}
 
       <p>Score: {score} / {quizWords.length}</p>
-      <LinkAsButton href="/oasis" className="btn">
-          Back
-       </LinkAsButton>
     </div>
   );
 }
