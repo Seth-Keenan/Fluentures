@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Button } from "../components/Button";
+import { LinkAsButton } from "../components/LinkAsButton";
 
 export default function SettingsPage() {
   const [language, setLanguage] = useState("Japanese");
@@ -24,7 +26,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col justify-center items-center h-screen">
-      <h1 className="text-xl font-bold mb-4">Settings</h1>
+      <h1 className="text-4xl font-bold mb-4">Settings</h1>
 
       <div className="mb-4">
         <label className="block">Target Language:</label>
@@ -52,12 +54,16 @@ export default function SettingsPage() {
         </select>
       </div>
 
-      <button
-        onClick={saveSettings}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Save Settings
-      </button>
+      <div className="flex flex-col gap-2 items-center">
+        <Button
+          onClick={saveSettings}>
+          Save Settings
+        </Button>
+        <LinkAsButton
+          href="/">
+            Back
+        </LinkAsButton>
+      </div>
     </div>
   );
 }
