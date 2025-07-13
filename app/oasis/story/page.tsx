@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { useSettings } from "@/app/lib/hooks/useSettings";
 import { Button } from '@/app/components/Button';
 import { LinkAsButton } from '@/app/components/LinkAsButton';
+import { ButtonAsLink } from '@/app/components/ButtonAsLink';
+import { TextArea } from '@/app/components/TextArea';
+import { Chat } from '@/app/components/Chat';
 
 interface HistoryItem {
   role: 'user' | 'model';
@@ -103,22 +106,30 @@ const sendChat = async () => {
       <LinkAsButton href='/oasis'>
         Back
       </LinkAsButton>
-      <div className='flex flex-row'>
-        <div className='flex flex-col flex-1'>
-          <h1 className="text-xl font-bold">Story Generator</h1>
-          <textarea className="p-2 border resize-none" value={story} readOnly />
-          <Button onClick={generateStory} >Generate</Button>
+      <div className='flex flex-row gap-4'>
+        <div className='flex flex-col flex-1 basis-2/3 gap-2'>
+          <h1 className="text-xl font-bold text-center">Story Generator</h1>
+          <TextArea value={story} readOnly disabled placeholder={"Generate a story using AI here!"}/>
+          <ButtonAsLink onClick={generateStory}>Click here to generate another story!</ButtonAsLink>
         </div>
 
-        <div className='flex flex-col flex-1'>
-          <h1 className="text-xl font-semibold">Chat</h1>
-          <textarea className="p-2 border resize-none" value={chatLog.join('\n')} readOnly />
-          <input
-            value={chatInput}
-            onChange={e => setChatInput(e.target.value)}
-            className="border p-2"
-          />
-          <Button onClick={sendChat}>Send</Button>
+        <div className="w-px bg-gray-400"></div>
+
+        <div className='flex flex-col flex-1 basis-1/3 gap-2'>
+          <h1 className="text-xl font-semibold text-center">Chat</h1>
+          {/* TODO: Maybe we can figure out how to center this placeholder? */}
+          <Chat value={chatLog.join('\n')} readOnly disabled placeholder={"Ask a question about this story!"}/>
+          <div className="h-px bg-gray-400"></div>
+          <div className='flex gap-2 items-center'>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              className="flex-1 border p-2 rounded-lg focus:outline-none"/>
+            {/* TODO: Add some error checking here to not make api call until if no story */}
+            {/* TODO: TONE THIS AI DOWN ITS YAPPING SO MUCH */}
+            <Button onClick={sendChat} className='px-4 py-2 rounded-lg'>Send</Button>
+          </div>
+          
         </div>
       </div>
 
