@@ -49,37 +49,33 @@ export default function WordMatcher() {
 
     return (
     win ?
-        <>
-            <h1>
-                You Win
-            </h1>
-        </>
+        <h1>
+            You Win
+        </h1>
         :
-        <>
-            <div className='flex gap-5'>
-                <div className='flex flex-col gap-2'>
-                    {preMatchedData.map((match, index) => (
-                        <Button
-                        onClick={() => {setSelectedWord(match)}}
-                        className={`${isMatched(match) ? "bg-green-500 cursor-not-allowed hover:bg-green-800 transition: duration-200" : ""}`}
-                        disabled={isMatched(match)}
-                        key={index}>
-                            {match.knownLanguage}
-                        </Button>
-                    ))}
-                </div>
-                <div className='flex flex-col gap-2'>
-                    {shuffledData.map((match, index) => (
-                        <Button
-                        onClick={() => {handleTargetClick(match);}}
-                        className={`${isMatched(match) ? "bg-green-500 cursor-not-allowed hover:bg-green-800 transition: duration-200" : ""}`}
-                        disabled={isMatched(match)}
-                        key={index}>
-                            {match.targetLanguage}
-                        </Button>
-                    ))}
-                </div>
-            </div>    
-        </>
+        <div className='flex gap-5'>
+            <div className='flex flex-col gap-2'>
+                {preMatchedData.map((match) => (
+                    <Button
+                    onClick={() => {setSelectedWord(match)}}
+                    className={`${isMatched(match) ? "bg-green-500 cursor-not-allowed hover:bg-green-800 transition: duration-200" : ""}`}
+                    disabled={isMatched(match)}
+                    key={match.knownLanguage}>
+                        {match.knownLanguage}
+                    </Button>
+                ))}
+            </div>
+            <div className='flex flex-col gap-2'>
+                {shuffledData.map((match) => (
+                    <Button
+                    onClick={() => {handleTargetClick(match);}}
+                    className={`${isMatched(match) ? "bg-green-500 cursor-not-allowed hover:bg-green-800 transition: duration-200" : ""}`}
+                    disabled={isMatched(match)}
+                    key={match.targetLanguage}>
+                        {match.targetLanguage}
+                    </Button>
+                ))}
+            </div>
+        </div>    
   )
 }
