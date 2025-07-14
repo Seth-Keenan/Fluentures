@@ -21,7 +21,7 @@ export default function StoryPage() {
   }
 
   // Function to generate a new story based on the selected language and difficulty
-  // Call from app\lib\hooks\geminiStoryClient.ts
+  // Call from app/lib/hooks/geminiStoryClient.ts
   const generateStory = async () => {
     setStory("Generating...");
     setChatLog([]);
