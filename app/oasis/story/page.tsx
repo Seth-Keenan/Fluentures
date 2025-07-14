@@ -3,11 +3,9 @@ import { useState } from 'react';
 import { useSettings } from "@/app/lib/hooks/useSettings";
 import { Button } from '@/app/components/Button';
 import { LinkAsButton } from '@/app/components/LinkAsButton';
+import { requestStory, sendStoryChat } from "@/app/lib/hooks/geminiStoryClient";
+import type { HistoryItem } from "@/app/types/gemini";
 
-interface HistoryItem {
-  role: 'user' | 'model';
-  parts: { text: string }[];
-}
 
 export default function StoryPage() {
   const { language, difficulty } = useSettings();
@@ -23,21 +21,12 @@ export default function StoryPage() {
   }
 
   // Function to generate a new story based on the selected language and difficulty
+  // Call from app/lib/hooks/geminiStoryClient.ts
   const generateStory = async () => {
-    setStory('Generating...');
-    setChatLog([]); 
-
-    const res = await fetch('/api/story', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        action: "generate",
-        language: language,
-        difficulty: difficulty
-      }),
-    });
-    const data = await res.json();
-    setStory(data.story);
+    setStory("Generating...");
+    setChatLog([]);
+    const newStory = await requestStory(language, difficulty);
+    setStory(newStory ?? "Failed to generate story.");
   };
 
 
@@ -49,53 +38,33 @@ const sendChat = async () => {
   setChatLog(prev => [...prev, `You: ${currentInput}`]);
   setChatInput('');
 
-  // Conversational context
   const storyContext: HistoryItem = {
-      role: 'user',
-      parts: [{ text: `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""` }]
+    role: 'user',
+    parts: [{ text: `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""` }],
   };
-  
   const modelContextConfirmation: HistoryItem = {
-      role: 'model',
-      parts: [{ text: "Okay, I have the story. I will answer your questions about it."}]
-  }
+    role: 'model',
+    parts: [{ text: "Okay, I have the story. I will answer your questions about it." }],
+  };
 
-  const historyForApi = (apiHistory.length === 0) 
-    ? [storyContext, modelContextConfirmation] 
+  const historyForApi = (apiHistory.length === 0)
+    ? [storyContext, modelContextConfirmation]
     : apiHistory;
 
-  try {
-    const res = await fetch('/api/story', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        input: currentInput,
-        history: historyForApi 
-      }),
-    });
+  const modelReply = await sendStoryChat(currentInput, historyForApi);
 
-    // ERROR HANDLING LOGIC
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'An unknown error occurred on the server.');
-    }
-
-    const modelReply = data.reply || 'Sorry, I could not respond.';
-
+  if (modelReply) {
     setChatLog(prev => [...prev, `Camel: ${modelReply}`]);
     setApiHistory(prev => [
-        ...prev,
-        { role: 'user', parts: [{ text: currentInput }] },
-        { role: 'model', parts: [{ text: modelReply }] }
+      ...prev,
+      { role: 'user', parts: [{ text: currentInput }] },
+      { role: 'model', parts: [{ text: modelReply }] },
     ]);
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-    console.error("Chat error:", errorMessage);
-    setChatLog(prev => [...prev, `Error: ${errorMessage}`]);
-  } finally {
-    setIsLoading(false);
+  } else {
+    setChatLog(prev => [...prev, "Error: No response received."]);
   }
+
+  setIsLoading(false);
 };
 
   return (

@@ -2,6 +2,7 @@
 
 import { Button } from "@/app/components/Button";
 import { useEffect, useState } from "react";
+import { getExampleSentence } from "@/app/lib/hooks/geminiQuizClient";
 
 // Simulated word list (target language: Japanese)
 const wordList = [
@@ -82,20 +83,8 @@ export default function QuizPage() {
     console.log("✅ Using settings:", language, difficulty);
 
     const word = quizWords[currentQuestion].target;
-
-    const res = await fetch("/api/quiz", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sentence",
-        word,
-        language,
-        difficulty,
-      }),
-    });
-
-    const data = await res.json();
-    setExampleSentence(data.sentence);
+    const sentence = await getExampleSentence(word, language, difficulty);
+    setExampleSentence(sentence ?? "No example sentence available.");
     setSentenceLoading(false);
   };
 
@@ -123,8 +112,9 @@ export default function QuizPage() {
       <div className="flex flex-col p-6">
         <h1 className="text-4xl font-bold mb-4">Start Your Quiz</h1>
 
-        <label className="block mb-2 font-bold">Number of Questions:</label>
+        <label htmlFor="question-count-select" className="block mb-2 font-bold">Number of Questions:</label>
         <select
+          id="question-count-select"
           value={questionCount}
           onChange={(e) => setQuestionCount(Number(e.target.value))}
           className="border p-2 mb-4"
@@ -134,8 +124,9 @@ export default function QuizPage() {
           ))}
         </select>
 
-        <label className="block mb-2 font-bold">Mode:</label>
+        <label htmlFor="mode-select" className="block mb-2 font-bold">Mode:</label>
         <select
+          id="mode-select"
           value={mode}
           onChange={(e) => setMode(e.target.value as Mode)}
           className="border p-2 mb-4"
