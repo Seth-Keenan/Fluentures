@@ -1,3 +1,5 @@
+"use server";
+
 export async function getExampleSentence(
   word: string,
   language: string,

@@ -1,3 +1,5 @@
+"use server";
+
 import type { HistoryItem } from "@/app/types/gemini";
 
 export async function requestStory(language: string, difficulty: string): Promise<string | null> {
