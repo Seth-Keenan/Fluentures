@@ -84,7 +84,7 @@ export default function QuizPage() {
 
     const word = quizWords[currentQuestion].target;
     const sentence = await getExampleSentence(word, language, difficulty);
-    setExampleSentence(sentence);
+    setExampleSentence(sentence ?? "No example sentence available.");
     setSentenceLoading(false);
   };
 
