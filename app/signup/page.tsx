@@ -29,22 +29,22 @@ export default function LoginPage() {
     })
 
     // Handle lgoin response
-    const data = await response.json();
+    const result = await response.json();
     if (response.ok) {
       console.log("You're signed up and logged in!");
       router.push("/home")
       return HttpStatusCode.Ok;
     }
     else {
-      console.error("Signup failed! " + response.status);
+      console.error("Signup failed!", response.status, result.message);
       return response.status;
     }
   }
 
   return (
-    <div className='flex flex-col justify-center items-center h-screen'>
+    <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
       <p className='text-4xl font-bold mb-4'>Sign up</p>
-        <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded" onSubmit={onSubmit}>
+        <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={onSubmit}>
           <div className='container flex flex-col justify-center gap-4'>
             <div className='flex flex-col'>
               <label>Name</label>
@@ -62,6 +62,9 @@ export default function LoginPage() {
               <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Sign up</button>
               <Link href="/login" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
                 Already a user? Sign in!
+              </Link>
+              <Link href="/" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
+                Back to home
               </Link>
             </div>
           </div>
