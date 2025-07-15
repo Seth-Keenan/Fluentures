@@ -3,7 +3,7 @@ import { supabase } from '../../app/lib/hooks/supabaseClient'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { username, password } = req.body;
+    const { username, password, name } = req.body;
 
     const { data, error } = await supabase.auth.signUp({
       email: username,
@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    console.log("User added succesfully!")
     return res.status(200).json({ message: "Login successful", data });
   }
 

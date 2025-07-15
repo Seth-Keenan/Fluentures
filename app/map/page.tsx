@@ -1,6 +1,13 @@
 import React from 'react'
 import { LinkAsButton } from '../components/LinkAsButton'
 
+export const metadata = {
+  title: 'Fluentures',
+  icons: {
+    icon: '/favicon.ico',
+  },
+}
+
 const page = () => {
   return (
     <div className={"flex flex-col justify-center items-center h-screen"}>
