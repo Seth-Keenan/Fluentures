@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const {
             data: { session, user },
             error,
-        } = await supabase.auth.signInWithPassword({
+        } = await supabase.auth.signUp({
             email: username,
             password,
         });
@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]);
 
         // S-tier error handling
-        if (error || !session) {
+        if (error) {
             console.error(error?.message);
             return res.status(401).json({ message: error?.message });
         }

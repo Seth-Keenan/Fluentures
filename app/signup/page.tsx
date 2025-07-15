@@ -31,8 +31,8 @@ export default function LoginPage() {
     // Handle lgoin response
     const result = await response.json();
     if (response.ok) {
-      console.log("You're signed up and logged in!");
-      router.push("/home")
+      console.log("You're signed up!");
+      router.push("/login")
       return HttpStatusCode.Ok;
     }
     else {
@@ -44,6 +44,7 @@ export default function LoginPage() {
   return (
     <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
       <p className='text-4xl font-bold mb-4 text-gray-500'>Sign up</p>
+      <p className='text-sm text-gray-700 mb-2'>Upon sign up, you must confirm your email before logging in.</p>
         <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={onSubmit}>
           <div className='container flex flex-col justify-center gap-4'>
             <div className='flex flex-col'>
