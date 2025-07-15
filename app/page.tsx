@@ -1,8 +1,21 @@
 import Logo from "next/image";
+import Head from "next/head";
 import { LinkAsButton } from "./components/LinkAsButton";
+
+export const metadata = {
+  title: 'Fluentures',
+  icons: {
+    icon: '/favicon.ico',
+  },
+}
 
 export default function Home() {
   return (
+    <>
+    <Head>
+        <title>Fluentures</title>
+        <link rel="icon" href="favicon.ico"></link>
+    </Head>
     <div style={{
       backgroundImage: "url('/ChatGPT Image Mar 31, 2025 at 12_13_22 PM.png')",
       backgroundSize: 'cover',
@@ -31,5 +44,6 @@ export default function Home() {
         </LinkAsButton>
       </div>
     </div>
+    </>
   );
 }
