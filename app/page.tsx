@@ -2,22 +2,10 @@ import Logo from "next/image";
 import Head from "next/head";
 import { LinkAsButton } from "./components/LinkAsButton";
 
-export const metadata = {
-  title: 'Fluentures',
-  icons: {
-    icon: '/favicon.ico',
-  },
-}
-
 export default function Home() {
   return (
-    <>
-    <Head>
-        <title>Fluentures</title>
-        <link rel="icon" href="favicon.ico"></link>
-    </Head>
     <div style={{
-      backgroundImage: "url('/ChatGPT Image Mar 31, 2025 at 12_13_22 PM.png')",
+      backgroundImage: 'url("/desert.png")',
       backgroundSize: 'cover',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center',
@@ -27,23 +15,22 @@ export default function Home() {
       width: 'auto',
       }}>
       <div className={"flex flex-col justify-center items-center h-screen"}>
-        <LinkAsButton href="/login" className="btn">
+        <LinkAsButton href="/login" className="btn m-1">
           Login
         </LinkAsButton>
-        <LinkAsButton href="/signup" className="btn">
+        <LinkAsButton href="/signup" className="btn m-1">
           Signup
         </LinkAsButton>
-        <LinkAsButton href="/settings" className="btn">
+        <LinkAsButton href="/settings" className="btn m-1">
           Settings
         </LinkAsButton>
-        <LinkAsButton href="/home" className="btn">
+        <LinkAsButton href="/home" className="btn m-1">
           Account Home
         </LinkAsButton>
-        <LinkAsButton href="/testing" className="btn">
+        <LinkAsButton href="/testing" className="bt m-1">
           Testing features
         </LinkAsButton>
       </div>
     </div>
-    </>
   );
 }

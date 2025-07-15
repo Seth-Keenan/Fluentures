@@ -7,12 +7,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { username, password, name } = req.body;
 
         // 1. Signup user to supabase
-        const { data, error } = await supabase.auth.signUp({
+        const {
+            data: { session, user },
+            error,
+        } = await supabase.auth.signInWithPassword({
             email: username,
-            password: password,
+            password,
         });
 
-        const userId = data.user?.id;
+        const userId = user?.id;
 
         // 2. Insert user into Users table
         const { error: dbError } = await supabase.from('Users').insert([
@@ -25,9 +28,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]);
 
         // S-tier error handling
-        if (error) {
-            console.error(error.message);
-            return res.status(401).json({ message: error.message });
+        if (error || !session) {
+            console.error(error?.message);
+            return res.status(401).json({ message: error?.message });
         }
         else if (dbError) {
             console.error(dbError.message);

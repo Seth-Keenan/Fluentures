@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SupabaseProvider from '@/app/lib/providers/SupabaseProvider';
+import Navbar from "@/app/components/Navbar";
 
 // Applies the favicon and website title to each page. Must be in a server component, so store in root layout.tsx
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SupabaseProvider>
+          <Navbar/>
           {children}
         </SupabaseProvider>
       </body>
