@@ -36,7 +36,7 @@ export default function LoginPage() {
       return HttpStatusCode.Ok;
     }
     else {
-      console.error("Signup failed!");
+      console.error("Signup failed! " + response.status);
       return response.status;
     }
   }
@@ -59,7 +59,7 @@ export default function LoginPage() {
               <input className="border border-black rounded-[.5vw] p-[5px]" placeholder='Enter password' name="password" type="password" required />
             </div>
             <div className='flex flex-col items-center gap-4'>
-              <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Login</button>
+              <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Sign up</button>
               <Link href="/login" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
                 Already a user? Sign in!
               </Link>
