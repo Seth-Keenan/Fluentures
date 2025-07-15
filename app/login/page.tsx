@@ -15,6 +15,7 @@ export default function LoginPage() {
     event.preventDefault()
 
     const formData = new FormData(event.currentTarget)
+    
     const body = {
       username: formData.get("username"),
       password: formData.get("password"),
@@ -40,9 +41,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className='flex flex-col justify-center items-center h-screen'>
-      <p className='text-4xl font-bold mb-4'>Login</p>
-        <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded" onSubmit={onSubmit}>
+    <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
+      <p className='text-4xl font-bold mb-4 text-gray-500'>Login</p>
+        <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={onSubmit}>
           <div className='container flex flex-col justify-center gap-4'>
             <div className='flex flex-col'>
               <label>Username</label>
@@ -56,6 +57,9 @@ export default function LoginPage() {
               <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Login</button>
               <Link href="/signup" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
                 Not a user? Sign up!
+              </Link>
+              <Link href="/" style={{textDecoration: "underline", textDecorationColor: "orange", color: "orange"}}>
+                Back to home
               </Link>
             </div>
           </div>
