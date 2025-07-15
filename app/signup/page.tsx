@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   return (
     <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
-      <p className='text-4xl font-bold mb-4'>Sign up</p>
+      <p className='text-4xl font-bold mb-4 text-gray-500'>Sign up</p>
         <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={onSubmit}>
           <div className='container flex flex-col justify-center gap-4'>
             <div className='flex flex-col'>

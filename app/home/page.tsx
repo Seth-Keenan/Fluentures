@@ -1,10 +1,20 @@
+"use client"
+
 import Link from 'next/link'
 import React from 'react'
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import { useSession } from '@supabase/auth-helpers-react'
 
 const page = () => {
+  const session = useSession()
+  
   return (
     <div className='flex flex-col justify-center items-center h-screen'>
+      {session ? (
+        <p>Logged in as {session.user.email}</p>
+      ) : (
+        <p>Not logged in.</p>
+      )}
       <LinkAsButton href="/social" className="btn">
         Social
       </LinkAsButton>
