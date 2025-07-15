@@ -6,21 +6,27 @@ import Link from "next/link";
 import fluenturesLogo from "@/fluenturesLogo.png";
 import Image from "next/image";
 import { Button } from "@/app/components/Button";
-import { supabase } from '@/app/lib/hooks/supabaseClient' 
-
-const handleSignOut = async () => {
-  try {
-    await supabase.auth.signOut();
-  } catch (error) {
-    console.error('Error signing out:', error);
-  }
-};
+import { supabase } from '@/app/lib/hooks/supabaseClient'
+import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <div className="w-full h-20 bg-emerald-800 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-full relative flex items-center">
-        
+
         {/* Logo on left */}
         <Link href="/" className="flex items-center z-10">
           <Image
