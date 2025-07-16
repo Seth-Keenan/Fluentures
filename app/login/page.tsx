@@ -5,38 +5,29 @@ import { FormEvent } from 'react'
 import { HttpStatusCode } from 'axios';
 import { useRouter } from 'next/navigation'
 import Link from 'next/link';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPage() {
-
-  // Define a router upon successful login
-  const router = useRouter();
+  const supabase = createClientComponentClient()
+  const router = useRouter()
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const formData = new FormData(event.currentTarget)
-    
-    const body = {
-      username: formData.get("username"),
-      password: formData.get("password"),
-    }
+    const email = formData.get("username") as string
+    const password = formData.get("password") as string
 
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
-    // Handle lgoin response
-    const data = await response.json();
-    if (response.ok) {
-      console.log("You're logged in!");
+    if (error) {
+      console.error("Login failed:", error.message)
+    } else {
+      console.log("You're logged in!")
       router.push("/home")
-      return HttpStatusCode.Ok;
-    }
-    else {
-      console.error("Login failed!");
-      return response.status;
     }
   }
 
