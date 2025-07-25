@@ -27,7 +27,10 @@ const page = () => {
       <LinkAsButton href="/logbook" className="btn">
         Log Book
       </LinkAsButton>
-      {/* For now just have this go back but in the future have a log out */}
+      <LinkAsButton href="/settings" className="btn">
+        Settings
+      </LinkAsButton>
+      {/* TODO: For now just have this go back but in the future have a log out */}
       <LinkAsButton href="/" className="btn">
         Back
       </LinkAsButton>
