@@ -1,4 +1,5 @@
 "use client";
+import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export function useSettings() {
@@ -13,11 +14,20 @@ export function useSettings() {
     if (storedDifficulty) setDifficulty(storedDifficulty);
   }, []);
 
-  const saveSettings = (newLanguage: string, newDifficulty: string) => {
-    localStorage.setItem("targetLanguage", newLanguage);
-    localStorage.setItem("difficultyLevel", newDifficulty);
-    setLanguage(newLanguage);
-    setDifficulty(newDifficulty);
+  // Save settings to the server
+  const saveSettings = async () => {
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language, difficulty }),
+    });
+
+    if (res.ok) {
+      alert("Settings saved to your account!");
+      redirect("/");
+    } else {
+      alert("Failed to save settings.");
+    }
   };
 
   return { language, difficulty, saveSettings };
