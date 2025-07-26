@@ -22,6 +22,10 @@ export function useSettings() {
       body: JSON.stringify({ language, difficulty }),
     });
 
+    //DEBUG 
+    const data = await res.json();
+    console.log("🔍 API response:", data);
+
     if (res.ok) {
       alert("Settings saved to your account!");
       redirect("/");
