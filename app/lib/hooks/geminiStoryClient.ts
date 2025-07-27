@@ -2,15 +2,13 @@
 
 import type { HistoryItem } from "@/app/types/gemini";
 
-export async function requestStory(language: string, difficulty: string): Promise<string | null> {
+export async function requestStory(): Promise<string | null> {
   try {
     const res = await fetch("/api/story", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "generate",
-        language,
-        difficulty,
+        action: "generate"
       }),
     });
 

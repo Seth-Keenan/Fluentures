@@ -1,6 +1,8 @@
 // app/api/gemini/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, Content } from "@google/generative-ai";
+import { getUserSettings } from '@/app/lib/helpers/getUserSettings';
+import { getDifficultyInstruction } from '@/app/lib/helpers/getDifficultyInstructions';
 
 // Initialize the Google AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -18,7 +20,15 @@ export async function POST(req: NextRequest) {
     }
 
   // Extract relevant fields from the parsed body
-  const { language, difficulty, input, history } = body;  
+  const { input, history } = body;  
+
+  // Fetch user settings from database
+  const { user, settings } = await getUserSettings();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { language, difficulty } = settings;
 
   let model;
   try {
@@ -31,11 +41,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Provide instructions based on difficulty level
+    const instruction = getDifficultyInstruction(difficulty);
 
-    // SCENARIO 2: GENERATE A NEW STORY   
+
+    // SCENARIO 1: GENERATE A NEW STORY
 
     // Prompt set up
-    if (language && difficulty) {
+    if (body.action === "story") {
       //Configuration for the story generation
       const generationConfig = {
         temperature: 0.9, //Higher creativity (0.0-1.0)
@@ -43,19 +56,6 @@ export async function POST(req: NextRequest) {
         topP: 1, //Top-P sampling to control diversity (0.0-1.0)
         maxOutputTokens: 2048,
       }
-
-    let instruction = '';
-    switch (difficulty) {
-      case 'Beginner':
-        instruction = 'Use very simple vocabulary and sentence structures.';
-        break;
-      case 'Intermediate':
-        instruction = 'Use moderately complex vocabulary and grammar.';
-        break;
-      case 'Advanced':
-        instruction = 'Use natural and idiomatic expressions, with some advanced grammar.';
-        break;
-    }
 
       // Prompt for generating a story
       const prompt = `Generate a complete story in the ${language} language. 
@@ -74,15 +74,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // HANDLE A CHAT MESSAGE
+    // SCENARIO 2: HANDLE A CHAT MESSAGE
     else if (input && history) {
-      const chat = model.startChat({
-        history: history as Content[],
-      });
+      const chat = model.startChat({ history: history as Content[] });
 
       const result = await chat.sendMessage(input);
-      const response = result.response;
-      return NextResponse.json({ reply: response.text() });
+      return NextResponse.json({ reply: result.response.text() });
     }
 
     // If the request doesn't match any scenario

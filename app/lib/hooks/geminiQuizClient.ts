@@ -1,9 +1,7 @@
 "use server";
 
 export async function getExampleSentence(
-  word: string,
-  language: string,
-  difficulty: string
+  word: string
 ): Promise<string | null> {
   try {
     const res = await fetch("/api/quiz", {
@@ -11,9 +9,7 @@ export async function getExampleSentence(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "sentence",
-        word,
-        language,
-        difficulty,
+        word
       }),
     });
 
