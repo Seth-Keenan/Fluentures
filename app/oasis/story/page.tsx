@@ -25,7 +25,7 @@ export default function StoryPage() {
   const generateStory = async () => {
     setStory("Generating...");
     setChatLog([]);
-    const newStory = await requestStory(language, difficulty);
+    const newStory = await requestStory();
     setStory(newStory ?? "Failed to generate story.");
   };
 

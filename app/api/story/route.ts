@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
 
   const { language, difficulty } = settings;
 
+  console.log(`Language: ${language}`);
+  console.log(`Difficulty: ${difficulty}`);
+
   let model;
   try {
     model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
                       The story should be suitable for a ${difficulty.toLowerCase()} learning the language. 
                       ${instruction} The story should be at least 10 sentences long. Do not include explanations or translations.`;
       try {
+        console.log(`Story prompt sent to gemini: ${prompt}`);
         const result = await model.generateContent({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig,

@@ -2,9 +2,11 @@
 
 import type { HistoryItem } from "@/app/types/gemini";
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export async function requestStory(): Promise<string | null> {
   try {
-    const res = await fetch("/api/story", {
+    const res = await fetch(`${BASE_URL}/api/story`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -1,6 +1,6 @@
 "use client";
 
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "../components/Button";
 import { LinkAsButton } from "../components/LinkAsButton";
@@ -17,11 +17,13 @@ export default function SettingsPage() {
     if (storedDiff) setDifficulty(storedDiff);
   }, []);
 
+  const router = useRouter();
+
   const saveSettings = () => {
     localStorage.setItem("targetLanguage", language);
     localStorage.setItem("difficultyLevel", difficulty);
     alert("Settings saved! Close to continue.");
-    redirect("/");
+    router.push("/home");
   };
 
   return (
@@ -60,7 +62,7 @@ export default function SettingsPage() {
           Save Settings
         </Button>
         <LinkAsButton
-          href="/">
+          href="/home">
             Back
         </LinkAsButton>
       </div>
