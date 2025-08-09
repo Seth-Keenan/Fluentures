@@ -31,7 +31,7 @@ export async function requestSentence(
 
 export async function sendSentenceChat(input: string, history: HistoryItem[]): Promise<string | null> {
   try {
-    const res = await fetch("/api/sentences", {
+    const res = await fetch(`${getBaseUrl()}/api/sentences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
