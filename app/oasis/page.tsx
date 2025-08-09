@@ -16,6 +16,9 @@ const page = () => {
         <LinkAsButton href="/oasis/story" className="btn">
             Story
         </LinkAsButton>
+        <LinkAsButton href="/oasis/sentences" className="btn">
+            Sentences
+        </LinkAsButton>
         <LinkAsButton href="/oasis/edit" className="btn">
             Edit Oasis
         </LinkAsButton>

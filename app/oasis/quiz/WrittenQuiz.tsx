@@ -2,7 +2,7 @@
 
 import { Button } from "@/app/components/Button";
 import { useEffect, useState } from "react";
-import { getExampleSentence } from "@/app/lib/hooks/geminiQuizClient";
+import { requestQuizSentence } from "@/app/lib/hooks/geminiQuizClient";
 
 // Simulated word list (target language: Japanese)
 const wordList = [
@@ -83,7 +83,7 @@ export default function QuizPage() {
     console.log("✅ Using settings:", language, difficulty);
 
     const word = quizWords[currentQuestion].target;
-    const sentence = await getExampleSentence(word, language, difficulty);
+    const sentence = await requestQuizSentence(word, language, difficulty);
     setExampleSentence(sentence ?? "No example sentence available.");
     setSentenceLoading(false);
   };
