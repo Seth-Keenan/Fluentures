@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
-import { getWordlist, saveWordlist } from "@/app/lib/clients/wordlistClient";
+import { getWordlist, saveWordlist } from "@/app/lib/actions/wordlistClient";
 import type { WordItem } from "@/app/types/wordlist";
 
 export default function EditOasisPage() {
