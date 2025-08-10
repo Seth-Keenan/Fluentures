@@ -14,8 +14,7 @@ const Quiz = () => {
   };
 
   return (
-    <>
-      <div className="flex flex-col gap-4 justify-center items-center h-screen">
+    <div className="flex flex-col gap-4 justify-center items-center h-screen">
       {selectedQuiz === null && (
         <>
           <h1 className="text-4xl font-bold">Choose a Quiz</h1>
@@ -36,7 +35,6 @@ const Quiz = () => {
         </Button>
       )}
     </div>
-    </>
   )
 }
 

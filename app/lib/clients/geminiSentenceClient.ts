@@ -38,8 +38,6 @@ export async function sendSentenceChat(input: string, history: HistoryItem[]): P
         action: "chat",
         input,
         history,
-        language,
-        difficulty,
       })
     });
 
