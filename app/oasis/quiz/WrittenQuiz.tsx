@@ -2,7 +2,7 @@
 
 import { Button } from "@/app/components/Button";
 import { useEffect, useState } from "react";
-import { requestQuizSentence } from "@/app/lib/client/geminiQuizClient";
+import { requestQuizSentence } from "@/app/lib/clients/geminiQuizClient";
 
 // Simulated word list (target language: Japanese)
 const wordList = [

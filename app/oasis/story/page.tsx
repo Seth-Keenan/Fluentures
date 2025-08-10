@@ -1,9 +1,9 @@
 "use client";
 import { useState } from 'react';
-import { useSettings } from "@/app/lib/clients/useSettings";
+import { useSettings } from "@/app/lib/hooks/useSettings";
 import { Button } from '@/app/components/Button';
 import { LinkAsButton } from '@/app/components/LinkAsButton';
-import { requestStory, sendStoryChat } from "@/app/lib/client/geminiStoryClient";
+import { requestStory, sendStoryChat } from "@/app/lib/clients/geminiStoryClient";
 import type { HistoryItem } from "@/app/types/gemini";
 
 

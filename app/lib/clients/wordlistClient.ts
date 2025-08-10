@@ -1,9 +1,11 @@
 "use server";
 import type { WordItem, WordListFile } from "@/app/types/wordlist";
+import { getBaseUrl } from "@/app/lib/util/getBaseUrl";
+
 
 export async function getWordlist(): Promise<WordItem[]> {
   try {
-    const res = await fetch("/api/wordlist", { method: "GET", cache: "no-store" });
+    const res = await fetch(`${getBaseUrl()}/api/wordlist`, { method: "GET", cache: "no-store" });
     if (!res.ok) throw new Error(await res.text());
     const data = (await res.json()) as WordListFile;
     return data.items ?? [];
@@ -15,7 +17,7 @@ export async function getWordlist(): Promise<WordItem[]> {
 
 export async function saveWordlist(items: WordItem[]): Promise<boolean> {
   try {
-    const res = await fetch("/api/wordlist", {
+    const res = await fetch(`${getBaseUrl()}/api/wordlist`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
