@@ -6,7 +6,7 @@ import Link from "next/link";
 import fluenturesLogo from "@/fluenturesLogo.png";
 import Image from "next/image";
 import { Button } from "@/app/components/Button";
-import { supabase } from '@/app/lib/hooks/supabaseClient'
+import { supabase } from '@/app/lib/hooks/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 const Navbar = () => {

@@ -13,7 +13,7 @@ const page = () => {
     <div className={"flex flex-col justify-center items-center h-screen"}>
         <h2>Map placeholder</h2>
         <LinkAsButton href="/oasis" className="btn">
-            Choose Oasis
+            Test Oasis 1
         </LinkAsButton>
         <LinkAsButton href="/map/edit" className="btn">
             Edit Map

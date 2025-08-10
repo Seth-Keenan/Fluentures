@@ -40,3 +40,6 @@ local.env
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp files
+/data/wordlists/

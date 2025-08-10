@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSettings } from "@/app/lib/hooks/useSettings";
 import { Button } from '@/app/components/Button';
 import { LinkAsButton } from '@/app/components/LinkAsButton';
-import { requestStory, sendStoryChat } from "@/app/lib/hooks/geminiStoryClient";
+import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction";
 import type { HistoryItem } from "@/app/types/gemini";
 
 
@@ -21,7 +21,7 @@ export default function StoryPage() {
   }
 
   // Function to generate a new story based on the selected language and difficulty
-  // Call from app/lib/hooks/geminiStoryClient.ts
+  // Call from app/lib/actions/geminiStoryClient.ts
   const generateStory = async () => {
     setStory("Generating...");
     setChatLog([]);
