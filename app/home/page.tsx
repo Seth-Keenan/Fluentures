@@ -27,6 +27,9 @@ const page = () => {
       <LinkAsButton href="/logbook" className="btn">
         Log Book
       </LinkAsButton>
+      <LinkAsButton href="/settings" className="btn m-1">
+          Settings
+        </LinkAsButton>
       {/* For now just have this go back but in the future have a log out */}
       <LinkAsButton href="/" className="btn">
         Back

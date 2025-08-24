@@ -1,6 +1,5 @@
 "use client";
 
-import { redirect } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "../components/Button";
 import { LinkAsButton } from "../components/LinkAsButton";
@@ -8,20 +7,42 @@ import { LinkAsButton } from "../components/LinkAsButton";
 export default function SettingsPage() {
   const [language, setLanguage] = useState("Japanese");
   const [difficulty, setDifficulty] = useState("Beginner");
+  const [isDarkMode, setIsDarkMode] = useState(false); // add boolean state
 
   useEffect(() => {
-    // Load previous values if available
+    // Load previous values if available (for now localStorage fallback)
     const storedLang = localStorage.getItem("targetLanguage");
     const storedDiff = localStorage.getItem("difficultyLevel");
+    const storedDisplay = localStorage.getItem("display");
+
     if (storedLang) setLanguage(storedLang);
     if (storedDiff) setDifficulty(storedDiff);
+    if (storedDisplay !== null) setIsDarkMode(storedDisplay === "true"); // string → boolean
   }, []);
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
+    // localStorage fallback
     localStorage.setItem("targetLanguage", language);
     localStorage.setItem("difficultyLevel", difficulty);
-    alert("Settings saved! Close to continue.");
-    redirect("/");
+    localStorage.setItem("display", String(isDarkMode));
+
+    // Save to DB via API
+    const res = await fetch("/api/user/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        language,
+        difficulty,
+        display: isDarkMode,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Failed to save settings");
+      return;
+    }
+
+    alert("✅ Settings saved!");
   };
 
   return (
@@ -54,15 +75,19 @@ export default function SettingsPage() {
         </select>
       </div>
 
+      {/* Dark Mode Toggle */}
+      <div className="mb-4 flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isDarkMode}
+          onChange={(e) => setIsDarkMode(e.target.checked)}
+        />
+        <label>Dark Mode</label>
+      </div>
+
       <div className="flex flex-col gap-2 items-center">
-        <Button
-          onClick={saveSettings}>
-          Save Settings
-        </Button>
-        <LinkAsButton
-          href="/">
-            Back
-        </LinkAsButton>
+        <Button onClick={saveSettings}>Save Settings</Button>
+        <LinkAsButton href="/">Back</LinkAsButton>
       </div>
     </div>
   );
