@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "../components/Button";
 import { LinkAsButton } from "../components/LinkAsButton";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function SettingsPage() {
+  const supabase = createClientComponentClient()
   const [language, setLanguage] = useState("Japanese");
   const [difficulty, setDifficulty] = useState("Beginner");
   const [isDarkMode, setIsDarkMode] = useState(false); // add boolean state
@@ -21,28 +23,41 @@ export default function SettingsPage() {
   }, []);
 
   const saveSettings = async () => {
-    // localStorage fallback
-    localStorage.setItem("targetLanguage", language);
-    localStorage.setItem("difficultyLevel", difficulty);
-    localStorage.setItem("display", String(isDarkMode));
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        alert("Not authenticated!")
+        return
+      }
 
-    // Save to DB via API
-    const res = await fetch("/api/user/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        language,
-        difficulty,
-        display: isDarkMode,
-      }),
-    });
+      // Save to Supabase
+      const { error } = await supabase
+        .from('UserSettings')
+        .upsert({
+          user_id: user.id,
+          language,
+          difficulty,
+          display: isDarkMode,
+        })
 
-    if (!res.ok) {
-      alert("Failed to save settings");
-      return;
+      if (error) {
+        console.error('Save error:', error)
+        alert("Failed to save settings")
+        return
+      }
+
+      // Save to localStorage as fallback
+      localStorage.setItem("targetLanguage", language)
+      localStorage.setItem("difficultyLevel", difficulty)
+      localStorage.setItem("display", String(isDarkMode))
+
+      alert("✅ Settings saved!")
+    } catch (e) {
+      console.error('Unexpected error:', e)
+      alert("Failed to save settings")
     }
-
-    alert("✅ Settings saved!");
   };
 
   return (
@@ -87,7 +102,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-2 items-center">
         <Button onClick={saveSettings}>Save Settings</Button>
-        <LinkAsButton href="/">Back</LinkAsButton>
+        <LinkAsButton href="/home">Back</LinkAsButton>
       </div>
     </div>
   );
