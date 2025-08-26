@@ -32,7 +32,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowForm(true), 1000);
+    const t = setTimeout(() => setShowForm(true), 3000);
     return () => clearTimeout(t);
   }, []);
 
