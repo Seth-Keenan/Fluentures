@@ -65,6 +65,9 @@ export default function LoginPage() {
             <Link href="/signup" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
               Not a user? Sign up!
             </Link>
+            <Link href="/reset-password" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
+              Forgot Password?
+            </Link>
             <Link href="/" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
               Back to home
             </Link>
