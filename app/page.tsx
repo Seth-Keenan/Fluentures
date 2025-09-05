@@ -21,9 +21,6 @@ export default function Home() {
         <LinkAsButton href="/signup" className="btn m-1">
           Signup
         </LinkAsButton>
-        <LinkAsButton href="/settings" className="btn m-1">
-          Settings
-        </LinkAsButton>
         <LinkAsButton href="/home" className="btn m-1">
           Account Home
         </LinkAsButton>
