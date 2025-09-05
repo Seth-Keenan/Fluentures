@@ -1,5 +1,8 @@
 // This file protects routes with sessions? I hope lol
 
+// auth-helpers is the old version for middleware
+// TODO: update to supabase-ssr when possible
+
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
