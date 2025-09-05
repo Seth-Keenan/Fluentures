@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { FormEvent } from 'react'
-import { HttpStatusCode } from 'axios';
 import { useRouter } from 'next/navigation'
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -18,19 +17,34 @@ export default function LoginPage() {
     const email = formData.get("username") as string
     const password = formData.get("password") as string
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      console.error("Login failed:", error.message)
-      return
+      if (error) {
+        console.error("Login failed:", error.message)
+        return
+      }
+
+      // Set auth cookie by calling the server-side auth endpoint
+      await fetch('/auth/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ event: 'SIGNED_IN', session: data.session }),
+      })
+
+      // Refresh the page and router state
+      router.refresh()
+      
+      // Navigate to home page
+      router.push('/home')
+    } catch (error) {
+      console.error("Error during login:", error)
     }
-
-    // Force a hard reload instead of using router.push()
-    // This ensures cookies are properly set before the next request
-    window.location.href = "/home"
   }
 
   return (
