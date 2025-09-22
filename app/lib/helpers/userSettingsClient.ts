@@ -7,120 +7,98 @@ export interface UserSettings {
   display?: boolean;
 }
 
-const SETTINGS_SESSION_KEY = 'user_settings_loaded';
-const SETTINGS_CACHE_KEY = 'cached_user_settings';
+const SETTINGS_SESSION_KEY = "user_settings_loaded";
+const SETTINGS_CACHE_KEY = "cached_user_settings";
 
-/**
- * Fetches user settings from the database API
- * Returns null if user is not authenticated or fetch fails
- */
-export async function fetchUserSettingsFromDB(): Promise<UserSettings | null> {
+export async function fetchUserSettingsFromDB(force = false): Promise<UserSettings | null> {
   try {
-    const response = await fetch('/api/user/settings', {
-      method: 'GET',
-      credentials: 'include', // Important for cookie-based auth
-    });
+    if (!force && sessionStorage.getItem(SETTINGS_SESSION_KEY) === "true") {
+      const cached = getCachedSettings();
+      if (cached) return cached;
+    }
 
-    if (response.status === 401) {
-      // User not authenticated
+    const res = await fetch("/api/user/settings", { method: "GET", credentials: "include" });
+    if (res.status === 401) return null;
+    if (!res.ok) {
+      console.error("Failed to fetch user settings:", res.statusText);
       return null;
     }
 
-    if (!response.ok) {
-      console.error('Failed to fetch user settings:', response.statusText);
-      return null;
-    }
-
-    const settings: UserSettings = await response.json();
-    
-    // Cache the settings and mark as loaded this session
+    const settings: UserSettings = await res.json();
     localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
-    sessionStorage.setItem(SETTINGS_SESSION_KEY, 'true');
-    
+    sessionStorage.setItem(SETTINGS_SESSION_KEY, "true");
     return settings;
-  } catch (error) {
-    console.error('Error fetching user settings:', error);
+  } catch (err) {
+    console.error("Error fetching user settings:", err);
     return null;
   }
 }
 
-/**
- * Saves user settings to the database
- * Also updates localStorage cache
- */
-export async function saveUserSettingsToDB(settings: Omit<UserSettings, 'display'>): Promise<boolean> {
+export async function saveUserSettingsToDB(
+  settings: Omit<UserSettings, "display"> & { display?: boolean }
+): Promise<UserSettings | null> {
   try {
-    const response = await fetch('/api/user/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
+    const res = await fetch("/api/user/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(settings),
     });
 
-    if (response.status === 401) {
-      // User not authenticated, save to localStorage only
+    if (res.status === 401) {
+      // Not logged in → fallback only
       localStorage.setItem("targetLanguage", settings.language);
       localStorage.setItem("difficultyLevel", settings.difficulty);
-      return false; // Indicates fallback was used
+      if (typeof settings.display === "boolean") localStorage.setItem("display", String(settings.display));
+      // Also write the cache key so readers don’t pick stale JSON
+      localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
+      sessionStorage.setItem(SETTINGS_SESSION_KEY, "true");
+      return settings;
     }
 
-    if (!response.ok) {
-      console.error('Failed to save user settings:', response.statusText);
-      return false;
+    if (!res.ok) {
+      console.error("Failed to save user settings:", await res.text());
+      return null;
     }
 
-    // Update cache and mark as loaded
-    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
-    localStorage.setItem("targetLanguage", settings.language);
-    localStorage.setItem("difficultyLevel", settings.difficulty);
-    sessionStorage.setItem(SETTINGS_SESSION_KEY, 'true');
-    
-    return true;
-  } catch (error) {
-    console.error('Error saving user settings:', error);
-    // Fallback to localStorage
-    localStorage.setItem("targetLanguage", settings.language);
-    localStorage.setItem("difficultyLevel", settings.difficulty);
-    return false;
+    // Server returns canonical row
+    const fresh: UserSettings = await res.json();
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(fresh));
+    localStorage.setItem("targetLanguage", fresh.language);
+    localStorage.setItem("difficultyLevel", fresh.difficulty);
+    if (typeof fresh.display === "boolean") localStorage.setItem("display", String(fresh.display));
+    sessionStorage.setItem(SETTINGS_SESSION_KEY, "true");
+
+    // Let other tabs/components know
+    window.dispatchEvent(new Event("user-settings-updated"));
+    return fresh;
+  } catch (err) {
+    console.error("Error saving user settings:", err);
+    return null;
   }
 }
 
-/**
- * Checks if settings have been loaded from DB this session
- */
-export function hasLoadedSettingsThisSession(): boolean {
-  return sessionStorage.getItem(SETTINGS_SESSION_KEY) === 'true';
-}
-
-/**
- * Gets cached settings from localStorage
- */
 export function getCachedSettings(): UserSettings | null {
   try {
     const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-  } catch (error) {
-    console.error('Error parsing cached settings:', error);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {
+    console.error("Error parsing cached settings:", e);
   }
-
-  // Fallback to old localStorage keys
+  // fallback
   const language = localStorage.getItem("targetLanguage");
   const difficulty = localStorage.getItem("difficultyLevel");
-  
-  if (language && difficulty) {
-    return { language, difficulty };
-  }
-
+  const display = localStorage.getItem("display");
+  if (language && difficulty) return { language, difficulty, display: display === "true" };
   return null;
 }
 
-/**
- * Clears the session flag (useful for logout)
- */
+export async function refreshUserSettingsCache(): Promise<UserSettings | null> {
+  sessionStorage.removeItem(SETTINGS_SESSION_KEY);
+  localStorage.removeItem(SETTINGS_CACHE_KEY);
+  return fetchUserSettingsFromDB(true);
+}
+
 export function clearSettingsSession(): void {
   sessionStorage.removeItem(SETTINGS_SESSION_KEY);
   localStorage.removeItem(SETTINGS_CACHE_KEY);

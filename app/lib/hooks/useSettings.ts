@@ -1,10 +1,11 @@
+// useSettings.ts (your hook)
 "use client";
 import { useEffect, useState } from "react";
-import { 
-  fetchUserSettingsFromDB, 
-  saveUserSettingsToDB, 
-  hasLoadedSettingsThisSession, 
-  getCachedSettings
+import {
+  fetchUserSettingsFromDB,
+  saveUserSettingsToDB,
+  hasLoadedSettingsThisSession,
+  getCachedSettings,
 } from "@/app/lib/helpers/userSettingsClient";
 
 export function useSettings() {
@@ -14,9 +15,7 @@ export function useSettings() {
 
   useEffect(() => {
     const loadSettings = async () => {
-      // Check if we've already loaded from DB this session
       if (hasLoadedSettingsThisSession()) {
-        // Use cached settings
         const cached = getCachedSettings();
         if (cached) {
           setLanguage(cached.language);
@@ -25,50 +24,56 @@ export function useSettings() {
           return;
         }
       }
-
-      // Try to fetch from database
-      const dbSettings = await fetchUserSettingsFromDB();
-      
+      const dbSettings = await fetchUserSettingsFromDB(); // cached fetch
       if (dbSettings) {
-        // Successfully loaded from DB
         setLanguage(dbSettings.language);
         setDifficulty(dbSettings.difficulty);
       } else {
-        // Fallback to localStorage or defaults
         const cached = getCachedSettings();
         if (cached) {
           setLanguage(cached.language);
           setDifficulty(cached.difficulty);
         } else {
-          console.log("No cached or DB settings, defaulting...");
-          // Ultimate fallback to defaults
           setLanguage("Japanese");
           setDifficulty("Beginner");
-          // Save defaults to localStorage
           localStorage.setItem("targetLanguage", "Japanese");
           localStorage.setItem("difficultyLevel", "Beginner");
         }
       }
-      
       setIsLoading(false);
     };
-
     loadSettings();
+
+    // react to updates from anywhere in the app
+    const onUpdated = async () => {
+      const fresh = await fetchUserSettingsFromDB(true); // FORCE refresh
+      if (fresh) {
+        setLanguage(fresh.language);
+        setDifficulty(fresh.difficulty);
+      }
+    };
+    window.addEventListener("user-settings-updated", onUpdated);
+    return () => window.removeEventListener("user-settings-updated", onUpdated);
   }, []);
 
   const saveSettings = async (newLanguage: string, newDifficulty: string) => {
-    // Optimistically update UI
+    // Optimistic UI
     setLanguage(newLanguage);
     setDifficulty(newDifficulty);
 
-    // Try to save to database
-    const success = await saveUserSettingsToDB({
+    // Save; our helper should dispatch "user-settings-updated"
+    const saved = await saveUserSettingsToDB({
       language: newLanguage,
       difficulty: newDifficulty,
     });
 
-    if (!success) {
-      console.log("Settings saved to localStorage (database save failed or user not authenticated)");
+    // If your helper returns boolean, keep as-is;
+    // If it returns the saved row, you can set state from it.
+    if (!saved) {
+      console.log("Saved locally only (not authenticated or error).");
+    } else {
+      // Also force a re-fetch to ensure cache + other tabs are consistent.
+      await fetchUserSettingsFromDB(true);
     }
   };
 
