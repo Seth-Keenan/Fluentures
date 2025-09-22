@@ -8,16 +8,19 @@ import type { HistoryItem } from "@/app/types/gemini";
 
 
 export default function StoryPage() {
-  const { language, difficulty } = useSettings();
+  const { language, difficulty, isLoading: settingsLoading } = useSettings();
   const [story, setStory] = useState('');
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
+  if (settingsLoading) {
+    return <p className="p-6">Loading your settings...</p>;
+  }
 
   if (!language || !difficulty) {
-    return <p className="p-6">Loading your settings...</p>;
+    return <p className="p-6">Error loading settings. Please try refreshing.</p>;
   }
 
   // Function to generate a new story based on the selected language and difficulty

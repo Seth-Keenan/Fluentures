@@ -16,7 +16,7 @@ export async function getUserSettings() {
   }
 
   const { data, error } = await supabase
-    .from("user_settings")
+    .from("UserSettings")
     .select("*")
     .eq("user_id", user.id)
     .single();

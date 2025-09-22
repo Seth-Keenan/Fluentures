@@ -32,7 +32,7 @@ export async function saveUserSettings(input: SaveSettingsInput): Promise<boolea
   };
 
   const { error } = await supabase
-    .from("user_settings")
+    .from("UserSettings")
     .upsert(payload, { onConflict: "user_id" });
 
   if (error) {
