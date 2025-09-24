@@ -4,33 +4,41 @@ import { useState, useEffect } from "react";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 
-//TODO: replace
+// TODO: replace demo list
 const wordList = ["りんご", "ねこ", "いぬ", "みず", "やま"];
+
+// Minimal history type that matches your API's expected shape
+type HistoryItem = {
+  role: "user" | "model";
+  parts: { text: string }[];
+};
+const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
+const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 export default function SentencesPage() {
   const [sentences, setSentences] = useState<Record<string, string>>({});
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
-  // Call the endpoint to generate a sentence for a word
+  // Generate a sentence for a given word (server reads settings)
   const generateSentence = async (word: string) => {
     setSentences((prev) => ({ ...prev, [word]: "Generating..." }));
     try {
       const res = await fetch("/api/sentences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            action: "generate",
-            word,
-            language: localStorage.getItem("targetLanguage") || "Japanese",
-            difficulty: localStorage.getItem("difficultyLevel") || "Beginner",
-         }),
+        credentials: "include",
+        body: JSON.stringify({
+          action: "generate",
+          word,
+        }),
       });
 
       const data = await res.json();
       setSentences((prev) => ({
         ...prev,
-        [word]: data.sentence || " Error generating sentence",
+        [word]: data?.sentence || " Error generating sentence",
       }));
     } catch (err) {
       console.error("Sentence fetch failed:", err);
@@ -41,33 +49,46 @@ export default function SentencesPage() {
   // Initial load: generate all sentences
   useEffect(() => {
     wordList.forEach((w) => generateSentence(w));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Chat handler (to new /api/sentences-chat route)
+  // Chat (server reads settings)
   const sendChat = async () => {
     if (!chatInput.trim()) return;
-    const userMsg = `You: ${chatInput}`;
-    setChatLog((prev) => [...prev, userMsg]);
+
+    const userMsg = chatInput.trim();
+    setChatLog((prev) => [...prev, `You: ${userMsg}`]);
+    setChatInput("");
+
+    // Append user message to API history
+    const newHistory = [...apiHistory, toUser(userMsg)];
 
     try {
       const res = await fetch("/api/sentences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-            action: "chat", 
-            input: chatInput, 
-            history: chatLog 
+          action: "chat",
+          input: userMsg,
+          history: newHistory, // properly typed history
         }),
       });
 
       const data = await res.json();
-      setChatLog((prev) => [...prev, `Gemini: ${data.reply}`]);
+      const replyText: string | null =
+        typeof data?.reply === "string" ? data.reply : null;
+
+      if (replyText) {
+        setChatLog((prev) => [...prev, `Gemini: ${replyText}`]);
+        setApiHistory([...newHistory, toModel(replyText)]);
+      } else {
+        setChatLog((prev) => [...prev, "Gemini: Chat failed"]);
+      }
     } catch (err) {
       console.error("Chat request failed:", err);
       setChatLog((prev) => [...prev, "Gemini: Chat failed"]);
     }
-
-    setChatInput("");
   };
 
   return (
