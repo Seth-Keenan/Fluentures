@@ -1,29 +1,22 @@
-"use server";
-import { getBaseUrl } from "@/app/lib/util/getBaseUrl";
-
+// app/lib/actions/geminiQuizAction.ts
 
 export async function requestQuizSentence(
-  word: string,
-  language: string,
-  difficulty: string
+  word: string
 ): Promise<string | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/quiz`, {
+    const res = await fetch("/api/quiz", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word, language, difficulty }),
+      credentials: "include", // mirror story action
+      body: JSON.stringify({ word }), // no language/difficulty
     });
 
-    if (!res.ok) {
-      const error = await res.text();
-      console.error("❌ Quiz API Error:", error);
-      return null;
-    }
+    if (!res.ok) return null;
 
     const data = await res.json();
-    return data.sentence ?? null;
-  } catch (err) {
-    console.error("❌ Quiz fetch error:", err);
+    // API returns { sentence, usedSettings? }. We only need the string here.
+    return typeof data?.sentence === "string" ? data.sentence : null;
+  } catch {
     return null;
   }
 }

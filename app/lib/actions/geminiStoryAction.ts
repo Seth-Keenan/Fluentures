@@ -10,7 +10,15 @@ export async function requestStory(): Promise<string | { story: string; usedSett
     if (!res.ok) return null;
     const data = await res.json();
     // Support both shapes (string or {story,...})
-    return typeof data?.story === "string" ? data : data?.story ? data : null;
+    let result: string | { story: string; usedSettings?: { language: string; difficulty: string } } | null;
+    if (typeof data?.story === "string") {
+      result = data;
+    } else if (data?.story) {
+      result = data;
+    } else {
+      result = null;
+    }
+    return result;
   } catch {
     return null;
   }
