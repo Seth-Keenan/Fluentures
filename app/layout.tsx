@@ -4,7 +4,6 @@ import "./globals.css";
 import SupabaseProvider from '@/app/lib/providers/SupabaseProvider';
 import Navbar from "@/app/components/Navbar";
 
-// Applies the favicon and website title to each page. Must be in a server component, so store in root layout.tsx
 export const metadata: Metadata = {
   title: "Fluentures",
   description: "Sign up for Fluentures and explore its features.",
