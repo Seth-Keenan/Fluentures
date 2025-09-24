@@ -27,8 +27,7 @@ export async function saveUserSettings(input: SaveSettingsInput): Promise<boolea
     user_id: user.id,
     language: input.language,
     difficulty: input.difficulty,
-    display: typeof input.display === "boolean" ? input.display : null,
-    updated_at: new Date().toISOString(),
+    display: typeof input.display === "boolean" ? input.display : null
   };
 
   const { error } = await supabase

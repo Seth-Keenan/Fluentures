@@ -43,8 +43,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       language: body.language,
       difficulty: body.difficulty,
-      display: body.display ?? null,
-      updated_at: new Date().toISOString(),
+      display: body.display ?? null
     };
 
     const { data, error: upsertErr } = await supabase
