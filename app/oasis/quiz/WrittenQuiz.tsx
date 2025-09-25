@@ -50,6 +50,7 @@ export default function QuizPage() {
     setAnswerSubmitted(false);
     setIsCorrect(null);
     setExampleSentence(null);
+    setQuizStarted(true);
   };
 
   const checkAnswer = () => {
