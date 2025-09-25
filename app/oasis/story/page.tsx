@@ -65,7 +65,6 @@ export default function StoryPage() {
 
     if (replyText) {
       setChatLog((prev) => [...prev, `Camel: ${replyText}`]);
-      // no unused "prev" — pass the new array directly
       setApiHistory([
         ...historyForApi,
         toUser(currentInput),
