@@ -13,40 +13,34 @@ const wordList = [
   { target: "やま", english: "mountain" },
 ];
 
-const language = "Japanese";
-const difficulty = "Beginner";
-
 type Mode = "en-to-target" | "target-to-en";
 
-// QuizPage component
-// This component allows users to select quiz settings and start a quiz.
 export default function QuizPage() {
-    const [mode, setMode] = useState<Mode>("en-to-target");
-    const [questionCount, setQuestionCount] = useState(5);
-    const [quizStarted, setQuizStarted] = useState(false);
+  const [mode, setMode] = useState<Mode>("en-to-target");
+  const [questionCount, setQuestionCount] = useState(5);
+  const [quizStarted, setQuizStarted] = useState(false);
 
-    const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [input, setInput] = useState("");
-    const [answerSubmitted, setAnswerSubmitted] = useState(false);
-    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-    const [score, setScore] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [input, setInput] = useState("");
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [score, setScore] = useState(0);
 
-    const [quizWords, setQuizWords] = useState<typeof wordList>([]);
+  const [quizWords, setQuizWords] = useState<typeof wordList>([]);
 
-    const [exampleSentence, setExampleSentence] = useState<string | null>(null);
-    const [sentenceLoading, setSentenceLoading] = useState(false);
+  const [exampleSentence, setExampleSentence] = useState<string | null>(null);
+  const [sentenceLoading, setSentenceLoading] = useState(false);
 
-    const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-      setMounted(true);
-    }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    if (!mounted) {
-      return <p className="p-6">Loading...</p>;
-    }
+  if (!mounted) {
+    return <p className="p-6">Loading...</p>;
+  }
 
-  // Function to start the quiz with selected settings
   const startQuiz = () => {
     const shuffled = [...wordList].sort(() => Math.random() - 0.5);
     setQuizWords(shuffled.slice(0, questionCount));
@@ -55,6 +49,7 @@ export default function QuizPage() {
     setInput("");
     setAnswerSubmitted(false);
     setIsCorrect(null);
+    setExampleSentence(null);
     setQuizStarted(true);
   };
 
@@ -79,22 +74,18 @@ export default function QuizPage() {
     setSentenceLoading(true);
     setExampleSentence(null);
 
-    // Updated log to reflect manual settings
-    console.log("✅ Using settings:", language, difficulty);
+    console.log("✅ Requesting example sentence (server will read settings from DB)");
 
     const word = quizWords[currentQuestion].target;
-    const sentence = await requestQuizSentence(word, language, difficulty);
+    const sentence = await requestQuizSentence(word);
     setExampleSentence(sentence ?? "No example sentence available.");
     setSentenceLoading(false);
   };
 
-
-  // Reset quiz to initial state
   const restartQuiz = () => {
     setQuizStarted(false);
   };
 
-  // When quiz is finished
   if (quizStarted && currentQuestion >= quizWords.length) {
     return (
       <div className="p-6">
@@ -106,7 +97,6 @@ export default function QuizPage() {
     );
   }
 
-  // If quiz hasn't started yet, show settings
   if (!quizStarted) {
     return (
       <div className="flex flex-col p-6">
@@ -135,21 +125,17 @@ export default function QuizPage() {
           <option value="target-to-en">Target Language → English</option>
         </select>
 
-        <Button
-          onClick={startQuiz}>
-          Start Quiz
-        </Button>
+        <Button onClick={startQuiz}>Start Quiz</Button>
       </div>
     );
   }
 
-
-    let current, prompt, correctAnswer;
-    if (quizStarted) {
-      current = quizWords[currentQuestion];
-      prompt = mode === "en-to-target" ? current.english : current.target;
-      correctAnswer = mode === "en-to-target" ? current.target : current.english;
-    }
+  let current, prompt, correctAnswer;
+  if (quizStarted) {
+    current = quizWords[currentQuestion];
+    prompt = mode === "en-to-target" ? current.english : current.target;
+    correctAnswer = mode === "en-to-target" ? current.target : current.english;
+  }
 
   return (
     <div className="p-6">
@@ -182,11 +168,11 @@ export default function QuizPage() {
         </button>
 
         <button
-            onClick={getSentence}
-            disabled={sentenceLoading}
-            className="bg-purple-500 text-white px-4 py-2 rounded"
+          onClick={getSentence}
+          disabled={sentenceLoading}
+          className="bg-purple-500 text-white px-4 py-2 rounded"
         >
-            {sentenceLoading ? "Generating..." : "Sentence"}
+          {sentenceLoading ? "Generating..." : "Sentence"}
         </button>
       </div>
 

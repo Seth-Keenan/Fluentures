@@ -1,53 +1,44 @@
-"use server";
-
-import type { HistoryItem } from "@/app/types/gemini";
-import { getBaseUrl } from "@/app/lib/util/getBaseUrl";
-
-export async function requestStory(
-  language: string,
-  difficulty: string
-): Promise<string | null> {
+// app/lib/actions/geminiStoryAction.ts
+export async function requestStory(): Promise<string | { story: string; usedSettings?: { language: string; difficulty: string } } | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/story`, {
+    const res = await fetch("/api/story", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language, difficulty }),
+      credentials: "include",
+      body: JSON.stringify({}), // no language/difficulty
     });
-
-    if (!res.ok) {
-      const error = await res.text();
-      console.error("Story API Error:", error);
-      return null;
-    }
-
+    if (!res.ok) return null;
     const data = await res.json();
-    return data.story ?? null;
-  } catch (err) {
-    console.error("Story fetch error:", err);
+    // Support both shapes (string or {story,...})
+    let result: string | { story: string; usedSettings?: { language: string; difficulty: string } } | null;
+    if (typeof data?.story === "string") {
+      result = data;
+    } else if (data?.story) {
+      result = data;
+    } else {
+      result = null;
+    }
+    return result;
+  } catch {
     return null;
   }
 }
 
-export async function sendStoryChat(
-  input: string,
-  history: HistoryItem[]
-): Promise<string | null> {
+import type { HistoryItem } from "@/app/types/gemini";
+export async function sendStoryChat(input: string, history: HistoryItem[]): Promise<{ text: string; usedSettings?: { language: string; difficulty: string } } | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/story`, {
+    const res = await fetch("/api/story", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input, history }),
+      credentials: "include",
+      body: JSON.stringify({ input, history }), // server reads settings from DB
     });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-
+    if (!res.ok) return null;
     const data = await res.json();
-    return data.reply ?? "No reply received.";
-  } catch (err) {
-    console.error("Story chat error:", err);
+    // Normalize to { text, usedSettings? }
+    if (typeof data?.reply === "string") return { text: data.reply, usedSettings: data.usedSettings };
+    return null;
+  } catch {
     return null;
   }
 }

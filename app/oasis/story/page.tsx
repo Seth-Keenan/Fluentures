@@ -1,71 +1,82 @@
 "use client";
-import { useState } from 'react';
+import { useState } from "react";
 import { useSettings } from "@/app/lib/hooks/useSettings";
-import { Button } from '@/app/components/Button';
-import { LinkAsButton } from '@/app/components/LinkAsButton';
+import { Button } from "@/app/components/Button";
+import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction";
 import type { HistoryItem } from "@/app/types/gemini";
 
+// typed helpers so role is "user" | "model"
+const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
+const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 export default function StoryPage() {
-  const { language, difficulty } = useSettings();
-  const [story, setStory] = useState('');
+  const { language, difficulty, isLoading: settingsLoading } = useSettings();
+  const [story, setStory] = useState("");
   const [chatLog, setChatLog] = useState<string[]>([]);
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
-
-  if (!language || !difficulty) {
+  if (settingsLoading) {
     return <p className="p-6">Loading your settings...</p>;
   }
 
-  // Function to generate a new story based on the selected language and difficulty
-  // Call from app/lib/actions/geminiStoryClient.ts
+  if (!language || !difficulty) {
+    return <p className="p-6">Error loading settings. Please try refreshing.</p>;
+  }
+
+  // Generate a new story (server reads settings from DB)
   const generateStory = async () => {
     setStory("Generating...");
     setChatLog([]);
-    const newStory = await requestStory(language, difficulty);
-    setStory(newStory ?? "Failed to generate story.");
+    setApiHistory([]); // reset chat context for the new story
+    const newStory = await requestStory();
+    // If newStory is an object with a 'story' property, use it; otherwise, use the string or fallback
+    const storyText =
+      typeof newStory === "string"
+        ? newStory
+        : newStory?.story ?? "Failed to generate story.";
+    setStory(storyText);
   };
 
+  const sendChat = async () => {
+    if (!chatInput.trim() || isLoading) return;
 
-const sendChat = async () => {
-  if (!chatInput.trim() || isLoading) return;
+    setIsLoading(true);
+    const currentInput = chatInput;
+    setChatLog((prev) => [...prev, `You: ${currentInput}`]);
+    setChatInput("");
 
-  setIsLoading(true);
-  const currentInput = chatInput;
-  setChatLog(prev => [...prev, `You: ${currentInput}`]);
-  setChatInput('');
+    // Seed the story context once
+    const seededContext: HistoryItem[] = [
+      toUser(
+        `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""`
+      ),
+      toModel("Okay, I have the story. I will answer your questions about it."),
+    ];
 
-  const storyContext: HistoryItem = {
-    role: 'user',
-    parts: [{ text: `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""` }],
+    const historyForApi: HistoryItem[] = apiHistory.length === 0 ? seededContext : apiHistory;
+
+    const modelReply = await sendStoryChat(currentInput, historyForApi);
+    // Normalize reply to a string
+    const replyText =
+      typeof modelReply === "string" ? modelReply : modelReply?.text ?? null;
+
+    if (replyText) {
+      setChatLog((prev) => [...prev, `Camel: ${replyText}`]);
+      setApiHistory([
+        ...historyForApi,
+        toUser(currentInput),
+        toModel(replyText),
+      ]);
+    } else {
+      setChatLog((prev) => [...prev, "Error: No response received."]);
+    }
+
+    setIsLoading(false);
   };
-  const modelContextConfirmation: HistoryItem = {
-    role: 'model',
-    parts: [{ text: "Okay, I have the story. I will answer your questions about it." }],
-  };
 
-  const historyForApi = (apiHistory.length === 0)
-    ? [storyContext, modelContextConfirmation]
-    : apiHistory;
-
-  const modelReply = await sendStoryChat(currentInput, historyForApi);
-
-  if (modelReply) {
-    setChatLog(prev => [...prev, `Camel: ${modelReply}`]);
-    setApiHistory(prev => [
-      ...prev,
-      { role: 'user', parts: [{ text: currentInput }] },
-      { role: 'model', parts: [{ text: modelReply }] },
-    ]);
-  } else {
-    setChatLog(prev => [...prev, "Error: No response received."]);
-  }
-
-  setIsLoading(false);
-};
 
   return (
     <div className="p-6 min-h-screen">

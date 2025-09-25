@@ -1,55 +1,41 @@
-"use server";
-import { getBaseUrl } from "@/app/lib/util/getBaseUrl";
+// app/lib/actions/geminiSentencesAction.ts
+
 import type { HistoryItem } from "@/app/types/gemini";
 
-
-export async function requestSentence(
-  word: string,
-  language: string,
-  difficulty: string
-): Promise<string | null> {
+export async function requestSentence(word: string): Promise<string | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/sentences`, {
+    const res = await fetch("/api/sentences", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word, language, difficulty, action: "generate"}),
+      credentials: "include",
+      body: JSON.stringify({ action: "generate", word }), // server reads settings from DB
     });
-
-    if (!res.ok) {
-      const error = await res.text();
-      console.error("Sentences API Error:", error);
-      return null;
-    }
-
+    if (!res.ok) return null;
     const data = await res.json();
-    return data.sentence ?? null;
-  } catch (err) {
-    console.error("Sentences fetch error:", err);
+    return typeof data?.sentence === "string" ? data.sentence : null;
+  } catch {
     return null;
   }
 }
 
-export async function sendSentenceChat(input: string, history: HistoryItem[]): Promise<string | null> {
+export async function sendSentenceChat(
+  input: string,
+  history: HistoryItem[]
+): Promise<{ text: string; usedSettings?: { language: string; difficulty: string } } | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/sentences`, {
+    const res = await fetch("/api/sentences", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "chat",
-        input,
-        history,
-      })
+      credentials: "include",
+      body: JSON.stringify({ action: "chat", input, history }), // server reads settings from DB
     });
-
-    if (!res.ok) {
-      console.error("Sentence chat API error:", await res.text());
-      return null;
-    }
-
+    if (!res.ok) return null;
     const data = await res.json();
-    return data.reply ?? "No reply received.";
-  } catch (err) {
-    console.error("Sentence chat fetch error:", err);
+    // Normalize to { text, usedSettings? }
+    return typeof data?.reply === "string"
+      ? { text: data.reply, usedSettings: data.usedSettings }
+      : null;
+  } catch {
     return null;
   }
 }
