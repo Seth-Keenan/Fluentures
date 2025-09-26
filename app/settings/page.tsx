@@ -3,60 +3,46 @@
 import { useState, useEffect } from "react";
 import { Button } from "../components/Button";
 import { LinkAsButton } from "../components/LinkAsButton";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { fetchUserSettingsFromDB, saveUserSettingsToDB } from "@/app/lib/helpers/userSettingsClient";
 
 export default function SettingsPage() {
-  const supabase = createClientComponentClient()
   const [language, setLanguage] = useState("Japanese");
   const [difficulty, setDifficulty] = useState("Beginner");
-  const [isDarkMode, setIsDarkMode] = useState(false); // add boolean state
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Load previous values if available (for now localStorage fallback)
-    const storedLang = localStorage.getItem("targetLanguage");
-    const storedDiff = localStorage.getItem("difficultyLevel");
-    const storedDisplay = localStorage.getItem("display");
-
-    if (storedLang) setLanguage(storedLang);
-    if (storedDiff) setDifficulty(storedDiff);
-    if (storedDisplay !== null) setIsDarkMode(storedDisplay === "true"); // string → boolean
+    // Try DB first (cached), fallback to local
+    (async () => {
+      const db = await fetchUserSettingsFromDB();
+      if (db) {
+        setLanguage(db.language);
+        setDifficulty(db.difficulty);
+        setIsDarkMode(!!db.display);
+        return;
+      }
+      // fallback: local
+      const storedLang = localStorage.getItem("targetLanguage");
+      const storedDiff = localStorage.getItem("difficultyLevel");
+      const storedDisplay = localStorage.getItem("display");
+      if (storedLang) setLanguage(storedLang);
+      if (storedDiff) setDifficulty(storedDiff);
+      if (storedDisplay !== null) setIsDarkMode(storedDisplay === "true");
+    })();
   }, []);
 
   const saveSettings = async () => {
-    try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        alert("Not authenticated!")
-        return
-      }
-
-      // Save to Supabase
-      const { error } = await supabase
-        .from('UserSettings')
-        .upsert({
-          user_id: user.id,
-          language,
-          difficulty,
-          display: isDarkMode,
-        })
-
-      if (error) {
-        console.error('Save error:', error)
-        alert("Failed to save settings")
-        return
-      }
-
-      // Save to localStorage as fallback
-      localStorage.setItem("targetLanguage", language)
-      localStorage.setItem("difficultyLevel", difficulty)
-      localStorage.setItem("display", String(isDarkMode))
-
-      alert("✅ Settings saved!")
-    } catch (e) {
-      console.error('Unexpected error:', e)
-      alert("Failed to save settings")
+    const saved = await saveUserSettingsToDB({
+      language,
+      difficulty,
+      display: isDarkMode,
+    });
+    if (saved) {
+      setLanguage(saved.language);
+      setDifficulty(saved.difficulty);
+      setIsDarkMode(!!saved.display);
+      alert("✅ Settings saved!");
+    } else {
+      alert("Failed to save settings");
     }
   };
 
