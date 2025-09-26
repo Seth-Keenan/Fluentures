@@ -1,79 +1,221 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState, useEffect, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, type Variants } from "framer-motion";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+
+// Font Awesome (Free)
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faRightToBracket, // submit
+  faEnvelope,       // email
+  faLock,           // password
+  faEye,            // show pwd
+  faEyeSlash,       // hide pwd
+} from "@fortawesome/free-solid-svg-icons";
+
+const card: Variants = {
+  hidden: { opacity: 0, scale: 0.98, y: 8 },
+  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.45 } },
+};
 
 export default function LoginPage() {
-  const supabase = createClientComponentClient()
-  const router = useRouter()
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  const [ready, setReady] = useState(false);         // small entrance delay
+  const [loading, setLoading] = useState(false);     // submit spinner
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get("username") as string
-    const password = formData.get("password") as string
+    const form = new FormData(event.currentTarget);
+
+    // Keeping your original "username" field name for compatibility,
+    // but we label it as Email in the UI:
+    const email = (form.get("username") as string) || "";
+    const password = (form.get("password") as string) || "";
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        console.error("Login failed:", error.message)
-        return
+        setError(error.message || "Login failed. Please check your credentials.");
+        return;
       }
-
-      // Set auth cookie by calling the server-side auth endpoint
-      await fetch('/auth/callback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ event: 'SIGNED_IN', session: data.session }),
-      })
-
-      // Refresh the page and router state
-      router.refresh()
-      
-      // Navigate to home page
-      router.push('/home')
-    } catch (error) {
-      console.error("Error during login:", error)
+      router.push("/home");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
-      <p className='text-4xl font-bold mb-4 text-gray-500'>Login</p>
-      <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={onSubmit}>
-        <div className='container flex flex-col justify-center gap-4'>
-          <div className='flex flex-col'>
-            <label>Username</label>
-            <input className="border border-black rounded-[.5vw] p-[5px]" placeholder="Enter username" name="username" type="text" required />
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Background with gentle zoom */}
+      <motion.img
+        src="/desert.png"
+        alt="Background"
+        className="absolute inset-0 h-full w-full object-cover"
+        initial={{ scale: 1 }}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Soft gradient/dim for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
+
+      {/* Glow blobs for depth */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.35), rgba(0,0,0,0))",
+        }}
+        animate={{ y: [0, 18, 0], x: [0, 10, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -right-20 h-80 w-80 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
+        }}
+        animate={{ y: [0, -16, 0], x: [0, -8, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Centered glass panel */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <motion.div
+          variants={card}
+          initial="hidden"
+          animate={ready ? "show" : "hidden"}
+          className="w-[min(92vw,32rem)] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-6 sm:p-8"
+        >
+          <div className="text-center mb-6">
+            <h1 className="text-white text-3xl sm:text-4xl font-semibold">Log in</h1>
+            <p className="mt-2 text-white/80 text-sm sm:text-base">
+              Welcome back! Enter your credentials to continue.
+            </p>
           </div>
-          <div className='flex flex-col'>
-            <label>Password</label>
-            <input className="border border-black rounded-[.5vw] p-[5px]" placeholder='Enter password' name="password" type="password" required />
-          </div>
-          <div className='flex flex-col items-center gap-4'>
-            <button type='submit' className="px-4 py-2 bg-amber-400 text-white rounded hover:bg-amber-800 transition: duration-200">Login</button>
-            <Link href="/signup" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
-              Not a user? Sign up!
-            </Link>
-            <Link href="/reset-password" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
-              Forgot Password?
-            </Link>
-            <Link href="/" style={{ textDecoration: "underline", textDecorationColor: "orange", color: "orange" }}>
-              Back to home
-            </Link>
-          </div>
-        </div>
-      </form>
+
+          <form onSubmit={onSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label htmlFor="username" className="text-sm text-white/90 mb-1 block">
+                Email
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700">
+                  <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4" />
+                </span>
+                <input
+                  id="username"
+                  name="username"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 pl-10 pr-4 py-3 ring-1 ring-white/30 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="text-sm text-white/90 mb-1 block">
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700">
+                  <FontAwesomeIcon icon={faLock} className="h-4 w-4" />
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  className="w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 pl-10 pr-10 py-3 ring-1 ring-white/30 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-900"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="rounded-lg bg-red-500/15 ring-1 ring-red-500/40 text-red-200 px-3 py-2 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <motion.button
+              type="submit"
+              whileTap={{ scale: 0.98 }}
+              disabled={loading}
+              className="w-full justify-center rounded-xl px-5 py-3 bg-indigo-500 text-white hover:bg-indigo-400 shadow-lg shadow-black/20 ring-1 ring-white/20 transition duration-200 font-semibold tracking-wide text-base focus:outline-none focus:ring-2 focus:ring-white/80 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span className="inline-flex items-center gap-2">
+                {loading ? (
+                  <>
+                    <span className="h-4 w-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
+                    Logging in…
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faRightToBracket} className="h-5 w-5" />
+                    Log in
+                  </>
+                )}
+              </span>
+            </motion.button>
+
+            {/* Links */}
+            <div className="text-center space-y-2">
+              <Link
+                href="/signup"
+                className="text-amber-300 underline decoration-amber-400 hover:text-amber-200"
+              >
+                Not a user? Sign up
+              </Link>
+              <div>
+                <Link
+                  href="/"
+                  className="text-white/80 underline decoration-white/60 hover:text-white"
+                >
+                  Back to home
+                </Link>
+              </div>
+            </div>
+          </form>
+
+          {/* Tiny footer hint */}
+          <p className="mt-6 text-center text-xs text-white/70">
+            By continuing you agree to our Terms & Privacy Policy.
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 }
