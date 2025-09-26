@@ -12,15 +12,29 @@ export default function UpdatePasswordPage() {
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    // Check if we have a session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      try {
+        const result = await supabase.auth.getSession()
+  
+        // Handle undefined safely
+        if (!result || !result.data) {
+          router.push('/login')
+          return
+        }
+  
+        const { session } = result.data
+  
+        if (!session) {
+          router.push('/login')
+        }
+      } catch (err) {
         router.push('/login')
       }
     }
+  
     checkSession()
-  }, [])
+  }, [router, supabase])
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,7 +62,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <div className='flex flex-col justify-center items-center h-screen bg-[#f2e6c2]'>
-      <p className='text-4xl font-bold mb-4 text-gray-500'>Update Password</p>
+      <h1 className='text-4xl font-bold mb-4 text-gray-500'>Update Password</h1>
       <form className="flex flex-col gap-4 p-6 bg-white shadow-md rounded-xl" onSubmit={handleSubmit}>
         <div className='container flex flex-col justify-center gap-4'>
           <div className='flex flex-col'>
