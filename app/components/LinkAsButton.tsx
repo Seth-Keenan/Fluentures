@@ -22,14 +22,14 @@ export const LinkAsButton: React.FC<LinkAsButtonProps> = ({ // sorry the other l
       sizeClass = "w-16 h-16 text-base";
       break;
     case "md":
-      sizeClass = "w-35 h-35 text-lg";
+      sizeClass = "w-30 h-10 text-lg";
       break;
     case "lg":
       sizeClass = "w-50 h-50 text-xl";
       break;
   }
 
-  const baseClass = `flex items-center justify-center bg-amber-400 text-white rounded-full hover:bg-amber-800 transition duration-200 ${sizeClass}`
+  const baseClass = `flex items-center justify-center bg-amber-400 text-white hover:bg-amber-200 transition duration-100 ${sizeClass}`
 
   return (
     <Link href={href}>
