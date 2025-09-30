@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const cookieStore = await cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) })
 
     // Get the current user from the session
     const { data: { user }, error: userError } = await supabase.auth.getUser()
