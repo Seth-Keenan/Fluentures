@@ -22,7 +22,7 @@ vi.mock('@supabase/auth-helpers-nextjs', () => ({
   }),
 }))
 
-describe('UpdatePasswordPage - Seth Keenan', () => {
+describe('UpdatePasswordPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
