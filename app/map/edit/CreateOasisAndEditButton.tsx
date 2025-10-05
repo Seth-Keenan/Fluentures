@@ -22,13 +22,13 @@ export default function CreateTestOasisButton() {
     try {
       setBusy(true);
 
-      // If we already created Test Oasis 1 in this browser, just go edit it
+      // already have an id? just go there
       if (testId) {
-        router.push(`/oasis/${testId}/edit`);
+        router.push(`/oasis/${testId}/edit`); // ← backticks
         return;
       }
 
-      // Otherwise, create it once and remember the id
+      // otherwise create it once and remember the id
       const newId = await createWordList("Test Oasis 1", "Japanese");
       if (!newId) {
         alert("Failed to create Test Oasis 1");
@@ -36,7 +36,7 @@ export default function CreateTestOasisButton() {
       }
       localStorage.setItem(STORAGE_KEY, newId);
       setTestId(newId);
-      router.push(`/oasis/${newId}/edit`);
+      router.push(`/oasis/${newId}/edit`); // ← backticks
     } finally {
       setBusy(false);
     }

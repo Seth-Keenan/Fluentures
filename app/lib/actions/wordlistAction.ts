@@ -88,7 +88,7 @@ export async function renameWordList(listId: string, newName: string): Promise<b
   const { error } = await supabase
     .from("word_lists")
     .update({ name })
-    .eq("id", listId);
+    .eq("id", listId)
     .select("id, name, language")
     .single();
 

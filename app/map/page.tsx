@@ -7,13 +7,14 @@ export const metadata = {
     icon: '/favicon.ico',
   },
 }
+const TEST_ID = "11111111-1111-1111-1111-111111111111";
 
 const page = () => {
   return (
     <div className={"flex flex-col justify-center items-center h-screen"}>
         <h2>Map placeholder</h2>
-        <LinkAsButton href="/oasis" className="btn">
-            Test Oasis 1
+        <LinkAsButton href={`/oasis/${TEST_ID}/edit`} className="btn">
+          Test Oasis 1
         </LinkAsButton>
         <LinkAsButton href="/map/edit" className="btn">
             Edit Map
