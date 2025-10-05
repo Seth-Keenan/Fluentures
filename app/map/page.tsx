@@ -24,6 +24,7 @@ function OasisModel({ scale = 1 }: { scale?: number }) {
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
   return <primitive object={scene} scale={scale} />;
 }
+const TEST_ID = "11111111-1111-1111-1111-111111111111";
 
 function OasisInstance({
   data,
