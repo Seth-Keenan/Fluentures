@@ -6,7 +6,7 @@ const page = () => {
   return (
     <div className={"flex flex-col justify-center items-center h-screen"}>
         <h1>
-            Edit current oasis here rather than on map - should be easier to implement?
+            This page is supposed to be where you can create a new oasis and delete oases
         </h1>
         {/* create + redirect straight to edit */}
         <CreateOasisAndEditButton />

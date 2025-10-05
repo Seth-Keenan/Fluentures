@@ -13,7 +13,7 @@ const page = () => {
   return (
     <div className={"flex flex-col justify-center items-center h-screen"}>
         <h2>Map placeholder</h2>
-        <LinkAsButton href={`/oasis/${TEST_ID}/edit`} className="btn">
+        <LinkAsButton href={`/oasis/${TEST_ID}`} className="btn">
           Test Oasis 1
         </LinkAsButton>
         <LinkAsButton href="/map/edit" className="btn">
