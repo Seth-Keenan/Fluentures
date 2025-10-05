@@ -1,12 +1,11 @@
 // app/api/test/getUserSettings/route.ts
 // You can test this route logging in and going to /api/test/getUserSettings
-
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function GET() {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

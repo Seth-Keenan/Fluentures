@@ -1,7 +1,7 @@
+//app/lib/actions/wordlistAction.ts
 "use server";
 
-import { cookies } from "next/headers";
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { getSupabaseServerActionClient } from '@/app/lib/hooks/supabaseServerActionClient'
 import type { WordItem } from "@/app/types/wordlist";
 
 
@@ -17,10 +17,13 @@ export type WordListMeta = {
 export async function getWordListMeta(listId: string): Promise<WordListMeta | null> {
   if (!listId) return null;
 
-  const supabase = createServerActionClient({ cookies });
+  // Added this 3-line block
+  const supabase = await getSupabaseServerActionClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) return null;
 
   const { data, error } = await supabase
-    .from("word_lists")
+    .from("WordList") 
     .select("id, name, language")
     .eq("id", listId)
     .single();
@@ -40,8 +43,15 @@ export async function updateWordListMeta(
   patch: Partial<Pick<WordListMeta, "name" | "language">>
 ): Promise<boolean> {
   if (!listId) return false;
-  const supabase = createServerActionClient({ cookies });
-  const { error } = await supabase.from("word_lists").update(patch).eq("id", listId);
+
+  // const supabase = createServerActionClient({ cookies });
+
+  // Added this 3-line block
+  const supabase = await getSupabaseServerActionClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) return false;
+
+  const { error } = await supabase.from("WordList") .update(patch).eq("id", listId);
   if (error) { console.error("updateWordListMeta error:", error); return false; }
   return true;
 }
@@ -53,7 +63,11 @@ export async function updateWordListMeta(
 export async function getWordlist(listId: string): Promise<WordItem[]> {
   if (!listId) return [];
 
-  const supabase = createServerActionClient({ cookies });
+  // const supabase = createServerActionClient({ cookies });
+  // Added this 3-line block
+  const supabase = await getSupabaseServerActionClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) return [];
 
   const { data, error } = await supabase
     .from("words")
@@ -83,10 +97,15 @@ export async function renameWordList(listId: string, newName: string): Promise<b
   const name = newName.trim();
   if (!name) return false;
 
-  const supabase = createServerActionClient({ cookies });
+  // const supabase = createServerActionClient({ cookies });
+
+  // Added this 3-line block
+  const supabase = await getSupabaseServerActionClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) return false;
 
   const { error } = await supabase
-    .from("word_lists")
+    .from("WordList") 
     .update({ name })
     .eq("id", listId)
     .select("id, name, language")
@@ -106,7 +125,12 @@ export async function renameWordList(listId: string, newName: string): Promise<b
 export async function saveWordlist(listId: string, items: WordItem[]): Promise<boolean> {
   if (!listId) return false;
 
-  const supabase = createServerActionClient({ cookies });
+  // const supabase = createServerActionClient({ cookies });
+
+  // Added this 3-line block
+  const supabase = await getSupabaseServerActionClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) return false;
 
   const payload = items.map((i) => ({
     id: i.id,                     // keep your client-generated id
@@ -131,22 +155,42 @@ export async function saveWordlist(listId: string, items: WordItem[]): Promise<b
  * CREATE (needs revision): create a new word list and return its id
  */
 export async function createWordList(name: string, language?: string) {
-  const supabase = createServerActionClient({ cookies });
+  console.log('Creating word list:', { name, language });
 
-  const { data, error } = await supabase
-    .from("word_lists")
-    .insert({
-      name,
-      language: language ?? null,
-      // user_id: <skip for now since no RLS>
-    })
-    .select("id")
-    .single();
+  const supabase = await getSupabaseServerActionClient(); 
+  console.log('Supabase client created');
 
-  if (error) {
-    console.error("createWordList error:", error);
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  console.log('Auth check result:', {
+    userId: user?.id,
+    hasUser: !!user,
+    userError: userError?.message
+  });
+
+  if (userError || !user) {
+    console.error('Authentication failed:', userError);
     return null;
   }
 
-  return data.id as string;
+  const insertData = {
+    word_list_name: name,  
+    language: language ?? null,
+    user_id: user.id,
+    is_favorite: false
+  };
+  console.log('Attempting to insert:', insertData);
+
+  const { data, error } = await supabase
+    .from("WordList") 
+    .insert(insertData)
+    .select("word_list_id")
+    .single();
+
+  if (error) {
+    console.error("createWordList insertion error:", error);
+    return null;
+  }
+
+  console.log('Successfully created word list:', data);
+  return data.word_list_id as string;
 }

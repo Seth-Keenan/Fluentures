@@ -7,7 +7,7 @@ import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function DELETE(req: Request) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
