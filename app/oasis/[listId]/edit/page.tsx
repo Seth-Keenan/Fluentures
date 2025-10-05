@@ -83,7 +83,9 @@ export default function EditOasisPage() {
   return (
     <>
       <div className="p-6 min-h-screen">
-        <LinkAsButton href="/oasis">Back</LinkAsButton>
+        <LinkAsButton href={`/oasis/${listId}`} className="btn">
+          Back
+        </LinkAsButton>
 
         <div className="flex flex-col mt-4 gap-3">
           {/* rename UI */}

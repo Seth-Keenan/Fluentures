@@ -29,9 +29,9 @@ export default function CreateTestOasisButton() {
       }
 
       // otherwise create it once and remember the id
-      const newId = await createWordList("Test Oasis 1", "Japanese");
+      const newId = await createWordList("Test Oasis 2", "Japanese");
       if (!newId) {
-        alert("Failed to create Test Oasis 1");
+        alert("Failed to create Test Oasis 2");
         return;
       }
       localStorage.setItem(STORAGE_KEY, newId);
@@ -44,7 +44,7 @@ export default function CreateTestOasisButton() {
 
   return (
     <Button onClick={openOrCreate} disabled={busy} className="btn">
-      {busy ? "Working…" : "Open 'Test Oasis 1' (create if needed)"}
+      {busy ? "Working…" : "Open 'Test Oasis 2' (create if needed)"}
     </Button>
   );
 }
