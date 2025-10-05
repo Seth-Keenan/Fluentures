@@ -3,12 +3,13 @@ import { GoogleGenerativeAI, Content } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-export function getGeminiModel(model: string = "gemini-1.5-flash-latest") {
+export function getGeminiModel(model: string = "gemini-2.5-flash") {
   return genAI.getGenerativeModel({ model });
 }
 
-const PRIMARY_MODEL = "gemini-1.5-flash-latest";
-const FALLBACK_MODEL = "gemini-1.5-pro-latest";
+// pick the new generation models
+const PRIMARY_MODEL = "gemini-2.5-flash";   
+const FALLBACK_MODEL = "gemini-2.5-pro";   
 
 // -------------------- retry utils --------------------
 const MAX_BACKOFF_MS = 2000;

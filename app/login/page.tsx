@@ -201,6 +201,14 @@ export default function LoginPage() {
               </Link>
               <div>
                 <Link
+                  href="/reset-password"
+                  className="text-amber-300 underline decoration-amber-400 hover:text-amber-200"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div>
+                <Link
                   href="/"
                   className="text-white/80 underline decoration-white/60 hover:text-white"
                 >
