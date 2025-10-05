@@ -35,19 +35,17 @@ Make a request [here](https://docs.google.com/document/d/1ylrXERwUurzHS7x3toWjKs
 ## These below examples will help when interacting with Supabase on the SERVER-SIDE. You can look at the UserSettings page for an example doing this client side.
 ### 1. How the Supabase server client is made:
 ```typescript
-// app/lib/hooks/supabaseServerClient.ts
-// Call this exported function to create a server-side supabase client
-// This must be called in your server-side functions like this: 
-// const supabase = getSupabaseServerClient()
+// // app/lib/hooks/supabaseServerClient.ts
+// // Call this exported function to create a server-side supabase client
+// // This must be called in your server-side functions like this: 
+// // const supabase = await getSupabaseServerClient()
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
-export function getSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createRouteHandlerClient({
-    cookies: () => Promise.resolve(cookieStore)
-  })
+export async function getSupabaseServerClient() {
+  const cookieStore = await cookies();  
+  return createRouteHandlerClient({ cookies: () => cookieStore }); 
 }
 ```
 ### 2. How to READ data:
@@ -60,7 +58,7 @@ import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function GET() {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -90,7 +88,7 @@ import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function POST(req: Request) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -176,7 +174,7 @@ import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function PUT(req: Request) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -208,7 +206,7 @@ import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
 
 export async function DELETE(req: Request) {
   try {
-    const supabase = getSupabaseServerClient()
+    const supabase = await getSupabaseServerClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
@@ -228,7 +226,70 @@ export async function DELETE(req: Request) {
   }
 }
 ```
-### 6. If you have any questions ask me!
+## Examples for Server Actions
+### 1. How the Supabase server action client is made
+```typescript
+// app/lib/hooks/supabaseServerActionClient.ts
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+
+export async function getSupabaseServerActionClient() {
+  const cookieStore = await cookies();  
+  return createServerActionClient({ cookies: () => cookieStore }); // this is actually correct, not an error
+}
+```
+```typescript
+//app/lib/actions/wordlistAction.ts
+// This is an example from this file how to work with server actions
+"use server";
+
+import { getSupabaseServerActionClient } from '@/app/lib/hooks/supabaseServerActionClient'
+import type { WordItem } from "@/app/types/wordlist";
+
+
+export async function createWordList(name: string, language?: string) {
+  console.log('Creating word list:', { name, language });
+
+  const supabase = await getSupabaseServerActionClient(); 
+  console.log('Supabase client created');
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  console.log('Auth check result:', {
+    userId: user?.id,
+    hasUser: !!user,
+    userError: userError?.message
+  });
+
+  if (userError || !user) {
+    console.error('Authentication failed:', userError);
+    return null;
+  }
+
+  const insertData = {
+    word_list_name: name,  
+    language: language ?? null,
+    user_id: user.id,
+    is_favorite: false
+  };
+  console.log('Attempting to insert:', insertData);
+
+  const { data, error } = await supabase
+    .from("WordList") 
+    .insert(insertData)
+    .select("word_list_id")
+    .single();
+
+  if (error) {
+    console.error("createWordList insertion error:", error);
+    return null;
+  }
+
+  console.log('Successfully created word list:', data);
+  return data.word_list_id as string;
+}
+```
+
+### If you have any questions ask me!
 * If you want a read/create/update/delete route for a specific table, create a card or DM me
 * I tested all of the above examples and they worked for me, so lmk if they don't work for you
 * If you're having issues with cookies refer to these examples and see if your method is the same
