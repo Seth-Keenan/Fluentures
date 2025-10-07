@@ -15,7 +15,7 @@ export const metadata = {
 export default async function OasisIndex() {
   const supabase = await getSupabaseServerActionClient();
 
-  // 1️⃣ Get the currently logged-in user
+  // Get the currently logged-in user
   const {
     data: { user },
     error: userError,
@@ -36,7 +36,7 @@ export default async function OasisIndex() {
     );
   }
 
-  // 2️⃣ Fetch only this user’s word lists
+  // Fetch only this user’s word lists
   const { data: lists, error } = await supabase
     .from("WordList")
     .select("word_list_id, word_list_name, language")
@@ -54,7 +54,7 @@ export default async function OasisIndex() {
 
   const rows = (lists ?? []) as WordListRow[];
 
-  // 3️⃣ Render the lists
+  // Render the lists
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-3">
       <h2 className="text-xl font-semibold">Your Oases</h2>
