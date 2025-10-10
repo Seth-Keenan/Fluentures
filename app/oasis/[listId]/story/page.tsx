@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useSettings } from "@/app/lib/hooks/useSettings";
+//import { useSettings } from "@/app/lib/hooks/useSettings";
+import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction";
@@ -10,33 +11,40 @@ import type { HistoryItem } from "@/app/types/gemini";
 const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
 const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
+// helper: build a brief vocab prompt from your list
+function buildVocabHint(words: { target: string; english: string }[], max = 20) {
+  const trimmed = words.slice(0, max).map(w => `${w.target} = ${w.english}`).join(", ");
+  return trimmed ? `Use these vocabulary items where natural: ${trimmed}.` : "";
+}
+
 export default function StoryPage() {
-  const { language, difficulty, isLoading: settingsLoading } = useSettings();
+  const { listId, meta, words, loading } = useOasisData();
+
   const [story, setStory] = useState("");
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
 
-  if (settingsLoading) {
-    return <p className="p-6">Loading your settings...</p>;
-  }
+  if (!listId) return <p className="p-6">Missing list id.</p>;
+  if (loading) return <p className="p-6">Loading oasis…</p>;
 
-  if (!language || !difficulty) {
-    return <p className="p-6">Error loading settings. Please try refreshing.</p>;
-  }
-
-  // Generate a new story (server reads settings from DB)
+  // Generate a new story, scoped to this oasis
   const generateStory = async () => {
-    setStory("Generating...");
+    setStory("Generating…");
     setChatLog([]);
-    setApiHistory([]); // reset chat context for the new story
-    const newStory = await requestStory();
-    // If newStory is an object with a 'story' property, use it; otherwise, use the string or fallback
+    setApiHistory([]);
+
+    // pass context to your server action
+    const vocabHint = buildVocabHint(words, 20);
+    const res = await requestStory({
+      listId,
+      language: meta?.language ?? undefined,
+      vocabHint,
+    });
+
     const storyText =
-      typeof newStory === "string"
-        ? newStory
-        : newStory?.story ?? "Failed to generate story.";
+      typeof res === "string" ? res : res?.story ?? "Failed to generate story.";
     setStory(storyText);
   };
 
@@ -45,37 +53,29 @@ export default function StoryPage() {
 
     setIsLoading(true);
     const currentInput = chatInput;
-    setChatLog((prev) => [...prev, `You: ${currentInput}`]);
+    setChatLog(prev => [...prev, `You: ${currentInput}`]);
     setChatInput("");
 
-    // Seed the story context once
     const seededContext: HistoryItem[] = [
       toUser(
-        `Here is a story. All my next questions will be about this story. Do not forget it. Story: """${story}"""`
+        `Here is the story for Oasis "${meta?.name ?? ""}" (id: ${listId}). Use the same language and reference these vocabulary items when helpful. Story: """${story}""". ${buildVocabHint(words, 20)}`
       ),
-      toModel("Okay, I have the story. I will answer your questions about it."),
+      toModel("Okay, I have the story and vocabulary. I will answer your questions about it."),
     ];
+    const historyForApi = apiHistory.length === 0 ? seededContext : apiHistory;
 
-    const historyForApi: HistoryItem[] = apiHistory.length === 0 ? seededContext : apiHistory;
-
-    const modelReply = await sendStoryChat(currentInput, historyForApi);
-    // Normalize reply to a string
-    const replyText =
-      typeof modelReply === "string" ? modelReply : modelReply?.text ?? null;
+    const reply = await sendStoryChat(currentInput, historyForApi, { listId });
+    const replyText = typeof reply === "string" ? reply : reply?.text ?? null;
 
     if (replyText) {
-      setChatLog((prev) => [...prev, `Camel: ${replyText}`]);
-      setApiHistory([
-        ...historyForApi,
-        toUser(currentInput),
-        toModel(replyText),
-      ]);
+      setChatLog(prev => [...prev, `Camel: ${replyText}`]);
+      setApiHistory([...historyForApi, toUser(currentInput), toModel(replyText)]);
     } else {
-      setChatLog((prev) => [...prev, "Error: No response received."]);
+      setChatLog(prev => [...prev, "Error: No response received."]);
     }
-
     setIsLoading(false);
   };
+
 
 
   return (
