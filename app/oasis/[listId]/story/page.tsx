@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-//import { useSettings } from "@/app/lib/hooks/useSettings";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
@@ -80,7 +79,7 @@ export default function StoryPage() {
 
   return (
     <div className="p-6 min-h-screen">
-      <LinkAsButton href='/oasis'>
+      <LinkAsButton href={`/oasis/${listId}`}>
         Back
       </LinkAsButton>
       <div className='flex flex-row'>

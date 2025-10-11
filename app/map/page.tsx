@@ -68,7 +68,7 @@ export default async function OasisIndex() {
       {rows.map((l) => (
         <LinkAsButton
           key={l.word_list_id}
-          href={`/oasis/${l.word_list_id}/edit`}   // or `/oasis/${l.word_list_id}` if you add a hub
+          href={`/oasis/${l.word_list_id}`}
           className="btn"
         >
           {l.word_list_name || "(Untitled)"}{" "}
