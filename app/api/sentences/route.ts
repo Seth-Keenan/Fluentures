@@ -64,7 +64,6 @@ async function handleGenerate(body: SentencesBody, s: Settings, vocabHint: strin
   const prompt = [
     `In ${s.language}, create a single natural sentence using the word "${word}".`,
     instruction,
-    `Replace the target word with a blank (______).`,
     `No explanations or translations. No formatting.`,
     vocabHint && `[Vocabulary bias] ${vocabHint}`,
   ]
