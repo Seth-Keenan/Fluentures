@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import { useOasis } from "@/app/context/OasisContext";
 
 // TODO: replace demo list
+
+
 const wordList = ["りんご", "ねこ", "いぬ", "みず", "やま"];
 
 // Minimal history type that matches your API's expected shape
@@ -16,6 +19,7 @@ const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }]
 const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 export default function SentencesPage() {
+  const { oasisId, setOasisId } = useOasis();
   const [sentences, setSentences] = useState<Record<string, string>>({});
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -98,7 +102,7 @@ export default function SentencesPage() {
       <div className="flex flex-row gap-6">
         {/* LEFT: Sentences List */}
         <div className="flex flex-col flex-1">
-          <h1 className="text-xl font-bold mb-2">Example Sentences</h1>
+          <h1 className="text-xl font-bold mb-2">Example Sentences - Oasis {oasisId}</h1>
 
           {wordList.map((word) => (
             <div key={word} className="mb-4 p-3 border rounded">
