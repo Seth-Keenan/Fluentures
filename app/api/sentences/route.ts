@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Content } from "@google/generative-ai";
 import { generateGeminiContent, getInstruction, sendGeminiChat } from "@/app/lib/util/gemini";
-import { getUserSettingsFromRoute } from "@/app/lib/server/getUserSettings";
+import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
 import { getSupabaseServerRouteClient } from "@/app/lib/hooks/supabaseServerRouteClient";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

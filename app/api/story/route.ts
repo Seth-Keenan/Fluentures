@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateGeminiContent, getInstruction, sendGeminiChat } from "@/app/lib/util/gemini";
 import { Content } from "@google/generative-ai";
-import { getUserSettingsFromRoute } from "@/app/lib/server/getUserSettings";
+import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
 import { getSupabaseServerRouteClient } from "@/app/lib/hooks/supabaseServerRouteClient";
 
 type StoryRequestBody = {

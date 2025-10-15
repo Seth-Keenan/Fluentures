@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateGeminiContent, getInstruction } from "@/app/lib/util/gemini";
-import { getUserSettingsFromRoute } from "@/app/lib/server/getUserSettings";
+import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
 import { getSupabaseServerRouteClient } from "@/app/lib/hooks/supabaseServerRouteClient";
 
 type QuizBody = { listId?: string; word?: string; language?: string };

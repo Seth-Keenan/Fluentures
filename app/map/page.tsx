@@ -76,7 +76,11 @@ export default async function OasisIndex() {
         </LinkAsButton>
       ))}
 
-      <LinkAsButton href="/map" className="btn mt-4">
+      <LinkAsButton href="/map/edit" className="btn mt-4">
+        Edit Map
+      </LinkAsButton>
+
+      <LinkAsButton href="/home" className="btn mt-4">
         Back
       </LinkAsButton>
     </div>
