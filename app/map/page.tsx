@@ -116,7 +116,6 @@ export default async function OasisIndex() {
             className="btn w-full"
           >
             {l.word_list_name || "(Untitled)"}{" "}
-            {l.language ? `— ${l.language}` : ""}
           </LinkAsButton>
         ))}
       </div>
