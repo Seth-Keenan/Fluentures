@@ -172,14 +172,7 @@ export default async function MapEditPage({
             className="border rounded-md px-3 py-2 text-sm"
           />
         </div>
-        <div className="flex flex-col">
-          <label className="text-xs text-neutral-600 mb-1">Language (from Settings)</label>
-          <input
-            value={selectedLanguage ?? "Not set"}
-            readOnly
-            className="border rounded-md px-3 py-2 text-sm bg-neutral-50 text-neutral-700"
-          />
-        </div>
+
         <button
           type="submit"
           className="px-4 py-2 rounded-md bg-amber-500 text-white text-sm hover:bg-amber-600 disabled:opacity-50"

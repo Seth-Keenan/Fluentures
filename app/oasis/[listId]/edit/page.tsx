@@ -6,10 +6,12 @@ import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import type { WordItem } from "@/app/types/wordlist";
-import { getWordlist, saveWordlist, renameWordList } from "@/app/lib/actions/wordlistAction"; // ← now real server actions
+import { getWordlist, saveWordlist, renameWordList } from "@/app/lib/actions/wordlistAction";
+
+const MAX_ITEMS = 20; // ← hard cap
 
 export default function EditOasisPage() {
-  const listId = useListId();   // from the URL
+  const listId = useListId();
   const [items, setItems] = useState<WordItem[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -23,11 +25,22 @@ export default function EditOasisPage() {
     if (!listId) return;
     (async () => {
       const data = await getWordlist(listId);
-      setItems(data);
+      // Enforce cap on load (in case DB already has > 20)
+      if (data.length > MAX_ITEMS) {
+        alert(`This list has ${data.length} items. Showing and saving only the first ${MAX_ITEMS}.`);
+        setItems(data.slice(0, MAX_ITEMS));
+      } else {
+        setItems(data);
+      }
     })();
   }, [listId]);
 
   const addRow = () => {
+    // Prevent adding beyond cap
+    if (items.length >= MAX_ITEMS) {
+      alert(`You can only have up to ${MAX_ITEMS} entries in a list.`);
+      return;
+    }
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -46,7 +59,14 @@ export default function EditOasisPage() {
   const save = async () => {
     if (!listId) return alert("Missing list id");
     setSaving(true);
-    const cleaned = items.filter(i => (i.target?.trim() || i.english?.trim() || i.notes?.trim()));
+    const cleaned = items.filter(
+      (i) => i.target?.trim() || i.english?.trim() || i.notes?.trim()
+    );
+    if (cleaned.length > MAX_ITEMS) {
+      setSaving(false);
+      alert(`Please keep the list at ${MAX_ITEMS} items or fewer before saving.`);
+      return;
+    }
     const ok = await saveWordlist(listId, cleaned);
     setSaving(false);
     alert(ok ? "✅ Saved!" : "Failed to save.");
@@ -72,13 +92,12 @@ export default function EditOasisPage() {
 
   const handleConfirmDelete = () => {
     if (rowToDelete) {
-      deleteRowLocal(rowToDelete);  // local remove (DB delete comes later)
+      deleteRowLocal(rowToDelete);
       setRowToDelete(null);
     }
   };
 
   if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
-
 
   return (
     <>
@@ -103,8 +122,18 @@ export default function EditOasisPage() {
 
           <h1 className="text-xl font-bold">Edit Oasis — Word List</h1>
 
+          <div className="mb-1 text-sm text-gray-500">
+            {items.length}/{MAX_ITEMS} entries
+          </div>
+
           <div className="mb-4 flex gap-2">
-            <Button onClick={addRow}>+ Add Entry</Button>
+            <Button
+              onClick={addRow}
+              disabled={items.length >= MAX_ITEMS}
+              title={items.length >= MAX_ITEMS ? `Max ${MAX_ITEMS} entries` : ""}
+            >
+              + Add Entry
+            </Button>
             <Button onClick={save} disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
             </Button>
@@ -119,9 +148,7 @@ export default function EditOasisPage() {
             </div>
 
             {items.length === 0 && (
-              <div className="p-3 text-sm text-gray-500">
-                No entries yet. Click “Add Entry”.
-              </div>
+              <div className="p-3 text-sm text-gray-500">No entries yet. Click “Add Entry”.</div>
             )}
 
             {items.map((item) => (
