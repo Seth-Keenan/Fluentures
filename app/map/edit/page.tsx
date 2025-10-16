@@ -164,14 +164,6 @@ export default async function MapEditPage({
 
       {/* Create (language fixed from settings; button disabled if not set) */}
       <form action={createList} className="flex flex-wrap items-end gap-2 w-full max-w-5xl">
-        <div className="flex flex-col">
-          <label className="text-xs text-neutral-600 mb-1">Name</label>
-          <input
-            name="name"
-            placeholder="New Oasis"
-            className="border rounded-md px-3 py-2 text-sm"
-          />
-        </div>
 
         <button
           type="submit"
