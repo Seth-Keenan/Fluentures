@@ -41,7 +41,7 @@ export default async function MapEditPage({
   }
 
   // --- Data: only this user's lists ---
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("WordList")
     .select("word_list_id, word_list_name, language, created_at, user_id")
     .eq("user_id", user.id)
@@ -102,7 +102,7 @@ export default async function MapEditPage({
 
   // --- Flash banner (searchParams) ---
   const flashMsg = searchParams?.flash;
-  const flashType = (searchParams?.type ?? "success") as "success" | "error";
+  const flashType = searchParams?.type ?? "success";
 
   return (
     <div className="flex flex-col items-center min-h-screen p-6 gap-5 w-full">
@@ -111,16 +111,15 @@ export default async function MapEditPage({
       </h1>
 
       {flashMsg && (
-        <div
+        <output
           className={`w-full max-w-5xl rounded-md px-4 py-3 text-sm ${
             flashType === "error"
               ? "bg-red-50 text-red-700 border border-red-200"
               : "bg-emerald-50 text-emerald-700 border border-emerald-200"
           }`}
-          role="status"
         >
           {flashMsg}
-        </div>
+        </output>
       )}
 
       {/* Simple Create form */}
