@@ -80,7 +80,7 @@ export default function HomePage() {
       />
 
       {/* Soft gradient/dim for contrast */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50 pointer-events-none" />
 
       {/* Centered glass panel */}
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
@@ -193,6 +193,13 @@ export default function HomePage() {
           </p>
         </motion.div>
       </div>
+      
+    {/*I am just placing setting button in bottom right corner. Feel free to move or reposisiton. */}
+    <div className="fixed bottom-4 right-4  z-50 pointer-events-auto">
+      <SettingsButtonGear />
+    </div>
+
+    
     </div>
   );
 }
