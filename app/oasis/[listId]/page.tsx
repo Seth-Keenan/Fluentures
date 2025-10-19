@@ -131,75 +131,85 @@ export default function OasisHubPage() {
   }
 
   return (
-    <div className="flex h-screen">
+  <div className="min-h-screen bg-neutral-50">
+    <div className="flex">
       {/* Left sidebar */}
-      <aside className="w-56 shrink-0 border-r bg-neutral-50/60 p-4 flex flex-col gap-3">
-        <div className="text-sm font-semibold text-neutral-600 mb-1">Actions</div>
+      <aside className="w-60 shrink-0 border-r border-neutral-200 bg-white/70 p-4">
+        <div className="mb-2 text-sm font-semibold text-neutral-600">Actions</div>
 
-        <LinkAsButton href={`/oasis/${listId}/quiz`} className="btn">
-          Quiz
-        </LinkAsButton>
+        <div className="flex flex-col gap-2">
+          <LinkAsButton href={`/oasis/${listId}/quiz`} className="px-4 py-2">
+            Quiz
+          </LinkAsButton>
 
-        <LinkAsButton href={`/oasis/${listId}/story`} className="btn">
-          Story
-        </LinkAsButton>
+          <LinkAsButton href={`/oasis/${listId}/story`} className="px-4 py-2">
+            Story
+          </LinkAsButton>
 
-        <LinkAsButton href={`/oasis/${listId}/sentences`} className="btn">
-          Sentences
-        </LinkAsButton>
+          <LinkAsButton href={`/oasis/${listId}/sentences`} className="px-4 py-2">
+            Sentences
+          </LinkAsButton>
 
-        <LinkAsButton href={`/oasis/${listId}/edit`} className="btn">
-          Edit Oasis
-        </LinkAsButton>
+          <LinkAsButton href={`/oasis/${listId}/edit`} className="px-4 py-2">
+            Edit Oasis
+          </LinkAsButton>
+        </div>
 
-        <div className="mt-auto pt-2 border-t">
-          <LinkAsButton href="/map" className="btn">
+        <div className="mt-6 border-t border-neutral-200 pt-3">
+          <LinkAsButton href="/map" className="px-4 py-2">
             Back
           </LinkAsButton>
         </div>
       </aside>
 
       {/* Right content */}
-      <main className="flex-1 h-full overflow-hidden">
-        <div className="h-full overflow-y-auto p-6">
+      <main className="flex-1">
+        <div className="mx-auto h-full max-w-5xl p-4 md:p-8">
+          {/* Header */}
           <header className="mb-4">
-            <h1 className="text-xl font-semibold">
-              {listName ?? "Word List"}
-            </h1>
+            <h1 className="text-xl font-semibold tracking-tight">{listName ?? "Word List"}</h1>
             <p className="text-xs text-neutral-500">
-              List ID: <span className="font-mono">{listId}</span>
+              List ID: <span className="font-mono text-neutral-700">{listId}</span>
             </p>
           </header>
 
           {/* States */}
           {loading && (
-            <div className="text-sm text-neutral-500">Loading words…</div>
+            <div role="status" aria-live="polite" className="text-sm text-neutral-500">
+              Loading words…
+            </div>
           )}
           {error && (
-            <div className="text-sm text-red-600">Error: {error}</div>
+            <div role="alert" className="text-sm text-red-600">
+              Error: {error}
+            </div>
           )}
           {!loading && !error && words.length === 0 && (
-            <div className="text-sm text-neutral-500">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-600 shadow-sm">
               No words found in this list yet.
             </div>
           )}
 
           {/* Word table with Heart column */}
           {!loading && !error && words.length > 0 && (
-            <div className="rounded-xl border bg-white/70">
+            <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
               {/* Header row */}
-              <div className="grid grid-cols-12 px-4 py-3 text-sm font-semibold text-neutral-700">
+              <div className="sticky top-0 grid grid-cols-12 gap-2 border-b border-neutral-100 bg-white/90 px-4 py-3 text-sm font-semibold text-neutral-700 backdrop-blur">
                 <div className="col-span-2">Favorite</div>
                 <div className="col-span-5">Target</div>
                 <div className="col-span-5">English</div>
               </div>
 
-              <div className="divide-y">
+              {/* Body */}
+              <div className="divide-y divide-neutral-100">
                 {words.map((w) => {
                   const fav = !!w.is_favorite;
                   const isBusy = pending.has(w.id);
                   return (
-                    <div key={w.id} className="grid grid-cols-12 px-4 py-2 text-sm items-center">
+                    <div
+                      key={w.id}
+                      className="grid grid-cols-12 items-center gap-2 px-4 py-2 text-sm"
+                    >
                       {/* Heart column */}
                       <div className="col-span-2">
                         <button
@@ -207,11 +217,13 @@ export default function OasisHubPage() {
                           aria-label={fav ? "Remove from favorites" : "Add to favorites"}
                           onClick={() => toggleFavorite(w.id, w.is_favorite)}
                           disabled={isBusy}
-                          className={`inline-flex items-center gap-2 rounded-full px-2 py-1 transition ${
+                          className={[
+                            "inline-flex items-center gap-2 rounded-full px-2 py-1 transition",
+                            "focus:outline-none focus:ring-2 focus:ring-amber-400/60",
                             isBusy
-                              ? "opacity-60 cursor-not-allowed"
-                              : "hover:bg-rose-50 active:scale-[0.98]"
-                          }`}
+                              ? "cursor-not-allowed opacity-60"
+                              : "hover:bg-rose-50 active:scale-[0.98]",
+                          ].join(" ")}
                           title={fav ? "Unfavorite" : "Favorite"}
                         >
                           <svg
@@ -220,6 +232,7 @@ export default function OasisHubPage() {
                               fav ? "fill-rose-500 stroke-rose-500" : "fill-none stroke-rose-500"
                             }`}
                             strokeWidth="1.8"
+                            aria-hidden="true"
                           >
                             <path d="M16.5 3.5c-1.8 0-3.2 1-4.5 2.7C10.7 4.5 9.3 3.5 7.5 3.5 5 3.5 3 5.5 3 8c0 4.5 5.7 7.8 8.5 11 2.8-3.2 8.5-6.5 8.5-11 0-2.5-2-4.5-4.5-4.5z" />
                           </svg>
@@ -228,22 +241,24 @@ export default function OasisHubPage() {
                       </div>
 
                       {/* Target */}
-                      <div className="col-span-5">
+                      <div className="col-span-5 text-neutral-900">
                         {w.word_target ?? <span className="text-neutral-400">—</span>}
                       </div>
 
                       {/* English */}
-                      <div className="col-span-5">
+                      <div className="col-span-5 text-neutral-900">
                         {w.word_english ?? <span className="text-neutral-400">—</span>}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
           )}
         </div>
       </main>
     </div>
-  );
+  </div>
+);
+
 }

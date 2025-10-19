@@ -132,43 +132,94 @@ export default function QuizPage() {
   const correctAnswer = mode === "en-to-target" ? current.target : current.english;
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">
-        Question {currentQuestion + 1} / {quizWords.length}
-      </h2>
-      <p className="mb-2">Translate: <span className="font-semibold">{prompt}</span></p>
+  <div className="min-h-[70vh] bg-neutral-50 p-4 md:p-8">
+    <div className="mx-auto max-w-2xl rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm md:p-6">
+      {/* Header / Progress */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-tight md:text-xl">
+          Question {currentQuestion + 1} / {quizWords.length}
+        </h2>
+        <p className="text-sm text-neutral-500">
+          Score: <span className="font-medium text-neutral-700">{score}</span> / {quizWords.length}
+        </p>
+      </div>
 
+      {/* Progress Bar (display-only) */}
+      <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+        <div
+          className="h-full bg-amber-400 transition-all"
+          style={{
+            width:
+              quizWords.length > 0
+                ? `${Math.min(((currentQuestion + 1) / quizWords.length) * 100, 100)}%`
+                : "0%",
+          }}
+        />
+      </div>
+
+      {/* Prompt */}
+      <p className="mb-3 text-sm text-neutral-600">
+        Translate:
+        <span className="ml-2 font-semibold text-neutral-900">{prompt}</span>
+      </p>
+
+      {/* Answer input */}
       <input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         disabled={answerSubmitted}
-        className={`border p-2 w-full mb-2 ${answerSubmitted && !isCorrect ? "border-red-500" : ""}`}
+        className={[
+          "w-full rounded-xl border bg-white/90 p-3 text-base outline-none shadow-inner placeholder:text-neutral-400",
+          "focus:ring-2 focus:ring-amber-400/60",
+          "mb-3",
+          answerSubmitted && !isCorrect ? "border-red-500 ring-0" : "border-neutral-200",
+        ].join(" ")}
+        placeholder="Type your answer…"
+        aria-invalid={answerSubmitted && !isCorrect ? true : undefined}
+        aria-describedby={answerSubmitted ? "answer-feedback" : undefined}
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button onClick={checkAnswer} disabled={answerSubmitted}>Submit</Button>
-        <Button disabled={!answerSubmitted} onClick={nextQuestion}>Next</Button>
-        <Button onClick={getSentence} disabled={sentenceLoading}>
+      {/* Actions */}
+      <div className="mb-5 flex flex-wrap gap-2">
+        <Button onClick={checkAnswer} disabled={answerSubmitted} className="px-4 py-2">
+          Submit
+        </Button>
+        <Button disabled={!answerSubmitted} onClick={nextQuestion} className="px-4 py-2">
+          Next
+        </Button>
+        <Button onClick={getSentence} disabled={sentenceLoading} className="px-4 py-2">
           {sentenceLoading ? "Generating..." : "Sentence"}
         </Button>
       </div>
 
+      {/* Feedback */}
       {answerSubmitted && (
-        <div className="mb-4">
+        <div id="answer-feedback" className="mb-4">
           {isCorrect ? (
-            <p className="text-green-600 font-semibold">Correct!</p>
+            <p className="font-semibold text-green-600">Correct!</p>
           ) : (
-            <p className="text-red-600">Incorrect. The correct answer is: <strong>{correctAnswer}</strong></p>
+            <p className="text-red-600">
+              Incorrect. The correct answer is:{" "}
+              <strong className="font-semibold">{correctAnswer}</strong>
+            </p>
           )}
         </div>
       )}
 
+      {/* Example sentence */}
       {exampleSentence && (
-        <p className="italic text-gray-700 mb-4">Example: {exampleSentence}</p>
+        <p className="mb-5 rounded-xl bg-neutral-50 p-4 text-sm italic text-neutral-700">
+          Example: {exampleSentence}
+        </p>
       )}
 
-      <p>Score: {score} / {quizWords.length}</p>
+      {/* Footer score (kept for parity) */}
+      <p className="text-sm text-neutral-600">
+        Score: <span className="font-medium text-neutral-800">{score}</span> / {quizWords.length}
+      </p>
     </div>
-  );
+  </div>
+);
+
 }
