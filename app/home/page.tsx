@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { useSession } from "@supabase/auth-helpers-react";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import  SettingsButtonGear from "@/app/components/SettingsButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,            // Social
