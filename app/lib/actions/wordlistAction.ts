@@ -132,6 +132,16 @@ export async function renameWordList(listId: string, newName: string): Promise<b
   return true;
 }
 
+  export async function deleteWordItem(listId: string, id: string) {
+    const supabase = await getSupabaseServerActionClient();
+    const { error } = await supabase
+      .from("Word")
+      .delete()
+      .eq("word_id", id)
+      .eq("word_list_id", listId);
+    return !error;
+  }
+
 /**
  * SAVE (minimal): upsert rows that are currently in the UI.
  */

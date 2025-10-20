@@ -4,7 +4,7 @@ import { generateGeminiContent, getInstruction, sendGeminiChat } from "@/app/lib
 import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
 import { getSupabaseServerRouteClient } from "@/app/lib/hooks/supabaseServerRouteClient";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 type SentencesBody = {
   action?: "generate" | "chat";
   listId?: string;
@@ -16,7 +16,7 @@ type SentencesBody = {
 
 type Settings = { language: string; difficulty: string };
 
-// ── Small helpers (cut branching inside POST, Sonar was mad) ─────────────────────────────────
+// Small helpers
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
 }
@@ -37,6 +37,7 @@ async function getResolvedSettings(body: SentencesBody): Promise<Settings> {
   };
 }
 
+// Build a soft vocabulary bias string from a list (for chat only)
 async function buildVocabHint(listId?: string): Promise<string> {
   if (!listId) return "";
   const supabase = await getSupabaseServerRouteClient();
@@ -53,24 +54,25 @@ async function buildVocabHint(listId?: string): Promise<string> {
     .map(w => `${w.word_target ?? ""} = ${w.word_english ?? ""}`)
     .slice(0, 25);
 
-  return pairs.length ? `Use these vocabulary items where natural: ${pairs.join(", ")}.` : "";
+  return pairs.length ? `Vocabulary in this course (for context only): ${pairs.join(", ")}.` : "";
 }
 
-async function handleGenerate(body: SentencesBody, s: Settings, vocabHint: string) {
+async function handleGenerate(body: SentencesBody, s: Settings /* no vocabHint here */) {
   const word = (body.word ?? "").trim();
   if (!word) return badRequest("Missing required field: word");
 
   const instruction = getInstruction(s.difficulty);
-  const prompt = [
-    `In ${s.language}, create a single natural sentence using the word "${word}".`,
-    instruction,
-    `No explanations or translations. No formatting.`,
-    vocabHint && `[Vocabulary bias] ${vocabHint}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
 
-  const sentence = await generateGeminiContent(prompt, 120);
+
+  const prompt = [
+    `Write exactly ONE natural sentence in ${s.language}.`,
+    `It MUST correctly use the target word: "${word}".`,
+    `Do NOT include any other vocabulary from the user's word list.`,
+    `No explanations, no translation, no formatting; return only the sentence.`,
+    instruction, // your difficulty guidance
+  ].join("\n");
+
+  const sentence = await generateGeminiContent(prompt);
   return NextResponse.json({ sentence, usedSettings: s });
 }
 
@@ -79,11 +81,13 @@ async function handleChat(body: SentencesBody, s: Settings, vocabHint: string) {
   const history: Content[] = Array.isArray(body.history) ? body.history : [];
   if (!input || history.length === 0) return badRequest("Missing chat input or history");
 
+  // Keep a soft bias for chat, but make it explicit it's "context only"
   const context = [
     `Answer in ${s.language}. Difficulty: ${s.difficulty}.`,
     `Be concise. No formatting.`,
-    vocabHint && `Vocabulary to prefer when natural: ${vocabHint}`,
-    body.listId && `This chat belongs to Oasis/List ID: ${body.listId}`,
+    `Answer primarily in English`,
+    vocabHint && `Use the following vocabulary ONLY when it fits naturally; do not force it: ${vocabHint}`,
+    body.listId && `This chat belongs to Oasis/List ID: ${body.listId}.`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -92,7 +96,7 @@ async function handleChat(body: SentencesBody, s: Settings, vocabHint: string) {
   return NextResponse.json({ reply, usedSettings: s });
 }
 
-// ── POST ──────────────────────────────────────────────────────────────────────
+// POST
 export async function POST(req: NextRequest) {
   const parsed = await parseBody(req);
   if (parsed instanceof NextResponse) return parsed;
@@ -100,11 +104,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const settings = await getResolvedSettings(body);
-    const vocabHint = await buildVocabHint(body.listId);
+
+    // FIX: Only compute vocab hint for chat so generate doesn't get biased
+    const vocabHint = body.action === "chat" ? await buildVocabHint(body.listId) : "";
 
     switch (body.action) {
       case "generate":
-        return await handleGenerate(body, settings, vocabHint);
+        return await handleGenerate(body, settings);
       case "chat":
         return await handleChat(body, settings, vocabHint);
       default:
