@@ -6,7 +6,8 @@ import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import type { WordItem } from "@/app/types/wordlist";
-import { getWordlist, saveWordlist, renameWordList } from "@/app/lib/actions/wordlistAction";
+import { getWordlist, saveWordlist, renameWordList, getWordListMeta } from "@/app/lib/actions/wordlistAction";
+import type { WordListMeta } from "@/app/lib/actions/wordlistAction";
 
 const MAX_ITEMS = 20; // ← hard cap
 
@@ -18,21 +19,30 @@ export default function EditOasisPage() {
   const [listName, setListName] = useState<string>("");
   const [renaming, setRenaming] = useState(false);
 
+  const [meta, setMeta] = useState<WordListMeta | null>(null);
+
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!listId) return;
-    (async () => {
-      const data = await getWordlist(listId);
-      // Enforce cap on load (in case DB already has > 20)
-      if (data.length > MAX_ITEMS) {
-        alert(`This list has ${data.length} items. Showing and saving only the first ${MAX_ITEMS}.`);
-        setItems(data.slice(0, MAX_ITEMS));
-      } else {
-        setItems(data);
-      }
-    })();
+  if (!listId) return;
+  (async () => {
+    const [data, metaRow] = await Promise.all([
+      getWordlist(listId),
+      getWordListMeta(listId),
+    ]);
+
+    // Enforce cap on load (in case DB already has > 20)
+    if (data.length > MAX_ITEMS) {
+      alert(`This list has ${data.length} items. Showing and saving only the first ${MAX_ITEMS}.`);
+      setItems(data.slice(0, MAX_ITEMS));
+    } else {
+      setItems(data);
+    }
+
+    setMeta(metaRow);
+  })();
   }, [listId]);
 
   const addRow = () => {
@@ -160,7 +170,7 @@ export default function EditOasisPage() {
 
           {/* Header Row */}
           <div className="grid grid-cols-12 gap-2 border-b border-neutral-100 p-3 text-sm font-semibold text-neutral-700">
-            <div className="col-span-3">Target Language</div>
+            <div className="col-span-3">{meta?.language ?? "Target"}</div>
             <div className="col-span-3">English</div>
             <div className="col-span-5">Notes</div>
             <div className="col-span-1 text-right">Actions</div>
