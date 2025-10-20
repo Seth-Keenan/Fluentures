@@ -1,8 +1,17 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Html } from "@react-three/drei";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import * as THREE from "three";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, Html, useGLTF } from "@react-three/drei";
+import { motion, type Variants } from "framer-motion";
 import { LinkAsButton } from "../../components/LinkAsButton";
 
 type Vec3 = [number, number, number];
@@ -25,8 +34,11 @@ const STORAGE_KEY_3D = "fluentures.oases.3d";
 const STORAGE_KEY_PACKETS = "fluentures.packets";
 const MODEL_URL = "/oasis.glb";
 
+/* ---------------- helpers ---------------- */
+
 function makeId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
+    return crypto.randomUUID();
   return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -39,6 +51,8 @@ function autoPosition(index: number): Vec3 {
   return [col * spacing, 0, row * spacing] as Vec3;
 }
 
+/* ---------------- 3D pieces ---------------- */
+
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(MODEL_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -49,7 +63,6 @@ function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
       onClick={(e) => {
         e.stopPropagation();
         const p = e.point;
@@ -57,8 +70,10 @@ function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
       }}
       receiveShadow
     >
-      <planeGeometry args={[200, 200]} />
-      <meshStandardMaterial color="#f0f2f5" />
+      {/* Big plane you can click to place */}
+      <planeGeometry args={[220, 220]} />
+      {/* Warm, sandy tone */}
+      <meshStandardMaterial color="#efe5d1" />
     </mesh>
   );
 }
@@ -72,7 +87,25 @@ function OasisInstance({
   isSelected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const groupRef = useRef<any>(null);
+  const groupRef = useRef<THREE.Group>(null!);
+  const ringRef = useRef<THREE.Mesh>(null!);
+  const [hovered, setHovered] = useState(false);
+
+  // Gentle bob + selection pulse
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const bobStrength = 0.03; // set to 0 to disable bob
+    const scaleLift = hovered ? 1.04 : 1.0;
+    if (groupRef.current) {
+      const baseY = data.position[1];
+      groupRef.current.position.y = baseY + Math.sin(t * 1.2) * bobStrength;
+      groupRef.current.scale.setScalar(data.scale * scaleLift);
+    }
+    if (ringRef.current) {
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = isSelected ? 0.35 + Math.sin(t * 3) * 0.15 : 0.0;
+    }
+  });
 
   return (
     <group
@@ -81,10 +114,12 @@ function OasisInstance({
       rotation={data.rotation}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(data.id); // select only; no navigation in edit mode
+        onSelect(data.id);
       }}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
     >
-      {/* bigger hit box for easy selection */}
+      {/* Invisible hit box for easier selection */}
       <mesh position={[0, 1.0 * data.scale, 0]} visible={false}>
         <boxGeometry args={[2 * data.scale, 2 * data.scale, 2 * data.scale]} />
         <meshBasicMaterial transparent opacity={0} />
@@ -92,29 +127,45 @@ function OasisInstance({
 
       <OasisModel scale={data.scale} />
 
+      {/* Floating label */}
       <Html
-        position={[0, 1.7 * data.scale, 0]}
+        position={[0, 1.65 * data.scale, 0]}
         center
         style={{
           pointerEvents: "none",
-          background: "rgba(255,255,255,0.8)",
-          padding: "2px 6px",
-          borderRadius: 8,
+          background: "rgba(255,255,255,0.85)",
+          padding: "4px 8px",
+          borderRadius: 10,
           fontSize: 12,
+          boxShadow: "0 6px 18px rgba(0,0,0,0.15)",
         }}
       >
         {data.title}
       </Html>
 
-      {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-          <ringGeometry args={[0.9 * data.scale, 1.2 * data.scale, 32]} />
-          <meshBasicMaterial color="black" transparent opacity={0.35} />
-        </mesh>
-      )}
+      {/* Pulsing selection ring */}
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <ringGeometry args={[0.95 * data.scale, 1.25 * data.scale, 48]} />
+        <meshBasicMaterial color="#0f766e" transparent opacity={0.0} />
+      </mesh>
     </group>
   );
 }
+
+/* ---------------- UI animation ---------------- */
+
+const panelIn: Variants = {
+  hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0)",
+    transition: { duration: 0.45, ease: "easeOut" },
+  },
+};
+
+/* ---------------- Page ---------------- */
 
 export default function EditPage() {
   const [instances, setInstances] = useState<Oasis3D[]>([]);
@@ -147,7 +198,19 @@ export default function EditPage() {
     }
   }, [instances, packets, mounted]);
 
-  // Add via grid
+  // Keyboard: Delete key removes selected
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeSelected();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, instances.length]);
+
   const addOasis = () => {
     const id = makeId();
     const title = `Oasis ${instances.length + 1}`;
@@ -168,7 +231,6 @@ export default function EditPage() {
     setSelectedId(id);
   };
 
-  // Click-to-place exact position
   const placeOasisAtPoint = (point: Vec3) => {
     const id = makeId();
     const title = `Oasis ${instances.length + 1}`;
@@ -188,7 +250,7 @@ export default function EditPage() {
     setSelectedId(id);
   };
 
-  const removeSelected = () => {
+  const removeSelected = useCallback(() => {
     if (!selectedId) return;
     setInstances((prev) => prev.filter((o) => o.id !== selectedId));
     setPackets((prev) => {
@@ -197,7 +259,7 @@ export default function EditPage() {
       return copy;
     });
     setSelectedId(null);
-  };
+  }, [selectedId]);
 
   const clearAll = () => {
     setInstances([]);
@@ -206,82 +268,165 @@ export default function EditPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col gap-6 py-6 px-4">
-      <header className="w-full max-w-6xl mx-auto flex items-center justify-between">
-        <h1 className="text-3xl font-semibold tracking-tight">Edit Map</h1>
-        <div className="flex gap-2">
-          <LinkAsButton href="/map" className="btn">Done</LinkAsButton>
-        </div>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* ---------- Animated background like other pages ---------- */}
+      <motion.img
+        src="/desert.png"
+        alt="Desert background"
+        className="absolute inset-0 h-full w-full object-cover"
+        initial={{ scale: 1 }}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Soft gradient/dim for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30" />
+      {/* Glow blobs */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.30), rgba(0,0,0,0))",
+        }}
+        animate={{ y: [0, 16, 0], x: [0, 10, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.22), rgba(0,0,0,0))",
+        }}
+        animate={{ y: [0, -14, 0], x: [0, -8, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* ---------- UI Shell ---------- */}
+      <header className="relative z-10">
+        <motion.div
+          variants={panelIn}
+          initial="hidden"
+          animate="show"
+          className="mx-auto mt-6 w-[min(92vw,80rem)] rounded-2xl border border-white/30 bg-white/30 backdrop-blur-xl p-4 shadow-2xl"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+                Edit Map
+              </h1>
+              <p className="text-sm text-white/90">
+                Click the ground to place an oasis · Select one and press{" "}
+                <kbd className="rounded bg-white/20 px-1">Del</kbd> to remove
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <LinkAsButton
+                href="/map"
+                className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 px-4 py-2 shadow-md ring-1 ring-white/40 transition"
+              >
+                Done
+              </LinkAsButton>
+            </div>
+          </div>
+        </motion.div>
       </header>
 
-      <section className="w-full max-w-6xl mx-auto rounded-2xl border border-gray-200 p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
-          <div>
-            <label className="block text-sm font-medium">Scale (for new oases)</label>
-            <input
-              type="range"
-              min={0.2}
-              max={3}
-              step={0.05}
-              value={scale}
-              onChange={(e) => setScale(parseFloat(e.target.value))}
-              className="w-48"
-            />
-            <div className="text-xs text-gray-600 mt-1">{scale.toFixed(2)}x</div>
+      <main className="relative z-10 mx-auto mt-4 w-[min(92vw,80rem)] space-y-4">
+        {/* Controls */}
+        <motion.section
+          variants={panelIn}
+          initial="hidden"
+          animate="show"
+          className="rounded-2xl border border-white/30 bg-white/35 backdrop-blur-xl p-4 shadow-xl"
+        >
+          <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
+            {/* Scale */}
+            <div>
+              <label className="block text-sm font-semibold text-white">
+                Scale (for new oases)
+              </label>
+              <input
+                type="range"
+                min={0.2}
+                max={3}
+                step={0.05}
+                value={scale}
+                onChange={(e) => setScale(parseFloat(e.target.value))}
+                className="mt-2 w-56 accent-emerald-700"
+              />
+              <div className="mt-1 text-xs text-white/90">{scale.toFixed(2)}×</div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={addOasis}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition active:scale-[0.98]"
+                title="Add an oasis on the grid"
+              >
+                ➕ Add Oasis
+              </button>
+
+              <button
+                onClick={removeSelected}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-400 shadow-md transition disabled:opacity-50 active:scale-[0.98]"
+                disabled={!selectedId}
+              >
+                🗑 Delete Selected
+              </button>
+
+              <button
+                onClick={clearAll}
+                className="rounded-xl px-4 py-2 text-sm font-semibold bg-white/80 hover:bg-white shadow-md ring-1 ring-black/10 transition disabled:opacity-50 active:scale-[0.98]"
+                disabled={!instances.length}
+              >
+                ✨ Clear All
+              </button>
+            </div>
           </div>
+        </motion.section>
 
-          <div className="flex gap-2">
-            <button
-              onClick={addOasis}
-              className="rounded-xl px-3 py-2 text-sm font-medium border border-sky-200 text-sky-700 hover:bg-sky-50"
-            >
-              Add Oasis
-            </button>
-            <button
-              onClick={removeSelected}
-              className="rounded-xl px-3 py-2 text-sm font-medium border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
-              disabled={!selectedId}
-            >
-              Delete selected
-            </button>
-            <button
-              onClick={clearAll}
-              className="rounded-xl px-3 py-2 text-sm font-medium border border-gray-200 hover:bg-gray-50"
-              disabled={!instances.length}
-            >
-              Clear all
-            </button>
+        {/* Canvas */}
+        <motion.section
+          variants={panelIn}
+          initial="hidden"
+          animate="show"
+          className="overflow-hidden rounded-2xl border border-white/30 bg-white/25 backdrop-blur-xl shadow-2xl"
+        >
+          <div className="relative h-[72vh]">
+            {/* subtle vignette */}
+            <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.18)]" />
+            <Canvas shadows camera={{ position: [8, 8, 8], fov: 46 }}>
+              {/* soft background inside canvas */}
+              <color attach="background" args={["#f8f6ef"]} />
+              <ambientLight intensity={0.65} />
+              <directionalLight
+                position={[10, 12, 6]}
+                intensity={1.1}
+                castShadow
+                shadow-mapSize={[2048, 2048]}
+              />
+
+              <Ground onPlace={placeOasisAtPoint} />
+
+              <Suspense fallback={null}>
+                {instances.map((o) => (
+                  <OasisInstance
+                    key={o.id}
+                    data={o}
+                    isSelected={o.id === selectedId}
+                    onSelect={setSelectedId}
+                  />
+                ))}
+              </Suspense>
+
+              <OrbitControls makeDefault />
+            </Canvas>
           </div>
-
-          <p className="text-xs text-gray-600">
-            Tip: Click the ground to place a new oasis at an exact location.
-          </p>
-        </div>
-      </section>
-
-      <section className="w-full max-w-6xl mx-auto rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="h-[70vh]">
-          <Canvas shadows camera={{ position: [8, 8, 8], fov: 45 }}>
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[10, 12, 6]} intensity={1.0} castShadow />
-
-            <Ground onPlace={placeOasisAtPoint} />
-
-            <Suspense fallback={null}>
-              {instances.map((o) => (
-                <OasisInstance
-                  key={o.id}
-                  data={o}
-                  isSelected={o.id === selectedId}
-                  onSelect={setSelectedId}
-                />
-              ))}
-            </Suspense>
-
-            <OrbitControls makeDefault />
-          </Canvas>
-        </div>
-      </section>
+        </motion.section>
+      </main>
     </div>
   );
 }
