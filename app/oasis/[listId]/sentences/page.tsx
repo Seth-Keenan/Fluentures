@@ -68,57 +68,101 @@ export default function SentencesPage() {
 
 
   return (
-    <div className="p-6 min-h-screen">
-      <LinkAsButton href={`/oasis/${listId}`}>Back</LinkAsButton>
-
-      <div className="mb-3">
-        <h1 className="text-xl font-bold">Example Sentences — {meta?.name ?? "Oasis"}</h1>
-        <p className="text-sm text-gray-500">
-          Language: {meta?.language ?? "—"} · Words: {targets.length}
-        </p>
+  <div className="min-h-screen bg-neutral-50 p-4 md:p-8">
+    <div className="mx-auto max-w-6xl space-y-6">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between gap-4">
+        <LinkAsButton href={`/oasis/${listId}`}>Back</LinkAsButton>
+        <div className="text-right">
+          <p className="text-sm text-neutral-500">Oasis</p>
+          <p className="text-base font-medium text-neutral-800">
+            {meta?.name ?? "Oasis"}
+            <span className="ml-2 text-neutral-400">
+              • {meta?.language ?? "—"} • {targets.length} words
+            </span>
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      {/* Main Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
         {/* LEFT: Sentences List */}
-        <div className="flex flex-col flex-1">
-          {targets.length === 0 && (
-            <div className="text-sm text-gray-500">No words yet. Add some in Edit Oasis.</div>
-          )}
+        <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-100 p-4 md:p-5">
+            <h1 className="text-lg font-semibold tracking-tight md:text-xl">
+              Example Sentences
+            </h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              Language: {meta?.language ?? "—"} · Words: {targets.length}
+            </p>
+          </div>
 
-          {targets.map((word) => (
-            <div key={word} className="mb-4 p-3 border rounded">
-              <p className="font-semibold">{word}</p>
-              <textarea
-                className="p-2 border w-full resize-none mt-1"
-                value={sentences[word] || (generating ? "Generating..." : "No sentence yet")}
-                readOnly
-              />
-              <Button className="mt-2" onClick={() => regenerateOne(word)} disabled={generating}>
-                🔄 Regenerate
-              </Button>
-            </div>
-          ))}
-        </div>
+          <div className="p-4 md:p-5 space-y-4">
+            {targets.length === 0 && (
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
+                No words yet. Add some in <span className="font-medium">Edit Oasis</span>.
+              </div>
+            )}
+
+            {targets.map((word) => (
+              <div key={word} className="rounded-xl border border-neutral-200 p-4">
+                <p className="font-semibold text-neutral-800">{word}</p>
+                <textarea
+                  className="mt-2 h-32 w-full resize-none rounded-xl border border-neutral-200 bg-white/90 p-3 text-neutral-800 shadow-inner outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
+                  value={
+                    sentences[word] ||
+                    (generating ? "Generating..." : "No sentence yet")
+                  }
+                  readOnly
+                />
+                <Button
+                  className="mt-3 px-4 py-2"
+                  onClick={() => regenerateOne(word)}
+                  disabled={generating}
+                >
+                  🔄 Regenerate
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* RIGHT: Chat Section */}
-        <div className="flex flex-col flex-1">
-          <h1 className="text-xl font-semibold">Chat</h1>
-          <textarea
-            className="p-2 border resize-none flex-grow min-h-[240px]"
-            value={chatLog.join("\n")}
-            readOnly
-          />
-          <input
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            className="border p-2 mt-2"
-            placeholder="Ask about the sentences..."
-          />
-          <Button className="mt-2" onClick={sendChat}>
-            Send
-          </Button>
-        </div>
+        <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-100 p-4 md:p-5">
+            <h2 className="text-lg font-semibold tracking-tight md:text-xl">Chat</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Ask about the sentences or request variations.
+            </p>
+          </div>
+
+          <div className="p-4 md:p-5">
+            <label className="mb-2 block text-sm font-medium text-neutral-700">
+              Conversation
+            </label>
+            <textarea
+              className="h-64 w-full resize-none rounded-xl border border-neutral-200 bg-white/90 p-3 text-neutral-800 shadow-inner outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
+              value={chatLog.join("\n")}
+              readOnly
+              placeholder="Messages will appear here."
+            />
+
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                className="flex-1 rounded-full border border-neutral-200 bg-white/90 px-4 py-2 text-sm outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
+                placeholder="Ask about the sentences..."
+              />
+              <Button className="px-4 py-2" onClick={sendChat}>
+                Send
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-  );
+  </div>
+);
+
 }

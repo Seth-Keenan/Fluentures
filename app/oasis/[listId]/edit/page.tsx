@@ -6,7 +6,8 @@ import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import type { WordItem } from "@/app/types/wordlist";
-import { getWordlist, saveWordlist, renameWordList } from "@/app/lib/actions/wordlistAction";
+import { getWordlist, saveWordlist, renameWordList, getWordListMeta } from "@/app/lib/actions/wordlistAction";
+import type { WordListMeta } from "@/app/lib/actions/wordlistAction";
 
 const MAX_ITEMS = 20; // ← hard cap
 
@@ -18,21 +19,30 @@ export default function EditOasisPage() {
   const [listName, setListName] = useState<string>("");
   const [renaming, setRenaming] = useState(false);
 
+  const [meta, setMeta] = useState<WordListMeta | null>(null);
+
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!listId) return;
-    (async () => {
-      const data = await getWordlist(listId);
-      // Enforce cap on load (in case DB already has > 20)
-      if (data.length > MAX_ITEMS) {
-        alert(`This list has ${data.length} items. Showing and saving only the first ${MAX_ITEMS}.`);
-        setItems(data.slice(0, MAX_ITEMS));
-      } else {
-        setItems(data);
-      }
-    })();
+  if (!listId) return;
+  (async () => {
+    const [data, metaRow] = await Promise.all([
+      getWordlist(listId),
+      getWordListMeta(listId),
+    ]);
+
+    // Enforce cap on load (in case DB already has > 20)
+    if (data.length > MAX_ITEMS) {
+      alert(`This list has ${data.length} items. Showing and saving only the first ${MAX_ITEMS}.`);
+      setItems(data.slice(0, MAX_ITEMS));
+    } else {
+      setItems(data);
+    }
+
+    setMeta(metaRow);
+  })();
   }, [listId]);
 
   const addRow = () => {
@@ -100,95 +110,125 @@ export default function EditOasisPage() {
   if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
 
   return (
-    <>
-      <div className="p-6 min-h-screen">
-        <LinkAsButton href={`/oasis/${listId}`} className="btn">
-          Back
-        </LinkAsButton>
-
-        <div className="flex flex-col mt-4 gap-3">
-          {/* rename UI */}
-          <div className="flex items-center gap-2">
-            <input
-              className="border p-2 rounded min-w-[260px]"
-              placeholder="Oasis name"
-              value={listName}
-              onChange={(e) => setListName(e.target.value)}
-            />
-            <Button onClick={handleRename} disabled={renaming}>
-              {renaming ? "Renaming..." : "Rename"}
-            </Button>
+  <>
+    <div className="min-h-screen bg-neutral-50 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <LinkAsButton href={`/oasis/${listId}`}>Back</LinkAsButton>
+          <div className="text-right">
+            <p className="text-sm text-neutral-500">Edit Oasis — Word List</p>
+            <p className="text-base font-medium text-neutral-800">
+              {items.length}/{MAX_ITEMS} entries
+            </p>
           </div>
+        </div>
 
-          <h1 className="text-xl font-bold">Edit Oasis — Word List</h1>
-
-          <div className="mb-1 text-sm text-gray-500">
-            {items.length}/{MAX_ITEMS} entries
+        {/* Rename + Actions */}
+        <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-100 p-4 md:p-5">
+            <h1 className="text-lg font-semibold tracking-tight md:text-xl">
+              List Settings
+            </h1>
           </div>
-
-          <div className="mb-4 flex gap-2">
-            <Button
-              onClick={addRow}
-              disabled={items.length >= MAX_ITEMS}
-              title={items.length >= MAX_ITEMS ? `Max ${MAX_ITEMS} entries` : ""}
-            >
-              + Add Entry
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-
-          <div className="border rounded">
-            <div className="grid grid-cols-12 gap-2 p-2 font-semibold border-b">
-              <div className="col-span-3">Target Language</div>
-              <div className="col-span-3">English</div>
-              <div className="col-span-5">Notes</div>
-              <div className="col-span-1 text-right">Actions</div>
+          <div className="p-4 md:p-5 space-y-4">
+            {/* Rename UI */}
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+              <input
+                className="min-w-[260px] flex-1 rounded-xl border border-neutral-200 bg-white/90 px-4 py-2 text-sm outline-none placeholder:text-neutral-400 shadow-inner focus:ring-2 focus:ring-amber-400/60"
+                placeholder="Oasis name"
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+              />
+              <Button onClick={handleRename} disabled={renaming} className="px-4 py-2">
+                {renaming ? "Renaming..." : "Rename"}
+              </Button>
             </div>
 
+            {/* Entry Actions */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button
+                onClick={addRow}
+                disabled={items.length >= MAX_ITEMS}
+                title={items.length >= MAX_ITEMS ? `Max ${MAX_ITEMS} entries` : ""}
+                className="px-4 py-2"
+              >
+                + Add Entry
+              </Button>
+              <Button onClick={save} disabled={saving} className="px-4 py-2">
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Word Table */}
+        <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-100 p-4 md:p-5">
+            <h2 className="text-lg font-semibold tracking-tight md:text-xl">Entries</h2>
+          </div>
+
+          {/* Header Row */}
+          <div className="grid grid-cols-12 gap-2 border-b border-neutral-100 p-3 text-sm font-semibold text-neutral-700">
+            <div className="col-span-3">{meta?.language ?? "Target"}</div>
+            <div className="col-span-3">English</div>
+            <div className="col-span-5">Notes</div>
+            <div className="col-span-1 text-right">Actions</div>
+          </div>
+
+          {/* Body */}
+          <div className="divide-y divide-neutral-100">
             {items.length === 0 && (
-              <div className="p-3 text-sm text-gray-500">No entries yet. Click “Add Entry”.</div>
+              <div className="p-4 text-sm text-neutral-600">
+                No entries yet. Click <span className="font-medium">“Add Entry”</span>.
+              </div>
             )}
 
             {items.map((item) => (
-              <div key={item.id} className="grid grid-cols-12 gap-2 p-2 border-b">
+              <div key={item.id} className="grid grid-cols-12 gap-2 p-3">
                 <input
-                  className="col-span-3 border p-2"
+                  className="col-span-3 rounded-xl border border-neutral-200 bg-white/90 px-3 py-2 text-sm outline-none shadow-inner placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
                   placeholder="こんにちは"
                   value={item.target}
                   onChange={(e) => updateField(item.id, "target", e.target.value)}
                 />
                 <input
-                  className="col-span-3 border p-2"
+                  className="col-span-3 rounded-xl border border-neutral-200 bg-white/90 px-3 py-2 text-sm outline-none shadow-inner placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
                   placeholder="hello"
                   value={item.english}
                   onChange={(e) => updateField(item.id, "english", e.target.value)}
                 />
                 <input
-                  className="col-span-5 border p-2"
+                  className="col-span-5 rounded-xl border border-neutral-200 bg-white/90 px-3 py-2 text-sm outline-none shadow-inner placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-400/60"
                   placeholder="Any notes (e.g., part of speech, hints)"
                   value={item.notes ?? ""}
                   onChange={(e) => updateField(item.id, "notes", e.target.value)}
                 />
                 <div className="col-span-1 flex items-center justify-end">
-                  <Button className="destructive" onClick={() => handleDeleteClick(item.id)}>
+                  <Button
+                    className="destructive px-3 py-2"
+                    onClick={() => handleDeleteClick(item.id)}
+                    aria-label="Delete entry"
+                    title="Delete entry"
+                  >
                     Delete
                   </Button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
+    </div>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        title="Delete this entry?"
-        description="This action cannot be undone."
-        onConfirm={handleConfirmDelete}
-      />
-    </>
-  );
+    <ConfirmDialog
+      open={confirmOpen}
+      onClose={() => setConfirmOpen(false)}
+      title="Delete this entry?"
+      description="This action cannot be undone."
+      onConfirm={handleConfirmDelete}
+    />
+  </>
+);
+
 }
