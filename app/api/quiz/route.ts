@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       body.listId && `Oasis/List ID: ${body.listId}`,
     ].filter(Boolean).join("\n");
 
-    const sentence = await generateGeminiContent(prompt, 120);
+    const sentence = await generateGeminiContent(prompt);
     return NextResponse.json({ sentence, usedSettings: { language, difficulty } });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") {
