@@ -1,26 +1,19 @@
 "use client";
 
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
-import { useListId } from "@/app/lib/hooks/useListId";
-=======
 import { useEffect, useMemo, useState } from "react";
+import { useListId } from "@/app/lib/hooks/useListId";
 import { motion, useReducedMotion } from "framer-motion";
->>>>>>> d9bec2f (UI update)
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import type { WordItem } from "@/app/types/wordlist";
-import { getWordlist, saveWordlist, renameWordList } from "@/app/lib/actions/wordlistAction"; // ← now real server actions
+import { getWordlist, saveWordlist } from "@/app/lib/actions/wordlistAction"; // server actions
 
 export default function EditOasisPage() {
-  const listId = useListId();   // from the URL
+  const listId = useListId(); // from the URL
+
   const [items, setItems] = useState<WordItem[]>([]);
   const [saving, setSaving] = useState(false);
-
-  const [listName, setListName] = useState<string>("");
-  const [renaming, setRenaming] = useState(false);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<string | null>(null);
 
@@ -33,12 +26,8 @@ export default function EditOasisPage() {
   useEffect(() => {
     if (!listId) return;
     (async () => {
-<<<<<<< HEAD
-      const data = await getWordlist(listId);
-=======
       setLoading(true);
-      const data = await getWordlist();
->>>>>>> d9bec2f (UI update)
+      const data = await getWordlist(listId); // <-- use list id
       setItems(data);
       setLoading(false);
       setLastSavedJSON(JSON.stringify(data));
@@ -47,13 +36,8 @@ export default function EditOasisPage() {
 
   const addRow = () => {
     const id =
-<<<<<<< HEAD
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-=======
-      typeof crypto !== "undefined" && (crypto as any).randomUUID
+      typeof crypto !== "undefined" && "randomUUID" in (crypto as any)
         ? (crypto as any).randomUUID()
->>>>>>> d9bec2f (UI update)
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setItems((prev) => [...prev, { id, target: "", english: "", notes: "" }]);
   };
@@ -66,43 +50,21 @@ export default function EditOasisPage() {
     setItems((prev) => prev.filter((x) => x.id !== id));
   };
 
-<<<<<<< HEAD
-=======
-  const updateField = (id: string, field: keyof WordItem, value: string) => {
-    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
-  };
-
   const isDirty = useMemo(() => JSON.stringify(items) !== lastSavedJSON, [items, lastSavedJSON]);
 
->>>>>>> d9bec2f (UI update)
   const save = async () => {
     if (!listId) return alert("Missing list id");
     setSaving(true);
-    const cleaned = items.filter(i => (i.target?.trim() || i.english?.trim() || i.notes?.trim()));
+    const cleaned = items.filter(
+      (i) => i.target?.trim() || i.english?.trim() || i.notes?.trim()
+    );
     const ok = await saveWordlist(listId, cleaned);
     setSaving(false);
     setLastMessage(ok ? "✅ Saved changes" : "❌ Failed to save");
     if (ok) setLastSavedJSON(JSON.stringify(items));
-    // subtle auto-clear
     setTimeout(() => setLastMessage(null), 1800);
   };
 
-<<<<<<< HEAD
-  const handleRename = async () => {
-    if (!listId) return;
-    const name = listName.trim();
-    if (!name) {
-      alert("Please enter a name.");
-      return;
-    }
-    setRenaming(true);
-    const ok = await renameWordList(listId, name);
-    setRenaming(false);
-    alert(ok ? "✅ Renamed!" : "Failed to rename.");
-  };
-
-=======
->>>>>>> d9bec2f (UI update)
   const handleDeleteClick = (id: string) => {
     setRowToDelete(id);
     setConfirmOpen(true);
@@ -110,88 +72,11 @@ export default function EditOasisPage() {
 
   const handleConfirmDelete = () => {
     if (rowToDelete) {
-      deleteRowLocal(rowToDelete);  // local remove (DB delete comes later)
+      deleteRowLocal(rowToDelete); // local remove (DB delete handled by a later action if desired)
       setRowToDelete(null);
     }
   };
 
-<<<<<<< HEAD
-  if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
-
-
-  return (
-    <>
-      <div className="p-6 min-h-screen">
-        <LinkAsButton href={`/oasis/${listId}`} className="btn">
-          Back
-        </LinkAsButton>
-
-        <div className="flex flex-col mt-4 gap-3">
-          {/* rename UI */}
-          <div className="flex items-center gap-2">
-            <input
-              className="border p-2 rounded min-w-[260px]"
-              placeholder="Oasis name"
-              value={listName}
-              onChange={(e) => setListName(e.target.value)}
-            />
-            <Button onClick={handleRename} disabled={renaming}>
-              {renaming ? "Renaming..." : "Rename"}
-            </Button>
-          </div>
-
-          <h1 className="text-xl font-bold">Edit Oasis — Word List</h1>
-
-          <div className="mb-4 flex gap-2">
-            <Button onClick={addRow}>+ Add Entry</Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-
-          <div className="border rounded">
-            <div className="grid grid-cols-12 gap-2 p-2 font-semibold border-b">
-              <div className="col-span-3">Target Language</div>
-              <div className="col-span-3">English</div>
-              <div className="col-span-5">Notes</div>
-              <div className="col-span-1 text-right">Actions</div>
-            </div>
-
-            {items.length === 0 && (
-              <div className="p-3 text-sm text-gray-500">
-                No entries yet. Click “Add Entry”.
-              </div>
-            )}
-
-            {items.map((item) => (
-              <div key={item.id} className="grid grid-cols-12 gap-2 p-2 border-b">
-                <input
-                  className="col-span-3 border p-2"
-                  placeholder="こんにちは"
-                  value={item.target}
-                  onChange={(e) => updateField(item.id, "target", e.target.value)}
-                />
-                <input
-                  className="col-span-3 border p-2"
-                  placeholder="hello"
-                  value={item.english}
-                  onChange={(e) => updateField(item.id, "english", e.target.value)}
-                />
-                <input
-                  className="col-span-5 border p-2"
-                  placeholder="Any notes (e.g., part of speech, hints)"
-                  value={item.notes ?? ""}
-                  onChange={(e) => updateField(item.id, "notes", e.target.value)}
-                />
-                <div className="col-span-1 flex items-center justify-end">
-                  <Button className="destructive" onClick={() => handleDeleteClick(item.id)}>
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-=======
   // Keyboard shortcuts: ⌘/Ctrl+S = Save, ⌘/Ctrl+B = Add Entry
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -206,7 +91,9 @@ export default function EditOasisPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [saving, items]);
+  }, [saving, items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
 
   return (
     <>
@@ -350,7 +237,7 @@ export default function EditOasisPage() {
 
               {items.length === 0 && !loading && (
                 <div className="p-4 text-sm text-white/80">
-                  No entries yet. Click <span className="font-semibold">“ + Add Entry”</span>.
+                  No entries yet. Click <span className="font-semibold">“+ Add Entry”</span>.
                 </div>
               )}
 
@@ -402,7 +289,6 @@ export default function EditOasisPage() {
             <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
             <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
           </p>
->>>>>>> d9bec2f (UI update)
         </div>
       </div>
 
@@ -415,8 +301,4 @@ export default function EditOasisPage() {
       />
     </>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d9bec2f (UI update)

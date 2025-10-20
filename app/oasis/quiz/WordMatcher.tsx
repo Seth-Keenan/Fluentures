@@ -75,7 +75,7 @@ export default function WordMatcher() {
       setPairedData((prev) => [...prev, match]);
       setSelectedWord(null);
     } else {
-      // wrong -> shake that tile
+      // wrong: shake that tile
       setWrongKey(`${match.knownLanguage}-${match.targetLanguage}-${Date.now()}`);
       setSelectedWord(null);
       setTimeout(() => setWrongKey(null), 350);

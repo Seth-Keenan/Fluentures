@@ -132,7 +132,6 @@ export default function Quiz() {
 
         {/* Selection or Active Quiz */}
         {selectedQuiz === null ? (
-          // --- Selector Grid ---
           <motion.div
             variants={container}
             initial="hidden"

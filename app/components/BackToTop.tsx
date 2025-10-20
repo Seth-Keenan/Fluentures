@@ -4,7 +4,7 @@ import { motion, useReducedMotion, useScroll, useMotionValueEvent } from "framer
 import { useEffect, useState } from "react";
 
 export default function BackToTop({
-  threshold = 300,         // when to show (px scrolled)
+  threshold = 300,
   className = "",
 }: {
   threshold?: number;
@@ -18,7 +18,6 @@ export default function BackToTop({
     setVisible(latest > threshold);
   });
 
-  // Fallback in case framer events don’t fire on very fast loads
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > threshold);
     onScroll();
@@ -48,7 +47,7 @@ export default function BackToTop({
       animate={visible ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.9, y: 12 }}
       transition={{ duration: 0.25 }}
     >
-      {/* Up arrow (SVG so no extra deps) */}
+      {/* Up arrow */}
       <svg width="18" height="18" viewBox="0 0 24 24" className="inline-block mr-2">
         <path fill="currentColor" d="M12 5l7 7-1.4 1.4L13 9.8V20h-2V9.8L6.4 13.4 5 12z" />
       </svg>

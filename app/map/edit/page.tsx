@@ -34,15 +34,12 @@ const STORAGE_KEY_3D = "fluentures.oases.3d";
 const STORAGE_KEY_PACKETS = "fluentures.packets";
 const MODEL_URL = "/oasis.glb";
 
-/* ---------------- helpers ---------------- */
-
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto)
     return crypto.randomUUID();
   return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// Simple grid to avoid overlap for the Add button
 function autoPosition(index: number): Vec3 {
   const spacing = 3;
   const cols = 5;
@@ -50,8 +47,6 @@ function autoPosition(index: number): Vec3 {
   const col = index % cols;
   return [col * spacing, 0, row * spacing] as Vec3;
 }
-
-/* ---------------- 3D pieces ---------------- */
 
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(MODEL_URL, true);

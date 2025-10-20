@@ -83,7 +83,6 @@ export default function StoryPage() {
     const historyForApi: HistoryItem[] = apiHistory.length === 0 ? seededContext : apiHistory;
 
     const modelReply = await sendStoryChat(currentInput, historyForApi);
-    // Normalize reply to a string
     const replyText =
       typeof modelReply === "string" ? modelReply : modelReply?.text ?? null;
 
