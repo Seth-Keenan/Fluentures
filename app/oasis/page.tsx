@@ -30,7 +30,6 @@ const item: Variants = {
   },
 };
 
-// Utility: is this a “technical-looking” id (hex/uuid-ish)? If so, don’t surface it in UI
 const looksOpaqueId = (v: string) =>
   !!v &&
   /^(?:[0-9a-f]{12,}|[0-9a-f-]{12,}|[a-z0-9]{16,})$/i.test(v);
@@ -43,8 +42,6 @@ export default function OasisHubPage() {
   const oasisId = search?.get("id") ?? "";
   const hideId = looksOpaqueId(oasisId);
 
-  // If the id looks like a human-friendly label (e.g., "Spanish A2"), show it;
-  // otherwise keep the title clean.
   const oasisTitle = useMemo(() => {
     if (!oasisId) return "Your Oasis";
     return hideId ? "Oasis" : `Oasis – ${oasisId}`;

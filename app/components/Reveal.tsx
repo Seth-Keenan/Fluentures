@@ -4,7 +4,6 @@
 import { motion, useAnimation, useInView, type Variants } from "framer-motion";
 import { useEffect, useRef } from "react";
 
-/** Default fade-up with slight blur */
 export const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 24, filter: "blur(6px)" },
   show: {
@@ -15,15 +14,11 @@ export const fadeInUp: Variants = {
   },
 };
 
-/**
- * Reveal: plays animation when in view, resets to hidden when out of view,
- * so it can play again next time it enters.
- */
 export function Reveal({
   children,
   variants = fadeInUp,
   className,
-  amount = 0.25, // 0..1 portion of element that must be visible
+  amount = 0.25,
 }: {
   children: React.ReactNode;
   variants?: Variants;
@@ -31,12 +26,12 @@ export function Reveal({
   amount?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount }); // ⬅️ removed `margin` to avoid TS error
+  const inView = useInView(ref, { amount });
   const controls = useAnimation();
 
   useEffect(() => {
     if (inView) controls.start("show");
-    else controls.start("hidden"); // reset to allow replay
+    else controls.start("hidden");
   }, [inView, controls]);
 
   return (
@@ -46,7 +41,6 @@ export function Reveal({
   );
 }
 
-/** Container that staggers its children; also resets when leaving view. */
 export function RevealSection({
   children,
   delay = 0.08,
@@ -59,7 +53,7 @@ export function RevealSection({
   amount?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount }); // ⬅️ removed `margin` here as well
+  const inView = useInView(ref, { amount });
   const controls = useAnimation();
 
   useEffect(() => {

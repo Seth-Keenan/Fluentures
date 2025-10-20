@@ -28,7 +28,6 @@ type Oasis3D = {
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 const MODEL_URL = "/oasis.glb";
 
-/* -------------------- 3D Model -------------------- */
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(MODEL_URL, true);
   // Clone to avoid shared mutations between instances
@@ -36,7 +35,6 @@ function OasisModel({ scale = 1 }: { scale?: number }) {
   return <primitive object={scene} scale={scale} />;
 }
 
-/* -------------------- Instance (clickable) -------------------- */
 function OasisInstance({
   data,
   onOpen,
@@ -84,7 +82,6 @@ function OasisInstance({
   );
 }
 
-/* -------------------- Page -------------------- */
 export default function Page() {
   const router = useRouter();
   const [instances, setInstances] = useState<Oasis3D[]>([]);

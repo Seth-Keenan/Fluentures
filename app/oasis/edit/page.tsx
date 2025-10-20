@@ -72,7 +72,6 @@ export default function EditOasisPage() {
     }
   };
 
-  // Keyboard shortcuts: ⌘/Ctrl+S = Save, ⌘/Ctrl+B = Add Entry
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {

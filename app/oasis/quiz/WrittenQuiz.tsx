@@ -11,7 +11,7 @@ import {
 } from "react";
 import { motion, type Variants } from "framer-motion";
 
-// Demo words
+// examples
 const WORDS = [
   { target: "りんご", english: "apple" },
   { target: "ねこ", english: "cat" },
@@ -44,16 +44,13 @@ const rowIn: Variants = {
 };
 
 export default function WrittenQuiz() {
-  // mounting guard (avoids hydration blips)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // setup
   const [mode, setMode] = useState<Mode>("en-to-target");
   const [count, setCount] = useState(5);
   const [started, setStarted] = useState(false);
 
-  // quiz state
   const [idx, setIdx] = useState(0);
   const [quizWords, setQuizWords] = useState<typeof WORDS>([]);
   const [input, setInput] = useState("");
@@ -61,7 +58,6 @@ export default function WrittenQuiz() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
 
-  // extras
   const [example, setExample] = useState<string | null>(null);
   const [genLoading, setGenLoading] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
@@ -114,7 +110,7 @@ export default function WrittenQuiz() {
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [submitted, idx, quizWords.length]);
 
-  // ENTER = submit or next
+  // submit or next
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return;

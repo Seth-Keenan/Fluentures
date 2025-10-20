@@ -16,14 +16,12 @@ const navLinks = [
   { href: "/contacts", label: "Contacts" },
 ];
 
-// Tailwind utility classes for our CTA variants (no nested <button>)
 const baseBtn =
   "rounded-lg px-4 py-2 relative overflow-hidden select-none focus:outline-none focus:ring-2 focus:ring-white/60";
 const primaryBtn = "!bg-amber-500 hover:!bg-amber-400 text-white shadow-md";
 const ghostBtn =
   "bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/30";
 
-// Shimmer overlay element
 function Shine() {
   return (
     <span
@@ -96,7 +94,6 @@ export default function Navbar() {
     );
   };
 
-  // Logo micro-interaction (note: <Link> wraps a motion container, not a button)
   const Logo = (
     <Link
       href={user ? "/home" : "/"}
@@ -171,7 +168,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/* NEW: Home (shows only when logged in) */}
+                {/* Home (shows only when logged in) */}
                 <Link href="/home" className="inline-block">
                   <motion.span
                     className={`group inline-flex ${baseBtn} ${ghostBtn}`}
@@ -200,7 +197,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile: hamburger */}
+          {/* Mobile */}
           <motion.button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}

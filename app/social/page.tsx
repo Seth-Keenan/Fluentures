@@ -53,7 +53,6 @@ const item: Variants = {
   },
 };
 
-// ---------- helpers ----------
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -93,20 +92,16 @@ function avatarGradient(seed: string) {
 export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
 
-  // pretend current user
   const [me] = useState("You");
 
-  // posts state
   const [posts, setPosts] = useState<Post[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "liked" | "mine">("all");
   const [tagFilter, setTagFilter] = useState<string>("");
 
-  // composer
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
 
-  // friends state
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendSearch, setFriendSearch] = useState("");
   const [adding, setAdding] = useState(false);
@@ -114,20 +109,17 @@ export default function CommunityPage() {
   const [newStatus, setNewStatus] = useState<Friend["status"]>("Online");
   const [newNote, setNewNote] = useState("");
 
-  // on mount, load localStorage
   useEffect(() => {
     setPosts(loadPosts());
     setFriends(loadFriends());
   }, []);
 
-  // derived tags
   const allTags = useMemo(() => {
     const s = new Set<string>();
     posts.forEach((p) => p.tags.forEach((t) => s.add(t)));
     return Array.from(s).sort();
   }, [posts]);
 
-  // filtered posts
   const filtered = useMemo(() => {
     let arr = posts.slice().sort((a, b) => b.createdAt - a.createdAt);
     if (filter === "liked") arr = arr.filter((p) => p.liked);
@@ -140,7 +132,6 @@ export default function CommunityPage() {
     return arr;
   }, [posts, filter, tagFilter, query, me]);
 
-  // friends filtered
   const filteredFriends = useMemo(() => {
     let arr = friends.slice().sort((a, b) => a.name.localeCompare(b.name));
     if (friendSearch.trim()) {
@@ -155,7 +146,6 @@ export default function CommunityPage() {
     return arr;
   }, [friends, friendSearch]);
 
-  // posts actions
   function createPost() {
     if (!text.trim()) return;
     const tlist = tags
@@ -209,7 +199,6 @@ export default function CommunityPage() {
     savePosts(next);
   }
 
-  // friends actions
   function addFriend() {
     if (!newName.trim()) return;
     const f: Friend = {
@@ -479,8 +468,6 @@ export default function CommunityPage() {
     </div>
   );
 }
-
-/* ---------- Subcomponents ---------- */
 
 function Filters({
   filter,
