@@ -16,6 +16,15 @@ vi.mock("@/app/components/LinkAsButton", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+
+
 describe("HomePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
