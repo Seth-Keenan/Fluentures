@@ -1,7 +1,7 @@
 // UpdatePasswordPage.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import UpdatePasswordPage from './page'
+import UpdatePasswordPage from './UpdatePasswordPage'
 
 
 // Mock supabase client

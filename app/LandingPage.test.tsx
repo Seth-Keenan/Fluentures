@@ -10,7 +10,7 @@ vi.mock("./components/LinkAsButton", () => ({
   ),
 }));
 
-import Home from "./page";
+import Home from "./LandingPage";
 
 describe("Landing Page", () => {
   beforeEach(() => {

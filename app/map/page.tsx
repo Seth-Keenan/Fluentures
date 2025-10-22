@@ -1,6 +1,5 @@
 import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 import { LinkAsButton } from "../components/LinkAsButton";
-import { motion } from "framer-motion";
 import AnimatedBackground from "./AnimatedBackground";
 import CenterPanel from "./CenterPanel";
 
