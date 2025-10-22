@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useListId } from "@/app/lib/hooks/useListId";
 import { motion, useReducedMotion } from "framer-motion";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { Button } from "@/app/components/Button";
@@ -9,10 +10,9 @@ import type { WordItem } from "@/app/types/wordlist";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 
 export default function EditOasisPage() {
+  const listId = useListId();   // from the URL
   const [items, setItems] = useState<WordItem[]>([]);
   const [saving, setSaving] = useState(false);
-
-  // state for confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export default function EditOasisPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const data = await getWordlist();
+      const data = await getWordlist(listId); // <-- use list id
       setItems(data);
       setLoading(false);
       setLastSavedJSON(JSON.stringify(data));
@@ -34,7 +34,7 @@ export default function EditOasisPage() {
 
   const addRow = () => {
     const id =
-      typeof crypto !== "undefined" && (crypto as any).randomUUID
+      typeof crypto !== "undefined" && "randomUUID" in (crypto as any)
         ? (crypto as any).randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setItems((prev) => [...prev, { id, target: "", english: "", notes: "" }]);
@@ -48,11 +48,16 @@ export default function EditOasisPage() {
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
   };
 
-  const isDirty = useMemo(() => JSON.stringify(items) !== lastSavedJSON, [items, lastSavedJSON]);
+  const deleteRowLocal = (id: string) => {
+    setItems((prev) => prev.filter((x) => x.id !== id));
+  };
 
   const save = async () => {
     setSaving(true);
-    const ok = await saveWordlist(items);
+    const cleaned = items.filter(
+      (i) => i.target?.trim() || i.english?.trim() || i.notes?.trim()
+    );
+    const ok = await saveWordlist(listId, cleaned);
     setSaving(false);
     setLastMessage(ok ? "✅ Saved changes" : "❌ Failed to save");
     if (ok) setLastSavedJSON(JSON.stringify(items));
@@ -72,6 +77,7 @@ export default function EditOasisPage() {
     }
   };
 
+  // Keyboard shortcuts: ⌘/Ctrl+S = Save, ⌘/Ctrl+B = Add Entry
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
@@ -85,7 +91,10 @@ export default function EditOasisPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [saving, items]);
+  }, [saving, items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
+
 
   return (
     <>
@@ -229,7 +238,7 @@ export default function EditOasisPage() {
 
               {items.length === 0 && !loading && (
                 <div className="p-4 text-sm text-white/80">
-                  No entries yet. Click <span className="font-semibold">“ + Add Entry”</span>.
+                  No entries yet. Click <span className="font-semibold">“+ Add Entry”</span>.
                 </div>
               )}
 

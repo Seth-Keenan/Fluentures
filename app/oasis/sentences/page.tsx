@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useOasis } from "@/app/context/OasisContext";
@@ -143,6 +145,12 @@ export default function SentencesPage() {
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
 
+<<<<<<< HEAD
+      <div className="flex flex-row gap-6">
+        {/* LEFT: Sentences List */}
+        <div className="flex flex-col flex-1">
+          <h1 className="text-xl font-bold mb-2">Example Sentences - Oasis {oasisId}</h1>
+=======
       {/* Aurora blobs */}
       <motion.div
         aria-hidden
@@ -164,6 +172,7 @@ export default function SentencesPage() {
         animate={prefersReducedMotion ? { x: 0, y: 0 } : { y: [0, -16, 0], x: [0, -10, 0] }}
         transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
       />
+>>>>>>> d9bec2f (UI update)
 
       {/* Grain + contrast veil */}
       <div
