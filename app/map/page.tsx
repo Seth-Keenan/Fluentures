@@ -26,6 +26,9 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 type Vec3 = [number, number, number];
 
+// Oasis instance saved to localStorage and rendered into the scene.
+// "position" & "rotation" place each oasis; "scale" sets model size.
+// "title" is the on‑screen HTML label above the model.
 type Oasis3D = {
   id: string;
   position: Vec3;
@@ -114,7 +117,13 @@ function DesertBackground({
   );
 }
 
-/* ---------------- Oasis model & instance ---------------- */
+/* ---------------- Oasis model & instance ---------------- 
+* OasisInstance: clickable wrapper that:
+* - draws an invisible, larger hitbox for easier clicking
+* - renders the model itself
+* - shows a floating HTML label above the model
+* Clicking navigates to the oasis detail route via onOpen(id).
+*/
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(OASIS_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -168,7 +177,11 @@ function OasisInstance({
   );
 }
 
-/* ---------------- Pan limiter ->frame-based.   ---------------- */
+/* ---------------- Pan limiter ->frame-based.   ---------------- 
+* Runs every frame, clamps OrbitControls.target to a rectangular region so the
+* user can't pan the camera outside the intended sand area. If the target is
+* clamped, the camera position is shifted by the same offset*/
+
 function PanLimiter({
   controls,
   bounds,
@@ -196,6 +209,7 @@ function PanLimiter({
 }
 
 /* ---------------- OrbitControls wrapper ---------------- */
+// affects how the camera can be moved 
 function ControlsWithLimits({
   controlsRef,
   bounds,
@@ -224,6 +238,8 @@ function ControlsWithLimits({
 }
 
 /* ---------------- Arrow pad  ---------------- */
+//* - step: how far each tap tries to move in world units (before clamping)
+// - duration: how long the glide animation takes (ms)
 function GlideControlsUI({
   controlsRef,
   bounds,
@@ -323,6 +339,7 @@ function GlideControlsUI({
 }
 
 /* ---------------- Page ---------------- */
+// current -> camera position is set in <Canvas camera={position:[9,7,9], fov:46}>.
 export default function Page() {
   const router = useRouter();
   const [instances, setInstances] = useState<Oasis3D[]>([]);
