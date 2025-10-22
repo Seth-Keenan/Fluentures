@@ -8,7 +8,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-<<<<<<< HEAD
   useLayoutEffect,
 } from "react";
 import * as THREE from "three";
@@ -21,17 +20,9 @@ import {
   Environment,
   ContactShadows,
 } from "@react-three/drei";
-=======
-} from "react";
-import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Html, useGLTF } from "@react-three/drei";
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
 import { motion, type Variants } from "framer-motion";
 import { LinkAsButton } from "../../components/LinkAsButton";
 import CreateTestOasisButton from "./CreateOasisAndEditButton";
-
-
 
 type Vec3 = [number, number, number];
 
@@ -52,8 +43,6 @@ type Packet = {
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 const STORAGE_KEY_PACKETS = "fluentures.packets";
 
-<<<<<<< HEAD
-// Your assets
 const OASIS_URL = "/blenderModels/oasis2.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
 
@@ -74,24 +63,24 @@ function DesertBackground({
   const groupRef = useRef<THREE.Group>(null);
 
   useLayoutEffect(() => {
-    // measure unscaled
+    // reset
     clone.position.set(0, 0, 0);
     clone.rotation.set(0, 0, 0);
     clone.scale.setScalar(1);
     clone.updateMatrixWorld(true);
 
+    // measure unscaled width
     const box = new THREE.Box3().setFromObject(clone);
     const baseWidth = box.getSize(new THREE.Vector3()).x;
 
-    // uniform scale to fit target
+    // uniform scale to fit target width
     const s = targetWidth && baseWidth > 0 ? (targetWidth / baseWidth) * scale : scale;
     clone.scale.setScalar(s);
     clone.updateMatrixWorld(true);
 
-    // after scaling, snaps to the bottom y axis
+    // snap to ground
     const box2 = new THREE.Box3().setFromObject(clone);
     clone.position.y += -box2.min.y;
-
     clone.updateMatrixWorld(true);
   }, [clone, scale, targetWidth]);
 
@@ -100,20 +89,19 @@ function DesertBackground({
       <primitive object={clone} />
     </group>
   );
-=======
-function makeId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
-    return crypto.randomUUID();
-  return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/* ---------------- Helpers ---------------- */
+function makeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
 function autoPosition(index: number): Vec3 {
   const spacing = 3;
   const cols = 5;
   const row = Math.floor(index / cols);
   const col = index % cols;
   return [col * spacing, 0, row * spacing] as Vec3;
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
 }
 
 /* ---------------- Models & Instances ---------------- */
@@ -123,15 +111,12 @@ function OasisModel({ scale = 1 }: { scale?: number }) {
   return <primitive object={scene} scale={scale} />;
 }
 
-// Invisible plane used ONLY for click-to-place, not for visuals
+// Invisible plane used ONLY for click-to-place (avoid z-fighting with small y-offset)
 function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-<<<<<<< HEAD
       position={[0, 0.02, 0]}
-=======
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
       onClick={(e) => {
         e.stopPropagation();
         const p = e.point;
@@ -140,15 +125,8 @@ function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
       receiveShadow
       visible={false}
     >
-<<<<<<< HEAD
       <planeGeometry args={[2000, 2000]} />
       <meshStandardMaterial transparent opacity={0} />
-=======
-      {/* Big plane you can click to place */}
-      <planeGeometry args={[220, 220]} />
-      {/* Warm, sandy tone */}
-      <meshStandardMaterial color="#efe5d1" />
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
     </mesh>
   );
 }
@@ -169,7 +147,6 @@ function OasisInstance({
   // Gentle bob + selection pulse
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-<<<<<<< HEAD
     const bobStrength = 0.03;
     const scaleLift = hovered ? 1.04 : 1.0;
     if (groupRef.current) {
@@ -179,13 +156,6 @@ function OasisInstance({
         baseY + Math.sin(t * 1.2) * bobStrength,
         data.position[2]
       );
-=======
-    const bobStrength = 0.03; // set to 0 to disable bob
-    const scaleLift = hovered ? 1.04 : 1.0;
-    if (groupRef.current) {
-      const baseY = data.position[1];
-      groupRef.current.position.y = baseY + Math.sin(t * 1.2) * bobStrength;
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
       groupRef.current.scale.setScalar(data.scale * scaleLift);
     }
     if (ringRef.current) {
@@ -233,23 +203,13 @@ function OasisInstance({
       {/* Pulsing selection ring */}
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
         <ringGeometry args={[0.95 * data.scale, 1.25 * data.scale, 48]} />
-<<<<<<< HEAD
         <meshBasicMaterial color="#ffffff" transparent opacity={0.0} />
-=======
-        <meshBasicMaterial color="#0f766e" transparent opacity={0.0} />
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
       </mesh>
     </group>
   );
 }
 
-<<<<<<< HEAD
-
 /* ---------------- UI animation ---------------- */
-=======
-/* ---------------- UI animation ---------------- */
-
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
 const panelIn: Variants = {
   hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
   show: {
@@ -261,26 +221,7 @@ const panelIn: Variants = {
   },
 };
 
-<<<<<<< HEAD
-/* ---------------- Helpers ---------------- */
-function makeId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
-    return crypto.randomUUID();
-  return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-function autoPosition(index: number): Vec3 {
-  const spacing = 3;
-  const cols = 5;
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  return [col * spacing, 0, row * spacing] as Vec3;
-}
-
 /* ---------------- Page ---------------- */
-=======
-/* ---------------- Page ---------------- */
-
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
 export default function EditPage() {
   const [instances, setInstances] = useState<Oasis3D[]>([]);
   const [packets, setPackets] = useState<Record<string, Packet>>({});
@@ -430,21 +371,13 @@ export default function EditPage() {
                 Edit Map
               </h1>
               <p className="text-sm text-white/90">
-<<<<<<< HEAD
                 Click the desert to place an oasis · Select one and press{" "}
-=======
-                Click the ground to place an oasis · Select one and press{" "}
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
                 <kbd className="rounded bg-white/20 px-1">Del</kbd> to remove
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-<<<<<<< HEAD
               <CreateTestOasisButton />
-
-=======
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
               <LinkAsButton
                 href="/map"
                 className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 px-4 py-2 shadow-md ring-1 ring-white/40 transition"
@@ -508,43 +441,10 @@ export default function EditPage() {
                 ✨ Clear All
               </button>
             </div>
-<<<<<<< HEAD
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={addOasis}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition active:scale-[0.98]"
-                title="Add an oasis on the grid"
-              >
-                ➕ Add Oasis
-              </button>
-
-              <button
-                onClick={removeSelected}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-400 shadow-md transition disabled:opacity-50 active:scale-[0.98]"
-                disabled={!selectedId}
-              >
-                🗑 Delete Selected
-              </button>
-
-              <button
-                onClick={clearAll}
-                className="rounded-xl px-4 py-2 text-sm font-semibold bg-white/80 hover:bg-white shadow-md ring-1 ring-black/10 transition disabled:opacity-50 active:scale-[0.98]"
-                disabled={!instances.length}
-              >
-                ✨ Clear All
-              </button>
-            </div>
           </div>
         </motion.section>
 
         {/* Canvas panel */}
-=======
-          </div>
-        </motion.section>
-
-        {/* Canvas */}
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
         <motion.section
           variants={panelIn}
           initial="hidden"
@@ -552,7 +452,6 @@ export default function EditPage() {
           className="overflow-hidden rounded-2xl border border-white/30 bg-white/25 backdrop-blur-xl shadow-2xl"
         >
           <div className="relative h-[72vh]">
-<<<<<<< HEAD
             <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.18)]" />
             <Canvas shadows camera={{ position: [10, 8, 10], fov: 46, near: 0.1, far: 200 }}>
               {/* Scene mood */}
@@ -583,7 +482,7 @@ export default function EditPage() {
               />
               <directionalLight position={[-10, 6, -6]} intensity={0.25} />
 
-              {/* Your GLB desert */}
+              {/* GLB desert */}
               <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
                 <DesertBackground position={[0, 0, 0]} rotation={[0, 0, 0]} scale={1} targetWidth={60} />
               </Suspense>
@@ -592,23 +491,6 @@ export default function EditPage() {
               <Ground onPlace={placeOasisAtPoint} />
 
               {/* Oases */}
-=======
-            {/* subtle vignette */}
-            <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.18)]" />
-            <Canvas shadows camera={{ position: [8, 8, 8], fov: 46 }}>
-              {/* soft background inside canvas */}
-              <color attach="background" args={["#f8f6ef"]} />
-              <ambientLight intensity={0.65} />
-              <directionalLight
-                position={[10, 12, 6]}
-                intensity={1.1}
-                castShadow
-                shadow-mapSize={[2048, 2048]}
-              />
-
-              <Ground onPlace={placeOasisAtPoint} />
-
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
               <Suspense fallback={null}>
                 {instances.map((o) => (
                   <OasisInstance
@@ -620,7 +502,6 @@ export default function EditPage() {
                 ))}
               </Suspense>
 
-<<<<<<< HEAD
               {/* Shadows + controls */}
               <ContactShadows position={[0, 0, 0]} scale={50} blur={2.4} opacity={0.5} far={15} />
               <OrbitControls
@@ -631,9 +512,6 @@ export default function EditPage() {
                 maxDistance={40}
                 maxPolarAngle={Math.PI / 2.05}
               />
-=======
-              <OrbitControls makeDefault />
->>>>>>> 4ebb74fb991dee3e1cfc2538fea7376cbc4e2795
             </Canvas>
           </div>
         </motion.section>
@@ -641,7 +519,6 @@ export default function EditPage() {
     </div>
   );
 }
-
 
 useGLTF.preload(OASIS_URL);
 useGLTF.preload(DESERT_URL);
