@@ -320,7 +320,6 @@ export default function EditPage() {
     });
     setSelectedId(null);
   }, [selectedId]);
-  }, [selectedId]);
 
   const clearAll = () => {
     setInstances([]);
@@ -396,31 +395,6 @@ export default function EditPage() {
         </motion.div>
       </header>
 
-      <main className="relative z-10 mx-auto mt-4 w-[min(92vw,80rem)] space-y-4">
-        {/* Controls */}
-        <motion.section
-          variants={panelIn}
-          initial="hidden"
-          animate="show"
-          className="rounded-2xl border border-white/30 bg-white/35 backdrop-blur-xl p-4 shadow-xl"
-        >
-          <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
-            {/* Scale */}
-            <div>
-              <label className="block text-sm font-semibold text-white">
-                Scale (for new oases)
-              </label>
-              <input
-                type="range"
-                min={0.2}
-                max={3}
-                step={0.05}
-                value={scale}
-                onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="mt-2 w-56 accent-emerald-700"
-              />
-              <div className="mt-1 text-xs text-white/90">{scale.toFixed(2)}×</div>
-            </div>
       <main className="relative z-10 mx-auto mt-4 w-[min(92vw,80rem)] space-y-4">
         {/* Controls */}
         <motion.section
@@ -577,6 +551,7 @@ export default function EditPage() {
     </div>
   );
 }
+
 
 useGLTF.preload(OASIS_URL);
 useGLTF.preload(DESERT_URL);
