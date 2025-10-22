@@ -1,11 +1,18 @@
 "use client";
 
 import { Button } from "@/app/components/Button";
-import { useEffect, useState } from "react";
 import { requestQuizSentence } from "@/app/lib/actions/geminiQuizAction";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { motion, type Variants } from "framer-motion";
 
-// Simulated word list (target language: Japanese)
-const wordList = [
+// Demo words
+const WORDS = [
   { target: "りんご", english: "apple" },
   { target: "ねこ", english: "cat" },
   { target: "みず", english: "water" },
@@ -15,182 +22,369 @@ const wordList = [
 
 type Mode = "en-to-target" | "target-to-en";
 
-export default function QuizPage() {
-  const [mode, setMode] = useState<Mode>("en-to-target");
-  const [questionCount, setQuestionCount] = useState(5);
-  const [quizStarted, setQuizStarted] = useState(false);
+const cardIn: Variants = {
+  hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { duration: 0.45, ease: "easeOut" },
+  },
+};
 
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+const rowIn: Variants = {
+  hidden: { opacity: 0, y: 10, filter: "blur(4px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.3 },
+  },
+};
+
+export default function WrittenQuiz() {
+  // mounting guard (avoids hydration blips)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // setup
+  const [mode, setMode] = useState<Mode>("en-to-target");
+  const [count, setCount] = useState(5);
+  const [started, setStarted] = useState(false);
+
+  // quiz state
+  const [idx, setIdx] = useState(0);
+  const [quizWords, setQuizWords] = useState<typeof WORDS>([]);
   const [input, setInput] = useState("");
-  const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
 
-  const [quizWords, setQuizWords] = useState<typeof wordList>([]);
-
-  const [exampleSentence, setExampleSentence] = useState<string | null>(null);
-  const [sentenceLoading, setSentenceLoading] = useState(false);
-
-  const [mounted, setMounted] = useState(false);
+  // extras
+  const [example, setExample] = useState<string | null>(null);
+  const [genLoading, setGenLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (started) setTimeout(() => inputRef.current?.focus(), 60);
+  }, [started, idx]);
 
-  if (!mounted) {
-    return <p className="p-6">Loading...</p>;
-  }
+  const current = quizWords[idx];
+  const prompt = useMemo(() => {
+    if (!current) return "";
+    return mode === "en-to-target" ? current.english : current.target;
+  }, [current, mode]);
+  const correctAnswer = useMemo(() => {
+    if (!current) return "";
+    return mode === "en-to-target" ? current.target : current.english;
+  }, [current, mode]);
 
-  const startQuiz = () => {
-    const shuffled = [...wordList].sort(() => Math.random() - 0.5);
-    setQuizWords(shuffled.slice(0, questionCount));
-    setCurrentQuestion(0);
+  const startQuiz = useCallback(() => {
+    const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
+    setQuizWords(shuffled.slice(0, count));
+    setIdx(0);
     setScore(0);
     setInput("");
-    setAnswerSubmitted(false);
+    setSubmitted(false);
     setIsCorrect(null);
-    setExampleSentence(null);
-    setQuizStarted(true);
-  };
+    setExample(null);
+    setStarted(true);
+  }, [count]);
 
-  const checkAnswer = () => {
-    const current = quizWords[currentQuestion];
-    const correctAnswer = mode === "en-to-target" ? current.target : current.english;
-    const isRight = input.trim() === correctAnswer;
-    setIsCorrect(isRight);
-    setAnswerSubmitted(true);
-    if (isRight) setScore((prev) => prev + 1);
-  };
+  const onSubmit = useCallback(() => {
+    if (!started || submitted || !current) return;
+    const right = input.trim() === correctAnswer;
+    setIsCorrect(right);
+    setSubmitted(true);
+    if (right) setScore((s) => s + 1);
+    else setShakeKey((k) => k + 1); // shake on wrong
+  }, [started, submitted, current, input, correctAnswer]);
 
-  const nextQuestion = () => {
-    setCurrentQuestion((prev) => prev + 1);
+  const onNext = useCallback(() => {
+    if (!submitted) return;
+    const next = idx + 1;
+    if (next >= quizWords.length) return;
+    setIdx(next);
     setInput("");
-    setAnswerSubmitted(false);
+    setSubmitted(false);
     setIsCorrect(null);
-    setExampleSentence(null);
-  };
+    setExample(null);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [submitted, idx, quizWords.length]);
 
-  const getSentence = async () => {
-    setSentenceLoading(true);
-    setExampleSentence(null);
+  // ENTER = submit or next
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      if (!started) return;
+      if (!submitted) onSubmit();
+      else onNext();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [started, submitted, onSubmit, onNext]);
 
-    console.log("✅ Requesting example sentence (server will read settings from DB)");
+  const fetchSentence = useCallback(async () => {
+    if (!current) return;
+    try {
+      setGenLoading(true);
+      setExample(null);
+      const sentence = await requestQuizSentence(current.target);
+      setExample(sentence ?? "No example sentence available.");
+    } catch {
+      setExample("Could not generate a sentence right now.");
+    } finally {
+      setGenLoading(false);
+    }
+  }, [current]);
 
-    const word = quizWords[currentQuestion].target;
-    const sentence = await requestQuizSentence(word);
-    setExampleSentence(sentence ?? "No example sentence available.");
-    setSentenceLoading(false);
-  };
+  // finished
+  if (mounted && started && idx >= quizWords.length) {
+    const pct = quizWords.length
+      ? Math.round((score / quizWords.length) * 100)
+      : 0;
 
-  const restartQuiz = () => {
-    setQuizStarted(false);
-  };
-
-  if (quizStarted && currentQuestion >= quizWords.length) {
     return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">Quiz Complete!</h2>
-        <p className="mb-4">Your score: {score} / {quizWords.length}</p>
-        <button onClick={restartQuiz} className="bg-blue-500 text-white px-4 py-2 mr-2 rounded">Restart</button>
-        <button onClick={() => window.location.href = "/"} className="bg-gray-500 text-white px-4 py-2 rounded">Quit</button>
+      <div className="w-full flex items-center justify-center p-4">
+        <motion.div
+          variants={cardIn}
+          initial="hidden"
+          animate="show"
+          className="w-[min(92vw,42rem)] rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl"
+        >
+          <motion.h2
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-2xl sm:text-3xl font-semibold text-white text-center"
+          >
+            Quiz Complete!
+          </motion.h2>
+
+          <div className="mt-6 space-y-4 text-center text-white/90">
+            <div className="text-lg">
+              Score: <span className="font-semibold">{score}</span> / {quizWords.length}
+            </div>
+            <div className="text-sm text-white/80">Accuracy: {pct}%</div>
+
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/20 ring-1 ring-white/25">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.8 }}
+                className="h-full bg-amber-400"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <Button onClick={() => setStarted(false)}>Restart</Button>
+              <Button
+                onClick={() => (window.location.href = "/oasis")}
+                className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30"
+              >
+                Back to Oasis
+              </Button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
-  if (!quizStarted) {
+  // setup screen
+  if (!mounted || !started) {
     return (
-      <div className="flex flex-col p-6">
-        <h1 className="text-4xl font-bold mb-4">Start Your Quiz</h1>
-
-        <label htmlFor="question-count-select" className="block mb-2 font-bold">Number of Questions:</label>
-        <select
-          id="question-count-select"
-          value={questionCount}
-          onChange={(e) => setQuestionCount(Number(e.target.value))}
-          className="border p-2 mb-4"
+      <div className="w-full flex items-center justify-center p-4">
+        <motion.div
+          variants={cardIn}
+          initial="hidden"
+          animate="show"
+          className="w-[min(92vw,48rem)] rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl"
         >
-          {[5, 10, 15, 20].map((num) => (
-            <option key={num} value={num}>{num}</option>
-          ))}
-        </select>
+          <motion.h1
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-white text-2xl sm:text-3xl font-semibold text-center"
+          >
+            Start Your Quiz
+          </motion.h1>
 
-        <label htmlFor="mode-select" className="block mb-2 font-bold">Mode:</label>
-        <select
-          id="mode-select"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as Mode)}
-          className="border p-2 mb-4"
-        >
-          <option value="en-to-target">English → Target Language</option>
-          <option value="target-to-en">Target Language → English</option>
-        </select>
+          <motion.div
+            variants={rowIn}
+            initial="hidden"
+            animate="show"
+            className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
+            <div>
+              <label className="block text-sm text-white/85 mb-1">Number of Questions</label>
+              <select
+                value={count}
+                onChange={(e) => setCount(Number(e.target.value))}
+                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none"
+              >
+                {[5, 10, 15, 20].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <Button onClick={startQuiz}>Start Quiz</Button>
+            <div>
+              <label className="block text-sm text-white/85 mb-1">Mode</label>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as Mode)}
+                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none"
+              >
+                <option value="en-to-target">English → Target language</option>
+                <option value="target-to-en">Target language → English</option>
+              </select>
+            </div>
+          </motion.div>
+
+          <div className="mt-6 flex justify-center">
+            <Button onClick={startQuiz}>Start Quiz</Button>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
-  let current, prompt, correctAnswer;
-  if (quizStarted) {
-    current = quizWords[currentQuestion];
-    prompt = mode === "en-to-target" ? current.english : current.target;
-    correctAnswer = mode === "en-to-target" ? current.target : current.english;
-  }
+  // in-progress
+  const progressPct = quizWords.length
+    ? Math.round(((idx + (submitted ? 1 : 0)) / quizWords.length) * 100)
+    : 0;
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Question {currentQuestion + 1} / {quizWords.length}</h2>
-      <p className="mb-2">Translate: <span className="font-semibold">{prompt}</span></p>
+    <div className="w-full flex items-center justify-center p-4">
+      <motion.div
+        variants={cardIn}
+        initial="hidden"
+        animate="show"
+        className="w-[min(92vw,48rem)] rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-white/90">
+            <div className="text-sm">
+              Question {idx + 1} / {quizWords.length}
+            </div>
+            <div className="mt-1 h-2 w-48 overflow-hidden rounded-full bg-white/20 ring-1 ring-white/25">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.4 }}
+                className="h-full bg-amber-400"
+              />
+            </div>
+          </div>
 
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        disabled={answerSubmitted}
-        className={`border p-2 w-full mb-2 ${answerSubmitted && !isCorrect ? "border-red-500" : ""}`}
-      />
+          <div className="text-white/90 text-sm">
+            Score: <span className="font-semibold">{score}</span>
+          </div>
+        </div>
 
-      <div className="mb-4">
-        <button
-          onClick={checkAnswer}
-          disabled={answerSubmitted}
-          className="bg-green-500 text-white px-4 py-2 mr-2 rounded"
+        {/* Prompt */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mt-6 rounded-xl bg-white/90 p-4 text-center text-gray-900 ring-1 ring-white/30 shadow"
         >
-          Submit
-        </button>
+          <div className="text-sm text-gray-700">Translate</div>
+          <div className="mt-1 text-2xl font-semibold tracking-wide">{prompt}</div>
+        </motion.div>
 
-        <button
-          disabled={!answerSubmitted}
-          onClick={nextQuestion}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+        {/* Input with shake on wrong */}
+        <motion.div
+          key={shakeKey}
+          initial={false}
+          animate={
+            submitted && isCorrect === false
+              ? { x: [0, -8, 8, -6, 6, -3, 3, 0] }
+              : {}
+          }
+          transition={{ duration: 0.35 }}
+          className="mt-5"
         >
-          Next
-        </button>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={submitted}
+            className={[
+              "w-full rounded-xl bg-white/90 px-4 py-3 text-gray-900 ring-1 ring-white/30 shadow",
+              submitted && isCorrect === false ? "outline outline-2 outline-rose-400" : "",
+            ].join(" ")}
+            placeholder="Type your answer…"
+          />
+        </motion.div>
 
-        <button
-          onClick={getSentence}
-          disabled={sentenceLoading}
-          className="bg-purple-500 text-white px-4 py-2 rounded"
-        >
-          {sentenceLoading ? "Generating..." : "Sentence"}
-        </button>
-      </div>
+        {/* Actions */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Button onClick={onSubmit} disabled={submitted}>
+              Submit
+            </Button>
+            <Button
+              onClick={onNext}
+              disabled={!submitted}
+              className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30"
+            >
+              Next
+            </Button>
+          </div>
 
-      {answerSubmitted && (
-        <div className="mb-4">
-          {isCorrect ? (
-            <p className="text-green-600 font-semibold">Correct!</p>
-          ) : (
-            <p className="text-red-600">Incorrect. The correct answer is: <strong>{correctAnswer}</strong></p>
+          <Button
+            onClick={fetchSentence}
+            disabled={genLoading}
+            className="!bg-indigo-500 hover:!bg-indigo-400"
+          >
+            {genLoading ? "Generating…" : "Example sentence"}
+          </Button>
+        </div>
+
+        {/* Feedback */}
+        <div className="mt-3 min-h-[1.5rem]">
+          {submitted && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={
+                isCorrect
+                  ? "text-emerald-300 font-semibold"
+                  : "text-rose-300 font-medium"
+              }
+            >
+              {isCorrect ? "Correct! 🎉" : (
+                <>
+                  Incorrect. Correct answer:{" "}
+                  <span className="font-semibold">{correctAnswer}</span>
+                </>
+              )}
+            </motion.div>
           )}
         </div>
-      )}
 
-      {exampleSentence && (
-        <p className="italic text-gray-700 mb-4">Example: {exampleSentence}</p>
-      )}
-
-      <p>Score: {score} / {quizWords.length}</p>
+        {/* Example sentence */}
+        {example && (
+          <motion.p
+            variants={rowIn}
+            initial="hidden"
+            animate="show"
+            className="mt-4 rounded-xl bg-white/10 p-3 text-white/90 ring-1 ring-white/20"
+          >
+            <span className="text-white/70 mr-2">Example:</span>
+            {example}
+          </motion.p>
+        )}
+      </motion.div>
     </div>
   );
 }

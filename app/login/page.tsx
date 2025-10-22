@@ -47,6 +47,7 @@ export default function LoginPage() {
     const email = (form.get("username") as string) || "";
     const password = (form.get("password") as string) || "";
 
+    // get fname from Supabase for displaying first (full) name of user when sign up
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
