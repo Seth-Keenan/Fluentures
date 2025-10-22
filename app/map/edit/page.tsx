@@ -199,6 +199,7 @@ function OasisInstance({
   );
 }
 
+
 /* ---------------- UI animation ---------------- */
 const panelIn: Variants = {
   hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
@@ -319,6 +320,7 @@ export default function EditPage() {
     });
     setSelectedId(null);
   }, [selectedId]);
+  }, [selectedId]);
 
   const clearAll = () => {
     setInstances([]);
@@ -419,7 +421,58 @@ export default function EditPage() {
               />
               <div className="mt-1 text-xs text-white/90">{scale.toFixed(2)}×</div>
             </div>
+      <main className="relative z-10 mx-auto mt-4 w-[min(92vw,80rem)] space-y-4">
+        {/* Controls */}
+        <motion.section
+          variants={panelIn}
+          initial="hidden"
+          animate="show"
+          className="rounded-2xl border border-white/30 bg-white/35 backdrop-blur-xl p-4 shadow-xl"
+        >
+          <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
+            {/* Scale */}
+            <div>
+              <label className="block text-sm font-semibold text-white">
+                Scale (for new oases)
+              </label>
+              <input
+                type="range"
+                min={0.2}
+                max={3}
+                step={0.05}
+                value={scale}
+                onChange={(e) => setScale(parseFloat(e.target.value))}
+                className="mt-2 w-56 accent-emerald-700"
+              />
+              <div className="mt-1 text-xs text-white/90">{scale.toFixed(2)}×</div>
+            </div>
 
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={addOasis}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition active:scale-[0.98]"
+                title="Add an oasis on the grid"
+              >
+                ➕ Add Oasis
+              </button>
+
+              <button
+                onClick={removeSelected}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-400 shadow-md transition disabled:opacity-50 active:scale-[0.98]"
+                disabled={!selectedId}
+              >
+                🗑 Delete Selected
+              </button>
+
+              <button
+                onClick={clearAll}
+                className="rounded-xl px-4 py-2 text-sm font-semibold bg-white/80 hover:bg-white shadow-md ring-1 ring-black/10 transition disabled:opacity-50 active:scale-[0.98]"
+                disabled={!instances.length}
+              >
+                ✨ Clear All
+              </button>
+            </div>
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
               <button
