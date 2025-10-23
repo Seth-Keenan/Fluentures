@@ -133,6 +133,7 @@ export default function HomePage() {
                 <LinkAsButton
                   href={d.href}
                   className="
+                    cursor-pointer
                     group relative w-full overflow-hidden justify-between items-center
                     rounded-2xl px-5 py-5
                     bg-white/15 !text-white hover:bg-white/25
@@ -146,13 +147,16 @@ export default function HomePage() {
                   {/* shine */}
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -left-1/2 top-0 h-[150%] w-[60%] -rotate-12 translate-x-[-40%] bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 blur-md transition duration-700 group-hover:translate-x-[140%] group-hover:opacity-100"
+                    className="pointer-events-none absolute -left-1/2 top-0 h[150%] w-[60%] -rotate-12 translate-x-[-40%] bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 blur-md transition duration-700 group-hover:translate-x-[140%] group-hover:opacity-100"
                   />
                   {/* icon + copy */}
                   <span className="inline-flex items-center gap-4 min-w-0">
                     <span className="relative grid h-10 w-10 place-items-center shrink-0">
                       <span className="absolute h-11 w-11 rounded-full bg-white/20 ring-1 ring-white/30" />
-                      <FontAwesomeIcon className="relative h-5 w-5 text-white transition-transform group-hover:-translate-y-0.5" icon={d.icon} />
+                      <FontAwesomeIcon
+                        className="relative h-5 w-5 text-white transition-transform group-hover:-translate-y-0.5"
+                        icon={d.icon}
+                      />
                     </span>
                     <span className="min-w-0 text-left">
                       <span className="block text-base font-semibold leading-tight truncate">

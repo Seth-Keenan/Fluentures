@@ -27,7 +27,7 @@ export default function ContactsPage() {
         >
           <h1 className="text-white text-3xl sm:text-4xl font-semibold">Contact us</h1>
           <p className="mt-2 text-white/85">
-            Questions, feedback, or ideas—we’d love to hear from you.
+            Questions, feedback, or ideas — we’d love to hear from you.
           </p>
 
           <form
@@ -71,18 +71,18 @@ export default function ContactsPage() {
               />
             </label>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                className="rounded-lg px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 shadow-md transition"
-              >
-                Send
-              </button>
+            <div className="flex items-center gap-3 justify-end">
               {sent && (
                 <span className="text-sm text-white/85">
                   Thanks! We’ll get back to you soon.
                 </span>
               )}
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 shadow-md transition"
+              >
+                Send
+              </button>
             </div>
           </form>
         </motion.main>

@@ -72,6 +72,7 @@ export default function WrittenQuiz() {
     if (!current) return "";
     return mode === "en-to-target" ? current.english : current.target;
   }, [current, mode]);
+
   const correctAnswer = useMemo(() => {
     if (!current) return "";
     return mode === "en-to-target" ? current.target : current.english;
@@ -110,7 +111,7 @@ export default function WrittenQuiz() {
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [submitted, idx, quizWords.length]);
 
-  // submit or next
+  // submit or next on Enter
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return;
@@ -176,10 +177,12 @@ export default function WrittenQuiz() {
             </div>
 
             <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <Button onClick={() => setStarted(false)}>Restart</Button>
+              <Button onClick={() => setStarted(false)} className="!cursor-pointer">
+                Restart
+              </Button>
               <Button
                 onClick={() => (window.location.href = "/oasis")}
-                className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30"
+                className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30 !cursor-pointer"
               >
                 Back to Oasis
               </Button>
@@ -220,7 +223,8 @@ export default function WrittenQuiz() {
               <select
                 value={count}
                 onChange={(e) => setCount(Number(e.target.value))}
-                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none"
+                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer"
+                aria-label="Select number of questions"
               >
                 {[5, 10, 15, 20].map((n) => (
                   <option key={n} value={n}>
@@ -235,7 +239,8 @@ export default function WrittenQuiz() {
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as Mode)}
-                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none"
+                className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer"
+                aria-label="Select quiz direction"
               >
                 <option value="en-to-target">English → Target language</option>
                 <option value="target-to-en">Target language → English</option>
@@ -244,7 +249,9 @@ export default function WrittenQuiz() {
           </motion.div>
 
           <div className="mt-6 flex justify-center">
-            <Button onClick={startQuiz}>Start Quiz</Button>
+            <Button onClick={startQuiz} className="!cursor-pointer">
+              Start Quiz
+            </Button>
           </div>
         </motion.div>
       </div>
@@ -315,23 +322,24 @@ export default function WrittenQuiz() {
             onChange={(e) => setInput(e.target.value)}
             disabled={submitted}
             className={[
-              "w-full rounded-xl bg-white/90 px-4 py-3 text-gray-900 ring-1 ring-white/30 shadow",
+              "w-full rounded-xl bg-white/90 px-4 py-3 text-gray-900 ring-1 ring-white/30 shadow focus:outline-none focus:ring-2 focus:ring-indigo-300",
               submitted && isCorrect === false ? "outline outline-2 outline-rose-400" : "",
             ].join(" ")}
             placeholder="Type your answer…"
+            aria-label="Your answer"
           />
         </motion.div>
 
         {/* Actions */}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Button onClick={onSubmit} disabled={submitted}>
+            <Button onClick={onSubmit} disabled={submitted} className="!cursor-pointer disabled:!cursor-not-allowed">
               Submit
             </Button>
             <Button
               onClick={onNext}
               disabled={!submitted}
-              className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30"
+              className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30 !cursor-pointer disabled:!cursor-not-allowed"
             >
               Next
             </Button>
@@ -340,7 +348,7 @@ export default function WrittenQuiz() {
           <Button
             onClick={fetchSentence}
             disabled={genLoading}
-            className="!bg-indigo-500 hover:!bg-indigo-400"
+            className="!bg-indigo-500 hover:!bg-indigo-400 !cursor-pointer disabled:!cursor-not-allowed"
           >
             {genLoading ? "Generating…" : "Example sentence"}
           </Button>

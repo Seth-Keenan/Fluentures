@@ -31,8 +31,7 @@ const item: Variants = {
 };
 
 const looksOpaqueId = (v: string) =>
-  !!v &&
-  /^(?:[0-9a-f]{12,}|[0-9a-f-]{12,}|[a-z0-9]{16,})$/i.test(v);
+  !!v && /^(?:[0-9a-f]{12,}|[0-9a-f-]{12,}|[a-z0-9]{16,})$/i.test(v);
 
 export default function OasisHubPage() {
   const search = useSearchParams();
@@ -114,8 +113,8 @@ export default function OasisHubPage() {
       {/* Contrast veil */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
-      {/* Shell */}
-      <div className="relative z-10 mx-auto flex min-h-screen w-[min(92vw,64rem)] flex-col items-center justify-center p-4">
+      {/* Shell (narrower overall to make cards smaller horizontally) */}
+      <div className="relative z-10 mx-auto flex min-h-screen w-[min(92vw,56rem)] flex-col items-center justify-center p-4">
         {/* Header card */}
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -129,7 +128,6 @@ export default function OasisHubPage() {
                 <FontAwesomeIcon icon={faTree} className="h-5 w-5 text-white/90" />
               </div>
               <div>
-                {/* Gradient title with subtle glow; tooltip keeps ID accessible */}
                 <h1
                   className="bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-2xl font-semibold leading-tight text-transparent sm:text-3xl drop-shadow-[0_2px_10px_rgba(255,255,255,0.12)]"
                   title={oasisId ? `Oasis ID: ${oasisId}` : undefined}
@@ -142,12 +140,12 @@ export default function OasisHubPage() {
               </div>
             </div>
 
-            {/* Right side: only the button; the ID chip is gone */}
+            {/* Back to map */}
             <div className="flex items-center gap-3">
               <LinkAsButton
                 href="/map"
                 className="
-                  rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30
+                  !cursor-pointer rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30
                   transition !px-5 !py-2.5
                   min-w-[8.5rem] justify-center shrink-0 whitespace-nowrap
                   focus:outline-none focus:ring-2 focus:ring-white/70
@@ -163,12 +161,12 @@ export default function OasisHubPage() {
           </div>
         </motion.div>
 
-        {/* Actions grid with “shine” hover effect */}
+        {/* Actions grid (narrower cards: smaller gap & inner padding) */}
         <motion.div
           variants={container}
           initial="hidden"
           animate={ready ? "show" : "hidden"}
-          className="mt-6 grid w-full grid-cols-1 gap-5 sm:grid-cols-2"
+          className="mt-5 grid w-full grid-cols-1 gap-4 sm:grid-cols-2"
         >
           {[
             {
@@ -176,7 +174,6 @@ export default function OasisHubPage() {
               icon: faCircleQuestion,
               title: "Quiz",
               desc: "Test yourself with targeted questions.",
-              accent: false,
               aria: "Open Quiz",
             },
             {
@@ -184,7 +181,6 @@ export default function OasisHubPage() {
               icon: faBookOpen,
               title: "Story",
               desc: "Immerse in context with short tales.",
-              accent: false,
               aria: "Read Story",
             },
             {
@@ -192,7 +188,6 @@ export default function OasisHubPage() {
               icon: faPenNib,
               title: "Sentences",
               desc: "Craft example sentences and variations.",
-              accent: false,
               aria: "Build Sentences",
             },
             {
@@ -200,64 +195,65 @@ export default function OasisHubPage() {
               icon: faWandMagicSparkles,
               title: "Edit Oasis",
               desc: "Tweak words, hints, and difficulty.",
-              accent: false,
               aria: "Edit Oasis",
             },
-          ].map(({ href, icon, title, desc, accent, aria }) => (
+          ].map(({ href, icon, title, desc, aria }) => (
             <motion.div
               key={title}
               variants={item}
-              className={`relative rounded-2xl ring-1 ring-white/20 backdrop-blur-xl shadow-2xl group
-                ${accent ? "bg-gradient-to-br from-indigo-500/90 to-indigo-500/80" : "bg-white/10"}
-              `}
+              className="relative rounded-2xl ring-1 ring-white/15 backdrop-blur-xl shadow-2xl group bg-white/10"
               style={{ transformPerspective: 800 }}
-              whileHover={{ y: -6, rotateX: 2, rotateY: -2, transition: { type: "spring", stiffness: 180, damping: 15 } }}
+              whileHover={{
+                y: -6,
+                rotateX: prefersReducedMotion ? 0 : 2,
+                rotateY: prefersReducedMotion ? 0 : -2,
+                transition: { type: "spring", stiffness: 180, damping: 15 },
+              }}
               whileTap={{ scale: 0.98, transition: { type: "spring", stiffness: 300, damping: 20 } }}
             >
-              {/* Shine effect */}
-              <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                   style={{
-                     background:
-                       "radial-gradient(1200px 300px at 0% -20%, rgba(255,255,255,0.15), transparent 60%)",
-                   }}
+              {/* Subtle diagonal shimmer (indigo/cyan tint) */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(34,211,238,0.10) 40%, transparent 60%)",
+                  maskImage:
+                    "radial-gradient(200% 60% at 0% 0%, black 30%, transparent 65%)",
+                  WebkitMaskImage:
+                    "radial-gradient(200% 60% at 0% 0%, black 30%, transparent 65%)",
+                }}
               />
+              {/* Gentle border tint on hover */}
+              <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent group-hover:ring-indigo-300/30 transition" />
+
               <LinkAsButton
                 href={href}
                 className="
-                    group flex w-full items-center justify-between
-                    rounded-2xl px-7 py-6 min-h-[7.25rem]
-                    bg-transparent !text-white text-left
-                    transition focus:outline-none focus:ring-2 focus:ring-white/70
+                  !cursor-pointer group flex w-full items-center justify-between
+                  rounded-2xl px-5 py-5 min-h-[6.75rem]
+                  bg-transparent !text-white text-left
+                  transition focus:outline-none focus:ring-2 focus:ring-white/70
                 "
                 aria-label={aria}
-                >
+              >
                 <div className="inline-flex items-center gap-3">
-                    {/* Icon with halo (moved from right -> behind icon) */}
-                    <span className="relative grid h-7 w-7 place-items-center">
-                    {/* halo */}
+                  <span className="relative grid h-7 w-7 place-items-center">
+                    {/* soft halo */}
                     <span
-                        aria-hidden
-                        className={`absolute h-8 w-8 rounded-full ring-1 ring-white/30 transition-transform duration-300
-                        ${accent ? "bg-white/30" : "bg-white/20"} 
-                        group-hover:scale-110`}
+                      aria-hidden
+                      className="absolute h-8 w-8 rounded-full ring-1 ring-white/25 bg-white/15 transition-transform duration-300 group-hover:scale-110"
                     />
-                    {/* icon */}
                     <FontAwesomeIcon
-                        icon={icon}
-                        className="relative h-4 w-4 transition-transform group-hover:-translate-y-0.5"
+                      icon={icon}
+                      className="relative h-4 w-4 transition-transform group-hover:-translate-y-0.5"
                     />
-                    </span>
-
-                    <div className="leading-tight">
-                    <div className="text-lg font-semibold">{title}</div>
-                    <div className={`text-[13px] ${accent ? "text-white/95" : "text-white/80"}`}>
-                        {desc}
-                    </div>
-                    </div>
+                  </span>
+                  <div className="leading-tight">
+                    <div className="text-base font-semibold">{title}</div>
+                    <div className="text-[13px] text-white/80">{desc}</div>
+                  </div>
                 </div>
-
-                {/* (Removed the right-side decorative dot) */}
-                </LinkAsButton>
+              </LinkAsButton>
             </motion.div>
           ))}
         </motion.div>

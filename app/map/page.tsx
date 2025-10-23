@@ -1,4 +1,3 @@
-// app/map/page.tsx
 "use client";
 
 import React, {
@@ -7,6 +6,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useCallback,
   useLayoutEffect,
 } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -27,8 +27,6 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 type Vec3 = [number, number, number];
 
 // Oasis instance saved to localStorage and rendered into the scene.
-// "position" & "rotation" place each oasis; "scale" sets model size.
-// "title" is the on‑screen HTML label above the model.
 type Oasis3D = {
   id: string;
   position: Vec3;
@@ -117,13 +115,7 @@ function DesertBackground({
   );
 }
 
-/* ---------------- Oasis model & instance ---------------- 
-* OasisInstance: clickable wrapper that:
-* - draws an invisible, larger hitbox for easier clicking
-* - renders the model itself
-* - shows a floating HTML label above the model
-* Clicking navigates to the oasis detail route via onOpen(id).
-*/
+/* ---------------- Oasis model & instance ---------------- */
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(OASIS_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -133,11 +125,22 @@ function OasisModel({ scale = 1 }: { scale?: number }) {
 function OasisInstance({
   data,
   onOpen,
+  onHover,
 }: {
   data: Oasis3D;
   onOpen: (id: string) => void;
+  onHover: (hovering: boolean) => void;
 }) {
   const groupRef = useRef<Group>(null!);
+
+  const handleOpen = useCallback(
+    (e?: any) => {
+      e?.stopPropagation?.();
+      onOpen(data.id);
+    },
+    [data.id, onOpen]
+  );
+
   return (
     <group
       ref={groupRef}
@@ -145,7 +148,15 @@ function OasisInstance({
       rotation={data.rotation}
       onClick={(e) => {
         e.stopPropagation();
-        onOpen(data.id);
+        handleOpen(e);
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        onHover(true);
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        onHover(false);
       }}
     >
       {/* Larger invisible hit-box for easier clicking */}
@@ -160,28 +171,50 @@ function OasisInstance({
       <Html
         position={[0, 1.7 * data.scale, 0]}
         center
+        transform={false}
         style={{
-          pointerEvents: "none",
-          background: "rgba(255,255,255,0.85)",
-          padding: "4px 8px",
+          pointerEvents: "auto",
+          background: "rgba(255,255,255,0.9)",
+          padding: "6px 10px",
           borderRadius: 10,
           fontSize: 12,
           color: "#111",
           boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
           whiteSpace: "nowrap",
+          cursor: "pointer",
+          userSelect: "none",
         }}
       >
-        {data.title}
+        <button
+          type="button"
+          onClick={handleOpen}
+          onMouseEnter={() => onHover(true)}
+          onMouseLeave={() => onHover(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleOpen();
+            }
+          }}
+          aria-label={`Open oasis ${data.title}`}
+          className="rounded-md outline-none focus:ring-2 focus:ring-indigo-500"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            font: "inherit",
+            color: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          {data.title}
+        </button>
       </Html>
     </group>
   );
 }
 
-/* ---------------- Pan limiter ->frame-based.   ---------------- 
-* Runs every frame, clamps OrbitControls.target to a rectangular region so the
-* user can't pan the camera outside the intended sand area. If the target is
-* clamped, the camera position is shifted by the same offset*/
-
+/* ---------------- Pan limiter ---------------- */
 function PanLimiter({
   controls,
   bounds,
@@ -208,38 +241,7 @@ function PanLimiter({
   return null;
 }
 
-/* ---------------- OrbitControls wrapper ---------------- */
-// affects how the camera can be moved 
-function ControlsWithLimits({
-  controlsRef,
-  bounds,
-}: {
-  controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
-  bounds: { minX: number; maxX: number; maxZ: number; minZ: number };
-}) {
-  return (
-    <>
-      <OrbitControls
-        ref={controlsRef}
-        makeDefault
-        enableDamping
-        dampingFactor={0.08}
-        enableRotate={false} // “glide” feel — no free orbit
-        enablePan
-        enableZoom
-        minDistance={6}
-        maxDistance={26}
-        minPolarAngle={0.9} // keep camera above horizon
-        maxPolarAngle={Math.PI / 2.1}
-      />
-      <PanLimiter controls={controlsRef} bounds={bounds} />
-    </>
-  );
-}
-
-/* ---------------- Arrow pad  ---------------- */
-//* - step: how far each tap tries to move in world units (before clamping)
-// - duration: how long the glide animation takes (ms)
+/* ---------------- Arrow pad (screen glide) ---------------- */
 function GlideControlsUI({
   controlsRef,
   bounds,
@@ -268,10 +270,9 @@ function GlideControlsUI({
     forward.normalize();
 
     const up = new THREE.Vector3(0, 1, 0);
-    // weird changes due to flipping model axis 
     const right = forward.clone().cross(up).normalize();
 
-    // Map screen step to world delta 
+    // Map screen step to world delta
     const worldDelta = new THREE.Vector3()
       .addScaledVector(right, sx * step)
       .addScaledVector(forward, -sz * step);
@@ -282,12 +283,12 @@ function GlideControlsUI({
     const to = new THREE.Vector3(
       Math.min(bounds.maxX, Math.max(bounds.minX, unclampedTo.x)),
       from.y,
-      Math.min(bounds.maxZ, Math.max(bounds.minZ, unclampedTo.z)),
+      Math.min(bounds.maxZ, Math.max(bounds.minZ, unclampedTo.z))
     );
 
     const animate = (t: number) => {
       const k = Math.min(1, (t - start) / duration);
-      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k; 
+      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
 
       const cur = from.clone().lerp(to, ease);
       const off = new THREE.Vector3().subVectors(c.object.position, c.target);
@@ -339,15 +340,19 @@ function GlideControlsUI({
 }
 
 /* ---------------- Page ---------------- */
-// current -> camera position is set in <Canvas camera={position:[9,7,9], fov:46}>.
 export default function Page() {
   const router = useRouter();
-  const [instances, setInstances] = useState<Oasis3D[]>([]);
-  const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
-  // Travel limits (match your anchored desert area; NEED to adjust because this isn't working how I thought it would
-  //Idea: bound using click limits left right up down. have zoom restrictions to keep user from exploring outside sand area
-  const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
+  // ✅ Hooks live INSIDE the component — not at module scope
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const bounds = useMemo(
+    () => ({ minX: -30, maxX: 30, minZ: -30, maxZ: 30 }),
+    []
+  );
+
+  const [instances, setInstances] = useState<Oasis3D[]>([]);
+  const [hoveringOasis, setHoveringOasis] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
     try {
@@ -361,6 +366,9 @@ export default function Page() {
   const openPacket = (id: string) => {
     router.push(`/oasis?id=${id}`);
   };
+
+  // Decide canvas cursor state
+  const canvasCursor = dragging ? "grabbing" : hoveringOasis ? "pointer" : "grab";
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -398,13 +406,13 @@ export default function Page() {
           <div className="flex gap-2">
             <LinkAsButton
               href="/map/edit"
-              className="rounded-lg px-4 py-2 bg-white/90 !text-gray-900 hover:bg-white shadow-lg shadow-black/20 ring-1 ring-white/30 transition"
+              className="!cursor-pointer rounded-lg px-4 py-2 bg-white/90 !text-gray-900 hover:bg-white shadow-lg shadow-black/20 ring-1 ring-white/30 transition"
             >
               Edit Map
             </LinkAsButton>
             <LinkAsButton
               href="/home"
-              className="rounded-lg px-4 py-2 bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/30 transition"
+              className="!cursor-pointer rounded-lg px-4 py-2 bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/30 transition"
             >
               Back
             </LinkAsButton>
@@ -418,7 +426,9 @@ export default function Page() {
           <div className="h-[70vh] relative">
             <Canvas
               shadows
-              camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }} // slightly zoomed-in start
+              camera={{ position: [10, 8, 10], fov: 46, near: 0.1, far: 200 }}
+              style={{ cursor: canvasCursor }}
+              onPointerMissed={() => setHoveringOasis(false)}
             >
               {/* Scene mood */}
               <color attach="background" args={["#000000"]} />
@@ -448,31 +458,63 @@ export default function Page() {
               />
               <directionalLight position={[-10, 6, -6]} intensity={0.25} />
 
-              {/* GLB background with an edge facing out */}
-              <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
+              {/* Ground (soft sand) */}
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, -0.01, 0]}
+                receiveShadow
+                onPointerOver={() => setHoveringOasis(false)}
+              >
+                <planeGeometry args={[200, 200]} />
+                <meshStandardMaterial color="#e8d9b3" roughness={0.95} />
+              </mesh>
+
+              {/* Background model */}
+              <Suspense fallback={<Html center style={{ color: "white" }}>Loading…</Html>}>
                 <DesertBackground
-                  rotation={[0, Math.PI / 4, 0]} // rotate so edge (not corner) faces the viewer
+                  position={[0, 0, 0]}
+                  rotation={[0, Math.PI * 0.25, 0]}
                   scale={1}
-                  targetWidth={60}
+                  targetWidth={100}
                   anchorX="min"
                   anchorZ="min"
-                  targetX={-30}
-                  targetZ={-30}
+                  targetX={-50}
+                  targetZ={-50}
                 />
               </Suspense>
 
               {/* Model instances */}
               <Suspense fallback={<Html center style={{ color: "white" }}>Loading oases…</Html>}>
                 {instances.map((o) => (
-                  <OasisInstance key={o.id} data={o} onOpen={(id) => router.push(`/oasis?id=${id}`)} />
+                  <OasisInstance
+                    key={o.id}
+                    data={o}
+                    onOpen={(id) => router.push(`/oasis?id=${id}`)}
+                    onHover={(h) => setHoveringOasis(h)}
+                  />
                 ))}
               </Suspense>
 
               {/* Soft contact shadows */}
               <ContactShadows position={[0, 0, 0]} scale={50} blur={2.4} opacity={0.5} far={15} />
 
-              {/* Controls + pan limits */}
-              <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
+              {/* Controls */}
+              <OrbitControls
+                ref={controlsRef}
+                makeDefault
+                enableDamping
+                dampingFactor={0.08}
+                minDistance={4}
+                maxDistance={40}
+                maxPolarAngle={Math.PI / 2.05}
+                autoRotate
+                autoRotateSpeed={0.6}
+                onStart={() => setDragging(true)}
+                onEnd={() => setDragging(false)}
+              />
+
+              {/* Optional: keep camera target within bounds */}
+              <PanLimiter controls={controlsRef} bounds={bounds} />
             </Canvas>
 
             {/* Arrow pad overlay outside map canvas */}
@@ -517,5 +559,6 @@ export default function Page() {
   );
 }
 
+// These are fine to call at module scope; they are not React hooks.
 useGLTF.preload(OASIS_URL);
 useGLTF.preload(DESERT_URL);

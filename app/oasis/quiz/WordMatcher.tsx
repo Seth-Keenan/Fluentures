@@ -109,7 +109,7 @@ export default function WordMatcher() {
           </span>
         </div>
 
-        <Button onClick={reset} className="!rounded-lg !px-3 !py-1.5">
+        <Button onClick={reset} className="!rounded-lg !px-3 !py-1.5 !cursor-pointer">
           Reset
         </Button>
       </div>
@@ -130,7 +130,7 @@ export default function WordMatcher() {
                 Great matching—shuffle and play again or try another mode.
               </p>
             </div>
-            <Button onClick={reset} className="!rounded-lg !px-4 !py-2">
+            <Button onClick={reset} className="!rounded-lg !px-4 !py-2 !cursor-pointer">
               Play again
             </Button>
           </div>
@@ -165,12 +165,12 @@ export default function WordMatcher() {
                         aria-pressed={selected}
                         aria-label={`Select ${m.knownLanguage}`}
                         className={[
-                          "!w-full !justify-center !rounded-lg !px-4 !py-2 transition",
+                          "!w-full !justify-center !rounded-lg !px-4 !py-2 transition focus:!ring-2 focus:!ring-indigo-300",
                           matched
                             ? "bg-emerald-500 hover:bg-emerald-500 cursor-not-allowed !text-white"
                             : selected
-                            ? "bg-indigo-500 hover:bg-indigo-500 !text-white"
-                            : "!bg-white hover:!bg-gray-50 !text-gray-900 border border-black/10",
+                            ? "bg-indigo-500 hover:bg-indigo-500 !text-white !cursor-pointer"
+                            : "!bg-white hover:!bg-gray-50 !text-gray-900 border border-black/10 !cursor-pointer",
                         ].join(" ")}
                       >
                         {m.knownLanguage}
@@ -209,10 +209,10 @@ export default function WordMatcher() {
                         disabled={matched}
                         aria-label={`Choose ${m.targetLanguage}`}
                         className={[
-                          "!w-full !justify-center !rounded-lg !px-4 !py-2 transition",
+                          "!w-full !justify-center !rounded-lg !px-4 !py-2 transition focus:!ring-2 focus:!ring-indigo-300",
                           matched
                             ? "bg-emerald-500 hover:bg-emerald-500 cursor-not-allowed !text-white"
-                            : "!bg-white hover:!bg-gray-50 !text-gray-900 border border-black/10",
+                            : "!bg-white hover:!bg-gray-50 !text-gray-900 border border-black/10 !cursor-pointer",
                         ].join(" ")}
                       >
                         {m.targetLanguage}

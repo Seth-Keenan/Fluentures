@@ -119,7 +119,7 @@ export default function Quiz() {
 
             <LinkAsButton
               href="/oasis"
-              className="rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition !px-6 !py-2 min-w-[12rem] md:min-w-[14rem] justify-center shrink-0 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-white/70"
+              className="!cursor-pointer rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition !px-6 !py-2 min-w-[12rem] md:min-w-[14rem] justify-center shrink-0 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-white/70"
               aria-label="Back to Oasis"
             >
               <span className="inline-flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function Quiz() {
               <button
                 onClick={() => setSelectedQuiz("matching")}
                 className="
-                  group flex w-full items-center justify-between
+                  !cursor-pointer group flex w-full items-center justify-between
                   rounded-2xl px-7 py-6 min-h-[7.25rem]
                   bg-transparent text-left text-white
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80
@@ -165,10 +165,18 @@ export default function Quiz() {
                 aria-label="Start Matching Tiles"
               >
                 <div className="inline-flex items-start gap-3">
-                  <FontAwesomeIcon
-                    icon={faTableCellsLarge}
-                    className="h-6 w-6 mt-0.5 transition group-hover:-translate-y-0.5"
-                  />
+                  {/* Icon inside a circular glass chip */}
+                  <span className="relative grid h-9 w-9 place-items-center">
+                    <span
+                      aria-hidden
+                      className="absolute h-10 w-10 rounded-full bg-white/20 ring-1 ring-white/30"
+                    />
+                    <FontAwesomeIcon
+                      icon={faTableCellsLarge}
+                      className="relative h-5 w-5 transition-transform group-hover:-translate-y-0.5"
+                    />
+                  </span>
+
                   <div>
                     <div className="text-lg font-semibold">Matching Tiles</div>
                     <div className="text-[13px] text-white/80">
@@ -176,7 +184,8 @@ export default function Quiz() {
                     </div>
                   </div>
                 </div>
-                <div className="h-7 w-7 rounded-full bg-white/20 ring-1 ring-white/30 group-hover:bg-white/30 transition" />
+
+                {/* removed the right-side decorative dot */}
               </button>
             </motion.div>
 
@@ -199,7 +208,7 @@ export default function Quiz() {
               <button
                 onClick={() => setSelectedQuiz("written")}
                 className="
-                  group flex w-full items-center justify-between
+                  !cursor-pointer group flex w-full items-center justify-between
                   rounded-2xl px-7 py-6 min-h-[7.25rem]
                   bg-transparent text-left text-white
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80
@@ -207,10 +216,18 @@ export default function Quiz() {
                 aria-label="Start Written Quiz"
               >
                 <div className="inline-flex items-start gap-3">
-                  <FontAwesomeIcon
-                    icon={faKeyboard}
-                    className="h-6 w-6 mt-0.5 transition group-hover:-translate-y-0.5"
-                  />
+                  {/* Icon inside a circular glass chip */}
+                  <span className="relative grid h-9 w-9 place-items-center">
+                    <span
+                      aria-hidden
+                      className="absolute h-10 w-10 rounded-full bg-white/20 ring-1 ring-white/30"
+                    />
+                    <FontAwesomeIcon
+                      icon={faKeyboard}
+                      className="relative h-5 w-5 transition-transform group-hover:-translate-y-0.5"
+                    />
+                  </span>
+
                   <div>
                     <div className="text-lg font-semibold">Written Quiz</div>
                     <div className="text-[13px] text-white/80">
@@ -218,7 +235,8 @@ export default function Quiz() {
                     </div>
                   </div>
                 </div>
-                <div className="h-7 w-7 rounded-full bg-white/20 ring-1 ring-white/30 group-hover:bg-white/30 transition" />
+
+                {/* removed the right-side decorative dot */}
               </button>
             </motion.div>
           </motion.div>
@@ -240,7 +258,7 @@ export default function Quiz() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setSelectedQuiz(null)}
-                  className="!rounded-lg !px-4 !py-2 !bg-amber-500 hover:!bg-amber-400 !text-white shadow-md"
+                  className="!cursor-pointer !rounded-lg !px-4 !py-2 !bg-amber-500 hover:!bg-amber-400 !text-white shadow-md"
                 >
                   <span className="inline-flex items-center gap-2">
                     <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4" />
@@ -249,7 +267,7 @@ export default function Quiz() {
                 </Button>
                 <LinkAsButton
                   href="/oasis"
-                  className="rounded-lg bg-white/15 text-white ring-1 ring-white/25 hover:bg-white/25 transition !px-4 !py-2"
+                  className="!cursor-pointer rounded-lg bg-white/15 text-white ring-1 ring-white/25 hover:bg-white/25 transition !px-4 !py-2"
                 >
                   Oasis Hub
                 </LinkAsButton>

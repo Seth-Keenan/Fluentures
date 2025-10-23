@@ -10,7 +10,8 @@ import type { WordItem } from "@/app/types/wordlist";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 
 export default function EditOasisPage() {
-  const listId = useListId();   // from the URL
+  const listId = useListId(); // from the URL (string | null)
+
   const [items, setItems] = useState<WordItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -22,15 +23,23 @@ export default function EditOasisPage() {
   const [lastMessage, setLastMessage] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
+  // Compute dirty state from current items vs last saved snapshot
+  const isDirty = useMemo(
+    () => JSON.stringify(items) !== lastSavedJSON,
+    [items, lastSavedJSON]
+  );
+
+  // Load list when listId becomes available
   useEffect(() => {
+    if (!listId) return; // guard: listId can be null
     (async () => {
       setLoading(true);
-      const data = await getWordlist(listId); // <-- use list id
+      const data = await getWordlist(listId); // listId is a string here
       setItems(data);
       setLoading(false);
       setLastSavedJSON(JSON.stringify(data));
     })();
-  }, []);
+  }, [listId]);
 
   const addRow = () => {
     const id =
@@ -48,11 +57,11 @@ export default function EditOasisPage() {
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
   };
 
-  const deleteRowLocal = (id: string) => {
-    setItems((prev) => prev.filter((x) => x.id !== id));
-  };
-
   const save = async () => {
+    if (!listId) {
+      setLastMessage("❌ Missing list id");
+      return;
+    }
     setSaving(true);
     const cleaned = items.filter(
       (i) => i.target?.trim() || i.english?.trim() || i.notes?.trim()
@@ -94,7 +103,6 @@ export default function EditOasisPage() {
   }, [saving, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
-
 
   return (
     <>

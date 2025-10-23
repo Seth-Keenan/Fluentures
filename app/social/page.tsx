@@ -250,13 +250,14 @@ export default function CommunityPage() {
           <div>
             <h1 className="text-white text-3xl sm:text-4xl font-semibold">Community</h1>
             <p className="text-white/85 mt-1">
-              Share progress, cheer friends, and keep your learning circle close            </p>
+              Share progress, cheer friends, and keep your learning circle close
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <LinkAsButton
               href="/home"
-              className="inline-flex justify-center rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition px-6 py-3 w-full sm:w-auto sm:min-w-56"
+              className="!cursor-pointer inline-flex items-center justify-center w-auto whitespace-nowrap rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition px-6 py-3"
             >
               Back to Home
             </LinkAsButton>
@@ -291,7 +292,7 @@ export default function CommunityPage() {
                     <button
                       type="button"
                       onClick={createPost}
-                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 ring-1 ring-white/20 transition px-3 py-2"
+                      className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 ring-1 ring-white/20 transition px-3 py-2"
                     >
                       <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
                       Post
@@ -370,7 +371,7 @@ export default function CommunityPage() {
                 <button
                   type="button"
                   onClick={() => setAdding((v) => !v)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 transition px-3 py-1.5 text-sm"
+                  className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 transition px-3 py-1.5 text-sm"
                 >
                   <FontAwesomeIcon icon={adding ? faXmark : faPlus} className="h-4 w-4" />
                   {adding ? "Cancel" : "Add"}
@@ -411,14 +412,14 @@ export default function CommunityPage() {
                           setNewStatus("Online");
                           setNewNote("");
                         }}
-                        className="rounded-md bg-white/60 hover:bg-white px-3 py-1 text-sm ring-1 ring-black/10 transition"
+                        className="cursor-pointer rounded-md bg-white/60 hover:bg-white px-3 py-1 text-sm ring-1 ring-black/10 transition"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={addFriend}
-                        className="inline-flex items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 text-sm ring-1 ring-white/20 transition"
+                        className="cursor-pointer inline-flex items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 text-sm ring-1 ring-white/20 transition"
                       >
                         <FontAwesomeIcon icon={faFloppyDisk} className="h-4 w-4" />
                         Save
@@ -500,7 +501,7 @@ function Filters({
             type="button"
             onClick={() => setFilter(f)}
             className={[
-              "rounded-lg px-3 py-1.5 text-sm ring-1 transition",
+              "cursor-pointer rounded-lg px-3 py-1.5 text-sm ring-1 transition",
               filter === f
                 ? "bg-indigo-500 text-white ring-white/20"
                 : "bg-white/10 text-white hover:bg-white/20 ring-white/30",
@@ -579,7 +580,7 @@ function PostCard({
               <button
                 type="button"
                 onClick={onDelete}
-                className="rounded-md bg-white/10 text-white hover:bg-white/20 px-2 py-1 text-xs ring-1 ring-white/30"
+                className="cursor-pointer rounded-md bg-white/10 text-white hover:bg-white/20 px-2 py-1 text-xs ring-1 ring-white/30"
                 title="Delete post"
               >
                 <FontAwesomeIcon icon={faTrashCan} className="h-3 w-3" />
@@ -608,7 +609,7 @@ function PostCard({
               type="button"
               onClick={onToggleLike}
               className={[
-                "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 transition",
+                "cursor-pointer inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 transition",
                 post.liked
                   ? "bg-rose-500 text-white ring-white/20"
                   : "bg-white/10 text-white hover:bg-white/20 ring-white/30",
@@ -621,7 +622,7 @@ function PostCard({
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs ring-1 ring-white/30 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs ring-1 ring-white/30 transition"
             >
               <FontAwesomeIcon icon={faCommentDots} className="h-3 w-3" />
               <span>{post.comments.length}</span>
@@ -672,7 +673,7 @@ function PostCard({
                       onComment(cmt);
                       setCmt("");
                     }}
-                    className="inline-flex items-center gap-1 rounded-md bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
+                    className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
                   >
                     <FontAwesomeIcon icon={faPaperPlane} className="h-3 w-3" />
                     Send
@@ -753,7 +754,7 @@ function FriendRow({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
               title="Edit"
             >
               <FontAwesomeIcon icon={faPenToSquare} className="h-3 w-3" />
@@ -762,7 +763,7 @@ function FriendRow({
             <button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-1 rounded-md bg-rose-500 hover:bg-rose-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-rose-500 hover:bg-rose-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
               title="Delete"
             >
               <FontAwesomeIcon icon={faTrashCan} className="h-3 w-3" />
@@ -777,7 +778,7 @@ function FriendRow({
                 onSave({ id: friend.id, name: name.trim() || friend.name, status, note: note.trim() || undefined });
                 setEditing(false);
               }}
-              className="inline-flex items-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
               title="Save"
             >
               <FontAwesomeIcon icon={faFloppyDisk} className="h-3 w-3" />
@@ -791,7 +792,7 @@ function FriendRow({
                 setStatus(friend.status);
                 setNote(friend.note || "");
               }}
-              className="inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
               title="Cancel"
             >
               <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
