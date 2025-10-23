@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
+import { LinkAsButton } from "@/app/components/LinkAsButton";
 
 type MatchItem = {
   id: string;
@@ -151,6 +152,13 @@ export default function WordMatcher() {
           Matched {matched.size} / {items.length}
         </span>
         {selectedId && <span className="italic">Select the matching target…</span>}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <div className="flex gap-3">
+          <LinkAsButton href={`/oasis/${listId}`} className="btn">Back</LinkAsButton>
+        </div>
       </div>
     </div>
   );
