@@ -365,7 +365,7 @@ export default function Page() {
   }, []);
 
   const openPacket = (id: string) => {
-    router.push(`/oasis?id=${id}`);
+    router.push(`/oasis/${encodeURIComponent(id)}`);
   };
 
   // Decide canvas cursor state
@@ -490,7 +490,7 @@ export default function Page() {
                   <OasisInstance
                     key={o.id}
                     data={o}
-                    onOpen={(id) => router.push(`/oasis?id=${id}`)}
+                    onOpen={(id) => router.push(`/oasis/${encodeURIComponent(id)}`)}
                     onHover={(h) => setHoveringOasis(h)}
                   />
                 ))}
