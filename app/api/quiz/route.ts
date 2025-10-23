@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateGeminiContent, getInstruction } from "@/app/lib/util/gemini";
 import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
-import { getSupabaseServerRouteClient } from "@/app/lib/hooks/supabaseServerRouteClient";
 
 type QuizBody = { listId?: string; word?: string; language?: string };
 
-async function buildVocabHint(listId?: string) {
-  if (!listId) return "";
-  const supabase = await getSupabaseServerRouteClient();
-  // Adjust column names if yours differ:
-  const { data: words, error } = await supabase
-    .from("Word")
-    .select("word_target, word_english")
-    .eq("word_list_id", listId)
-    .limit(50);
 
-  if (error || !words?.length) return "";
-  const pairs = words
-    .filter(w => w.word_target || w.word_english)
-    .map(w => `${w.word_target ?? ""} = ${w.word_english ?? ""}`)
-    .slice(0, 25);
-  return pairs.length ? `Use these vocabulary items where natural: ${pairs.join(", ")}.` : "";
+async function buildVocabHint(_listId?: string) {
+  return "";
 }
 
 export async function POST(req: NextRequest) {
@@ -42,18 +28,22 @@ export async function POST(req: NextRequest) {
     const language = body.language ?? settings.language ?? "Japanese";
     const difficulty = settings.difficulty ?? "Beginner";
 
-    // Optional bias from this oasis’ vocab
-    const vocabHint = await buildVocabHint(body.listId);
+    // Intentionally empty so model doesn't stuff extra vocab
+    const _vocabHint = await buildVocabHint(body.listId);
 
     const instruction = getInstruction(difficulty);
     const prompt = [
-      `In ${language}, create a natural, commonly used sentence that contains the word "${word}".`,
+      `Write exactly ONE natural sentence in ${language}.`,
+      `It must appropriately use the target word "${word}" in context,`,
+      `but REPLACE that occurrence with a single blank: "____".`,
+      `Do NOT include the target word text anywhere in the output.`,
+      `Do NOT use any other vocabulary from the user's word list.`,
+      `Return ONLY the sentence (no translation, no explanations, no formatting).`,
       instruction,
-      `Replace the target word with a blank (______).`,
-      `No translations or explanations. No formatting.`,
-      vocabHint && `[Vocabulary bias] ${vocabHint}`,
-      body.listId && `Oasis/List ID: ${body.listId}`,
-    ].filter(Boolean).join("\n");
+      body.listId && `Oasis/List ID: ${body.listId}`
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const sentence = await generateGeminiContent(prompt);
     return NextResponse.json({ sentence, usedSettings: { language, difficulty } });
