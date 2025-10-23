@@ -289,6 +289,13 @@ export default function EditOasisPage() {
             </div>
           </section>
         </div>
+
+        {/* Bottom Navigation */}
+        <div className="mx-auto max-w-6xl pt-6">
+          <div className="flex gap-3">
+            <LinkAsButton href={`/oasis/${listId}`} className="btn">Back</LinkAsButton>
+          </div>
+        </div>
       </div>
 
       <ConfirmDialog

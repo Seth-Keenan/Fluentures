@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { requestQuizSentence } from "@/app/lib/actions/geminiQuizAction";
+import { LinkAsButton } from "@/app/components/LinkAsButton";
 
 type Mode = "en-to-target" | "target-to-en";
 
@@ -218,6 +219,13 @@ export default function QuizPage() {
       <p className="text-sm text-neutral-600">
         Score: <span className="font-medium text-neutral-800">{score}</span> / {quizWords.length}
       </p>
+    </div>
+
+    {/* Bottom Navigation */}
+    <div className="mx-auto max-w-2xl pt-6">
+      <div className="flex gap-3">
+        <LinkAsButton href={`/oasis/${listId}`} className="btn">Back</LinkAsButton>
+      </div>
     </div>
   </div>
 );
