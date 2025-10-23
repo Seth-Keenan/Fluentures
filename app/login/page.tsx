@@ -154,7 +154,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-900"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-900 cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-4 w-4" />
@@ -174,7 +174,7 @@ export default function LoginPage() {
               type="submit"
               whileTap={{ scale: 0.98 }}
               disabled={loading}
-              className="w-full justify-center rounded-xl px-5 py-3 bg-indigo-500 text-white hover:bg-indigo-400 shadow-lg shadow-black/20 ring-1 ring-white/20 transition duration-200 font-semibold tracking-wide text-base focus:outline-none focus:ring-2 focus:ring-white/80 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full justify-center rounded-xl px-5 py-3 bg-indigo-500 text-white hover:bg-indigo-400 shadow-lg shadow-black/20 ring-1 ring-white/20 transition duration-200 font-semibold tracking-wide text-base focus:outline-none focus:ring-2 focus:ring-white/80 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span className="inline-flex items-center gap-2">
                 {loading ? (
@@ -195,14 +195,14 @@ export default function LoginPage() {
             <div className="text-center space-y-2">
               <Link
                 href="/signup"
-                className="text-amber-300 underline decoration-amber-400 hover:text-amber-200"
+                className="text-amber-300 underline decoration-amber-400 hover:text-amber-200 cursor-pointer"
               >
                 Not a user? Sign up
               </Link>
               <div>
                 <Link
                   href="/reset-password"
-                  className="text-amber-300 underline decoration-amber-400 hover:text-amber-200"
+                  className="text-amber-300 underline decoration-amber-400 hover:text-amber-200 cursor-pointer"
                 >
                   Forgot password?
                 </Link>
@@ -210,7 +210,7 @@ export default function LoginPage() {
               <div>
                 <Link
                   href="/"
-                  className="text-white/80 underline decoration-white/60 hover:text-white"
+                  className="text-white/80 underline decoration-white/60 hover:text-white cursor-pointer"
                 >
                   Back to home
                 </Link>
