@@ -1,76 +1,7 @@
-// app/map/edit/page.tsx
+import { createList, deleteList } from "./actions";
 import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import OasisRowActions from "@/app/components/OasisRowActions";
-
-// ---------- SERVER HELPERS & ACTIONS (module scope) ----------
-export async function getSelectedLanguageFor(userId: string) {
-  "use server";
-  const supa = await getSupabaseServerActionClient();
-  const { data: st } = await supa
-    .from("UserSettings")
-    .select("language")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return st?.language?.trim() || null;
-}
-
-export async function createList(formData: FormData) {
-  "use server";
-  const supa = await getSupabaseServerActionClient();
-
-  const {
-    data: { user },
-  } = await supa.auth.getUser();
-  if (!user) redirect("/home");
-
-  const name = (formData.get("name") as string)?.trim() || "New Oasis";
-
-  // force language from settings; block if not set
-  const lang = await getSelectedLanguageFor(user.id);
-  if (!lang) {
-    redirect("/map/edit?flash=Set%20your%20language%20in%20Settings%20first&type=error");
-  }
-
-  const { data: inserted, error: insErr } = await supa
-    .from("WordList")
-    .insert([{ word_list_name: name, language: lang, user_id: user.id }])
-    .select("word_list_id")
-    .single();
-
-  if (insErr || !inserted) {
-    console.error("Create failed:", insErr?.message, insErr?.details ?? "");
-    redirect("/map/edit?flash=Failed%20to%20create%20oasis&type=error");
-  }
-
-  redirect(`/oasis/${inserted.word_list_id}/edit`);
-}
-
-export async function deleteList(listId: string) {
-  "use server";
-  const supa = await getSupabaseServerActionClient();
-
-  const {
-    data: { user },
-  } = await supa.auth.getUser();
-  if (!user) redirect("/home");
-
-  const { error: delErr } = await supa
-    .from("WordList")
-    .delete()
-    .eq("word_list_id", listId)
-    .eq("user_id", user.id);
-
-  if (delErr) {
-    console.error("Delete failed:", delErr.message, delErr.details ?? "");
-    redirect("/map/edit?flash=Delete%20failed&type=error");
-  }
-
-  revalidatePath("/map/edit");
-  redirect("/map/edit?flash=Deleted&type=success");
-}
 
 // ---------- PAGE (server component) ----------
 type WordListRow = {
@@ -86,11 +17,11 @@ export const metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
-export default async function MapEditPage({
-  searchParams,
-}: {
-  searchParams: { flash?: string; type?: "success" | "error" };
-}) {
+export default async function MapEditPage(props: {
+  params?: Promise<Record<string, string>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;}) {
+
+  const searchParams = await props.searchParams;
   const supabase = await getSupabaseServerActionClient();
 
   // Auth

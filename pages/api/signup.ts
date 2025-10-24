@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 1. Signup user to supabase
         const {
-            data: { session, user },
+            data: { user },
             error,
         } = await supabase.auth.signUp({
             email: username,

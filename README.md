@@ -44,7 +44,7 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function getSupabaseServerClient() {
-  const cookieStore = await cookies();  
+  const cookieStore = (await cookies()) as unknown as ReturnType<typeof cookies>;  
   return createRouteHandlerClient({ cookies: () => cookieStore }); 
 }
 ```
@@ -234,7 +234,7 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function getSupabaseServerActionClient() {
-  const cookieStore = await cookies();  
+  const cookieStore = (await cookies()) as unknown as ReturnType<typeof cookies>;  
   return createServerActionClient({ cookies: () => cookieStore }); // this is actually correct, not an error
 }
 ```

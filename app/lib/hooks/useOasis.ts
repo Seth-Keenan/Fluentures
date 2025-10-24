@@ -14,7 +14,7 @@ type OasisMetaRaw =
 // Robust normalizer that doesn’t rely on TS union narrowing
 function normalizeMeta(m: OasisMetaRaw | null): { id: string; name: string; language: string | null } | null {
   if (!m) return null;
-  const anyMeta = m as Record<string, any>;
+  const anyMeta = m as Record<string, string | null | undefined>;
   return {
     id: anyMeta.word_list_id ?? anyMeta.id ?? "",
     name: anyMeta.word_list_name ?? anyMeta.name ?? "",
@@ -24,11 +24,11 @@ function normalizeMeta(m: OasisMetaRaw | null): { id: string; name: string; lang
 
 // Normalize words coming back as either
 // { id, target, english, notes }  OR  { word_id, target_word, english, notes }
-function normalizeWords(rows: any[] | null): WordItem[] {
+function normalizeWords(rows: WordItem[] | null): WordItem[] {
   if (!rows) return [];
   return rows.map((r) => ({
-    id: String(r.word_id ?? r.id ?? (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`)),
-    target: r.target_word ?? r.target ?? "",
+    id: String(r.id ?? (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`)),
+    target: r.target ?? "",
     english: r.english ?? "",
     notes: r.notes ?? "",
   }));
@@ -49,7 +49,7 @@ export function useOasisData() {
       const [m, w] = await Promise.all([getWordListMeta(listId), getWordlist(listId)]);
       if (!cancelled) {
         setMeta(normalizeMeta(m as OasisMetaRaw | null));
-        setWords(normalizeWords(w as any[]));
+        setWords(normalizeWords(w as WordItem[]));
         setLoading(false);
       }
     })();

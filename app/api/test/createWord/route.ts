@@ -22,6 +22,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: 'Word created', word: data[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error: ' + error }, { status: 500 })
   }
 }

@@ -28,6 +28,7 @@ export default function UpdatePasswordPage() {
           router.push('/login')
         }
       } catch (err) {
+        console.log("Error: " + err)
         router.push('/login')
       }
     }
@@ -56,7 +57,7 @@ export default function UpdatePasswordPage() {
         }, 2000)
       }
     } catch (err) {
-      setError('An error occurred while updating the password')
+      setError('An error occurred while updating the password: ' + err)
     }
   }
 

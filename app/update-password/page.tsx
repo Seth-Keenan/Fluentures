@@ -1,14 +1,13 @@
 import { Metadata } from "next";
 import dynamic from "next/dynamic";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
-import UpdatePasswordPage from "./UpdatePasswordPage";
 
-const LandingPage = dynamic(() => import("./UpdatePasswordPage"), {
+const UpdatePassword = dynamic(() => import("./UpdatePasswordPage"), {
   loading: () => <LoadingSpinner />,
 });
 
-export default function UpdatedPasswordWrapper() {
-  return <UpdatePasswordPage />;
+export default function UpdatePasswordWrapper() {
+  return <UpdatePassword />;
 }
 
 export const metadata: Metadata = {

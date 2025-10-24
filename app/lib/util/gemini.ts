@@ -38,7 +38,7 @@ function extractMeta(err: unknown): GeminiMeta {
     status = undefined;
   }
 
-  const details = (errObj as any)?.errorDetails;
+  const details = errObj?.errorDetails;
   const meta: GeminiMeta = { status };
 
   if (Array.isArray(details)) {

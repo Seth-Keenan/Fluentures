@@ -5,9 +5,9 @@ import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
 type QuizBody = { listId?: string; word?: string; language?: string };
 
 
-async function buildVocabHint(_listId?: string) {
-  return "";
-}
+// async function buildVocabHint(_listId?: string) {
+//   return "";
+// }
 
 export async function POST(req: NextRequest) {
   let body: QuizBody;
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const difficulty = settings.difficulty ?? "Beginner";
 
     // Intentionally empty so model doesn't stuff extra vocab
-    const _vocabHint = await buildVocabHint(body.listId);
+    // const _vocabHint = await buildVocabHint(body.listId);
 
     const instruction = getInstruction(difficulty);
     const prompt = [

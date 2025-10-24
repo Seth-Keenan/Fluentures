@@ -4,12 +4,18 @@ import HomePage from "./page";
 
 const mockUseSession = vi.fn();
 
+type LinkProps = {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+};
+
 vi.mock("@supabase/auth-helpers-react", () => ({
   useSession: () => mockUseSession(),
 }));
 
 vi.mock("@/app/components/LinkAsButton", () => ({
-  LinkAsButton: ({ href, children, className }: any) => (
+  LinkAsButton: ({ href, children, className }: LinkProps) => (
     <a href={href} className={className}>
       {children}
     </a>

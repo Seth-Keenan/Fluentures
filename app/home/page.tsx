@@ -50,7 +50,7 @@ export default function HomePage() {
     const user = session?.user;
     if (!user) return null;
 
-    const m: Record<string, any> = user.user_metadata || {};
+    const m: Record<string, string | null | undefined> = user.user_metadata || {};
     // Try common metadata fields first
     const fromMeta =
       m.name ||

@@ -30,3 +30,6 @@ export type DbWordRow = {
   notes: string | null;
 };
 
+export type WordListFile = {
+  items: WordItem[];
+};

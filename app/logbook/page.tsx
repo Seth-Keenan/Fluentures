@@ -1,7 +1,7 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBolt, faClock, faBookmark, faListUl, faFire } from "@fortawesome/free-solid-svg-icons";
+import { faBolt, faClock, faBookmark, faListUl } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 
 import BookShell from "@/app/logbook/BookShell";

@@ -7,6 +7,6 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function getSupabaseServerClient() {
-  const cookieStore = await cookies();  
+  const cookieStore = cookies();  
   return createRouteHandlerClient({ cookies: () => cookieStore }); // this is actually correct, not an error
 }
