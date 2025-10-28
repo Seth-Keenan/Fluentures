@@ -13,6 +13,7 @@ import {
   faCircleUser,
   faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import SettingsButtonGear from "@/app/components/SettingsButton";
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -181,6 +182,11 @@ export default function HomePage() {
           </p>
         </motion.div>
       </div>
+
+    <div className="fixed bottom-4 right-4  z-50 pointer-events-auto">
+      <SettingsButtonGear />
+    </div>
+
     </div>
   );
 }
