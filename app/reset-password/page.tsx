@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
         setMessage('Check your email for the password reset link')
       }
     } catch (err) {
-      setError('An error occurred while requesting password reset: ' + err)
+      setError('An error occurred while requesting password reset')
     }
   }
 
