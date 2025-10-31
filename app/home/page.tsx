@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
-import { useDisplayName } from "@/app/lib/hooks/useDisplayName";
+import  SettingsButtonGear from "@/app/components/SettingsButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,
@@ -41,6 +41,29 @@ export default function HomePage() {
     const t = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(t);
   }, []);
+
+  // Compute a friendly display name:
+  const displayName = useMemo(() => {
+    const user = session?.user;
+    if (!user) return null;
+
+    const m: Record<string, string | null | undefined> = user.user_metadata || {};
+    // Try common metadata fields first
+    const fromMeta =
+      m.name ||
+      m.full_name ||
+      (m.first_name && m.last_name && `${m.first_name} ${m.last_name}`) ||
+      (m.given_name && m.family_name && `${m.given_name} ${m.family_name}`) ||
+      m.preferred_username ||
+      m.username ||
+      m.user_name;
+
+    if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
+
+    // Fallback: email local part, title-cased
+    const local = user.email?.split("@")[0] ?? "Friend";
+    return titleize(local);
+  }, [session]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -181,6 +204,13 @@ export default function HomePage() {
           </p>
         </motion.div>
       </div>
+      
+    {/*I am just placing setting button in bottom right corner. Feel free to move or reposisiton. */}
+    <div className="fixed bottom-4 right-4  z-50 pointer-events-auto">
+      <SettingsButtonGear />
+    </div>
+
+    
     </div>
   );
 }

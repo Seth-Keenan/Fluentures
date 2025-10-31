@@ -1,15 +1,18 @@
-// app/api/quiz/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { generateGeminiContent, getInstruction } from "@/app/lib/util/gemini";
-import { getUserSettingsFromRoute } from "@/app/lib/server/getUserSettings";
+import { getUserSettingsFromRoute } from "@/app/login/server/getUserSettings";
+
+type QuizBody = { listId?: string; word?: string; language?: string };
+
+
+// async function buildVocabHint(_listId?: string) {
+//   return "";
+// }
 
 export async function POST(req: NextRequest) {
-  type QuizBody = { word?: string };
   let body: QuizBody;
-
   try {
     body = await req.json();
-    console.log("✅ Parsed quiz request:", body);
   } catch {
     return NextResponse.json({ error: "Invalid JSON format" }, { status: 400 });
   }
@@ -20,20 +23,31 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Read language/difficulty from DB
+    // Settings (route-safe)
     const { settings } = await getUserSettingsFromRoute();
-    const language = settings.language ?? "Japanese";
+    const language = body.language ?? settings.language ?? "Japanese";
     const difficulty = settings.difficulty ?? "Beginner";
-    console.log(`${language}, ${difficulty}`);
+
+    // Intentionally empty so model doesn't stuff extra vocab
+    // const _vocabHint = await buildVocabHint(body.listId);
 
     const instruction = getInstruction(difficulty);
-    const prompt = `In ${language}, create a natural, commonly used sentence that contains the word "${word}".
-    ${instruction} Replace the word with a blank (______). Do not include any translations or explanations.
-    Be creative, use a natural context different from the example "私は______を食べました。"`;    
+    const prompt = [
+      `Write exactly ONE natural sentence in ${language}.`,
+      `It must appropriately use the target word "${word}" in context,`,
+      `but REPLACE that occurrence with a single blank: "____".`,
+      `Do NOT include the target word text anywhere in the output.`,
+      `Do NOT use any other vocabulary from the user's word list.`,
+      `Return ONLY the sentence (no translation, no explanations, no formatting).`,
+      instruction,
+      body.listId && `Oasis/List ID: ${body.listId}`
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-    const sentence = await generateGeminiContent(prompt, 100);
+    const sentence = await generateGeminiContent(prompt);
     return NextResponse.json({ sentence, usedSettings: { language, difficulty } });
-  } catch (err: unknown) {
+  } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

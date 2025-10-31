@@ -2,15 +2,22 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type LinkProps = {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+  "aria-label"?: string;
+};
+
 vi.mock("./components/LinkAsButton", () => ({
-  LinkAsButton: ({ href, children, className, "aria-label": ariaLabel }: any) => (
+  LinkAsButton: ({ href, children, className, "aria-label": ariaLabel }: LinkProps) => (
     <a href={href} className={className} aria-label={ariaLabel}>
       {children}
     </a>
   ),
 }));
 
-import Home from "./page";
+import Home from "./LandingPage";
 
 describe("Landing Page", () => {
   beforeEach(() => {

@@ -1,41 +1,53 @@
-import Link from 'next/link'
-import React from 'react'
+"use client";
+
+import Link from "next/link";
+import React from "react";
+import { motion } from "framer-motion";
 
 interface LinkAsButtonProps {
-  onClick?: () => void
-  children?: React.ReactNode
-  className?: string
-  href?: string
-  size?: "sm" | "md" | "lg" // Select sizing for buttons
+  onClick?: () => void;
+  children?: React.ReactNode;
+  className?: string;
+  href?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-export const LinkAsButton: React.FC<LinkAsButtonProps> = ({ // sorry the other long format hurt my brain
+export const LinkAsButton: React.FC<LinkAsButtonProps> = ({
   onClick,
   children,
-  className = '',
-  href = '',
-  size = "md"
+  className = "",
+  href = "",
+  size = "md",
 }) => {
   let sizeClass = "";
   switch (size) {
     case "sm":
-      sizeClass = "w-16 h-16 text-base";
+      sizeClass = "px-3 py-1.5 text-sm";
       break;
     case "md":
-      sizeClass = "w-30 h-10 text-lg";
+      sizeClass = "px-5 py-2.5 text-base";
       break;
     case "lg":
-      sizeClass = "w-50 h-50 text-xl";
+      sizeClass = "px-6 py-3 text-lg";
       break;
   }
 
-  const baseClass = `flex items-center justify-center bg-amber-400 text-white hover:bg-amber-200 transition duration-100 ${sizeClass}`
+  const baseClass = `
+    flex items-center justify-center
+    rounded-xl font-medium tracking-wide
+    backdrop-blur-md border border-white/20
+    bg-white/10 text-white
+    hover:bg-white/20 hover:shadow-lg hover:shadow-white/10
+    transition duration-200 ease-in-out
+    focus:outline-none focus:ring-2 focus:ring-white/40
+    ${sizeClass}
+  `;
 
   return (
-    <Link href={href}>
-      <button onClick={onClick} className={`${baseClass} ${className}`}>
-        {children}
-      </button>
-    </Link>
-  )
-}
+    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+      <Link href={href} onClick={onClick}>
+        <span className={`${baseClass} ${className}`}>{children}</span>
+      </Link>
+    </motion.div>
+  );
+};

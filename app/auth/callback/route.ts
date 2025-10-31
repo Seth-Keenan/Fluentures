@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const requestUrl = new URL(request.url)
+  // const requestUrl = new URL(request.url)
   const cookieStore = await cookies()
   const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) })
   

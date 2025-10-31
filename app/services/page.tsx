@@ -7,6 +7,7 @@ import {
   faBookOpen,       // Log Book
   faUsers,          // Social
   faMapLocationDot, // Map
+  IconDefinition,   // Typescript needs types this
 } from "@fortawesome/free-solid-svg-icons";
 
 const Card = ({
@@ -16,7 +17,7 @@ const Card = ({
 }: {
   title: string;
   desc: string;
-  icon: any;
+  icon: IconDefinition;
 }) => (
   <motion.div
     whileHover={{ y: -2 }}

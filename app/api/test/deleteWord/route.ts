@@ -23,6 +23,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ message: 'Word deleted', word: data[0] })
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error: ' + error }, { status: 500 })
   }
 }

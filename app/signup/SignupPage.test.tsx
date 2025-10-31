@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-global.fetch = vi.fn();
+global.fetch = vi.fn() as unknown as typeof fetch;
 
 describe("SignUpPage", () => {
   beforeEach(() => {
@@ -30,7 +30,9 @@ describe("SignUpPage", () => {
   });
 
   it("submits successfully and redirects to login", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    (global.fetch as unknown as {
+      mockResolvedValueOnce: (value: unknown) => void;
+    }).mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     });
@@ -74,11 +76,14 @@ describe("SignUpPage", () => {
   });
 
   it("displays error message on failed signup", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    (global.fetch as unknown as {
+      mockResolvedValueOnce: (value: unknown) => void;
+    }).mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => ({ message: "Email already exists" }),
     });
+    
 
     render(<SignUpPage />);
 
