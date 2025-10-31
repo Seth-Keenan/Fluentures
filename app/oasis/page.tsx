@@ -191,7 +191,8 @@ export default function OasisHubPage() {
               aria: "Build Sentences",
             },
             {
-              href: `/oasis/edit${oasisId ? `?id=${encodeURIComponent(oasisId)}` : ""}`,
+              //href: `/oasis/edit${oasisId ? `?id=${encodeURIComponent(oasisId)}` : ""}`,
+              href: oasisId ? `/oasis/${encodeURIComponent(oasisId)}/edit` : "/oasis",
               icon: faWandMagicSparkles,
               title: "Edit Oasis",
               desc: "Tweak words, hints, and difficulty.",

@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
-import  SettingsButtonGear from "@/app/components/SettingsButton";
+import { useDisplayName } from "@/app/lib/hooks/useDisplayName";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,
@@ -13,6 +13,7 @@ import {
   faCircleUser,
   faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import SettingsButtonGear from "@/app/components/SettingsButton";
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -27,7 +28,7 @@ const item: Variants = {
 type Dest = { label: string; href: string; icon: any; description: string };
 
 const DESTINATIONS: Dest[] = [
-  { label: "Social",   href: "/social",  icon: faUsers,          description: "Practice together and share progress" },
+  { label: "Social",   href: "/social",  icon: faUsers,          description: "Share progress with your friends" },
   { label: "Map",      href: "/map",     icon: faMapLocationDot, description: "Jump to your oases and explore" },
   { label: "Log Book", href: "/logbook", icon: faBookOpen,       description: "Review stories, quizzes, and notes" },
 ];
@@ -41,29 +42,6 @@ export default function HomePage() {
     const t = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(t);
   }, []);
-
-  // Compute a friendly display name:
-  const displayName = useMemo(() => {
-    const user = session?.user;
-    if (!user) return null;
-
-    const m: Record<string, string | null | undefined> = user.user_metadata || {};
-    // Try common metadata fields first
-    const fromMeta =
-      m.name ||
-      m.full_name ||
-      (m.first_name && m.last_name && `${m.first_name} ${m.last_name}`) ||
-      (m.given_name && m.family_name && `${m.given_name} ${m.family_name}`) ||
-      m.preferred_username ||
-      m.username ||
-      m.user_name;
-
-    if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
-
-    // Fallback: email local part, title-cased
-    const local = user.email?.split("@")[0] ?? "Friend";
-    return titleize(local);
-  }, [session]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -204,13 +182,11 @@ export default function HomePage() {
           </p>
         </motion.div>
       </div>
-      
-    {/*I am just placing setting button in bottom right corner. Feel free to move or reposisiton. */}
+
     <div className="fixed bottom-4 right-4  z-50 pointer-events-auto">
       <SettingsButtonGear />
     </div>
 
-    
     </div>
   );
 }

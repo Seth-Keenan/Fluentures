@@ -402,7 +402,8 @@ export default function MapView({
   // -----------------------------------------
 
   const openPacket = (id: string) => {
-    router.push(`/oasis?id=${id}`);
+    //router.push(`/oasis?id=${id}`);
+    router.push(`/oasis/${id}`);
   };
 
   return (
@@ -507,7 +508,7 @@ export default function MapView({
               {/* Model instances */}
               <Suspense fallback={<Html center style={{ color: "white" }}>Loading oases…</Html>}>
                 {instances.map((o) => (
-                  <OasisInstance key={o.id} data={o} onOpen={(id) => router.push(`/oasis?id=${id}`)} />
+                  <OasisInstance key={o.id} data={o} onOpen={(id) => router.push(`/oasis/${id}`)} />
                 ))}
               </Suspense>
 
