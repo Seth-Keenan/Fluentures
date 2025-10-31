@@ -17,7 +17,8 @@ const navLinks = [
 ];
 
 const baseBtn =
-  "rounded-lg px-4 py-2 relative overflow-hidden select-none focus:outline-none focus:ring-2 focus:ring-white/60";
+  // added cursor-pointer
+  "rounded-lg px-4 py-2 relative overflow-hidden select-none focus:outline-none focus:ring-2 focus:ring-white/60 cursor-pointer";
 const primaryBtn = "!bg-amber-500 hover:!bg-amber-400 text-white shadow-md";
 const ghostBtn =
   "bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/30";
@@ -72,7 +73,8 @@ export default function Navbar() {
     return (
       <Link href={href} className="group relative">
         <motion.span
-          className="relative inline-flex items-center justify-center px-2 py-1 text-white/90 hover:text-white transition-colors"
+          // added cursor-pointer
+          className="relative inline-flex items-center justify-center px-2 py-1 text-white/90 hover:text-white transition-colors cursor-pointer"
           whileHover={{ y: prefersReducedMotion ? 0 : -2 }}
           whileTap={{ scale: prefersReducedMotion ? 1 : 0.98 }}
         >
@@ -186,6 +188,7 @@ export default function Navbar() {
                 <motion.button
                   type="button"
                   onClick={handleSignOut}
+                  // added cursor-pointer via className
                   className={`group ${baseBtn} ${primaryBtn}`}
                   whileHover={{ y: prefersReducedMotion ? 0 : -2 }}
                   whileTap={{ scale: prefersReducedMotion ? 1 : 0.98 }}
@@ -201,7 +204,8 @@ export default function Navbar() {
           <motion.button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="md:hidden ml-auto z-10 rounded-md p-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
+            // added cursor-pointer
+            className="md:hidden ml-auto z-10 rounded-md p-2 text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
             aria-label="Toggle menu"
             aria-expanded={menuOpen}
             whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
@@ -251,7 +255,8 @@ export default function Navbar() {
                   <Link
                     href={l.href}
                     onClick={() => setMenuOpen(false)}
-                    className="block rounded-lg px-3 py-2 hover:bg-white/10"
+                    // added cursor-pointer
+                    className="block rounded-lg px-3 py-2 hover:bg-white/10 cursor-pointer"
                   >
                     {l.label}
                   </Link>
@@ -280,7 +285,7 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    {/* Mobile Home button (you already had this; kept intact) */}
+                    {/* Mobile Home button */}
                     <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
                       <Link href="/home" onClick={() => setMenuOpen(false)} className="block">
                         <span className={`group inline-flex w-full justify-center ${baseBtn} ${ghostBtn}`}>

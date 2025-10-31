@@ -1,9 +1,8 @@
-//app/lib/actions/wordlistAction.ts
+// app/lib/actions/wordlistAction.ts
 "use server";
 
-import { getSupabaseServerActionClient } from '@/app/lib/hooks/supabaseServerActionClient'
+import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 import type { WordItem } from "@/app/types/wordlist";
-
 
 export type WordListMeta = {
   id: string;
@@ -12,14 +11,16 @@ export type WordListMeta = {
 };
 
 /**
-  * READ: get metadata for a given listId
+ * READ: get metadata for a given listId
  */
 export async function getWordListMeta(listId: string): Promise<WordListMeta | null> {
   if (!listId) return null;
 
-  // Added this 3-line block
-  const supabase = await getSupabaseServerActionClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerActionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) return null;
 
   const { data, error } = await supabase
@@ -37,7 +38,7 @@ export async function getWordListMeta(listId: string): Promise<WordListMeta | nu
   return {
     id: data.word_list_id,
     name: data.word_list_name,
-    language: data.language
+    language: data.language,
   } as WordListMeta;
 }
 
@@ -50,16 +51,16 @@ export async function updateWordListMeta(
 ): Promise<boolean> {
   if (!listId) return false;
 
-  // const supabase = createServerActionClient({ cookies });
-
-  // Added this 3-line block
-  const supabase = await getSupabaseServerActionClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerActionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) return false;
 
   // Map interface fields to database columns
   const dbPatch: Record<string, unknown> = {};
-  if (patch.name) dbPatch.word_list_name = patch.name;
+  if (patch.name !== undefined) dbPatch.word_list_name = patch.name;
   if (patch.language !== undefined) dbPatch.language = patch.language;
 
   const { error } = await supabase
@@ -67,9 +68,9 @@ export async function updateWordListMeta(
     .update(dbPatch)
     .eq("word_list_id", listId);
 
-  if (error) { 
-    console.error("updateWordListMeta error:", error); 
-    return false; 
+  if (error) {
+    console.error("updateWordListMeta error:", error);
+    return false;
   }
   return true;
 }
@@ -81,10 +82,11 @@ export async function updateWordListMeta(
 export async function getWordlist(listId: string): Promise<WordItem[]> {
   if (!listId) return [];
 
-  // const supabase = createServerActionClient({ cookies });
-  // Added this 3-line block
-  const supabase = await getSupabaseServerActionClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerActionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) return [];
 
   const { data, error } = await supabase
@@ -115,13 +117,15 @@ export async function renameWordList(listId: string, newName: string): Promise<b
   const name = newName.trim();
   if (!name) return false;
 
-  // Added this 3-line block
-  const supabase = await getSupabaseServerActionClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerActionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) return false;
 
   const { error } = await supabase
-    .from("WordList") 
+    .from("WordList")
     .update({ word_list_name: name })
     .eq("word_list_id", listId);
 
@@ -132,15 +136,18 @@ export async function renameWordList(listId: string, newName: string): Promise<b
   return true;
 }
 
-  export async function deleteWordItem(listId: string, id: string) {
-    const supabase = await getSupabaseServerActionClient();
-    const { error } = await supabase
-      .from("Word")
-      .delete()
-      .eq("word_id", id)
-      .eq("word_list_id", listId);
-    return !error;
-  }
+/**
+ * DELETE a word item from a list
+ */
+export async function deleteWordItem(listId: string, id: string) {
+  const supabase = await getSupabaseServerActionClient();
+  const { error } = await supabase
+    .from("Word")
+    .delete()
+    .eq("word_id", id)
+    .eq("word_list_id", listId);
+  return !error;
+}
 
 /**
  * SAVE (minimal): upsert rows that are currently in the UI.
@@ -148,9 +155,11 @@ export async function renameWordList(listId: string, newName: string): Promise<b
 export async function saveWordlist(listId: string, items: WordItem[]): Promise<boolean> {
   if (!listId) return false;
 
-  // Added this 3-line block
-  const supabase = await getSupabaseServerActionClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerActionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) return false;
 
   // Map interface fields to database columns
@@ -177,33 +186,36 @@ export async function saveWordlist(listId: string, items: WordItem[]): Promise<b
  * CREATE: create a new word list and return its id
  */
 export async function createWordList(name: string, language?: string) {
-  console.log('Creating word list:', { name, language });
+  console.log("Creating word list:", { name, language });
 
-  const supabase = await getSupabaseServerActionClient(); 
-  console.log('Supabase client created');
+  const supabase = await getSupabaseServerActionClient();
+  console.log("Supabase client created");
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  console.log('Auth check result:', {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  console.log("Auth check result:", {
     userId: user?.id,
     hasUser: !!user,
-    userError: userError?.message
+    userError: userError?.message,
   });
 
   if (userError || !user) {
-    console.error('Authentication failed:', userError);
+    console.error("Authentication failed:", userError);
     return null;
   }
 
   const insertData = {
-    word_list_name: name,  
+    word_list_name: name,
     language: language ?? null,
     user_id: user.id,
-    is_favorite: false
+    is_favorite: false,
   };
-  console.log('Attempting to insert:', insertData);
+  console.log("Attempting to insert:", insertData);
 
   const { data, error } = await supabase
-    .from("WordList") 
+    .from("WordList")
     .insert(insertData)
     .select("word_list_id")
     .single();
@@ -213,6 +225,6 @@ export async function createWordList(name: string, language?: string) {
     return null;
   }
 
-  console.log('Successfully created word list:', data);
+  console.log("Successfully created word list:", data);
   return data.word_list_id as string;
 }

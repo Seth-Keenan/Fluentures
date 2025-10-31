@@ -40,6 +40,7 @@ export const LinkAsButton: React.FC<LinkAsButtonProps> = ({
     hover:bg-white/20 hover:shadow-lg hover:shadow-white/10
     transition duration-200 ease-in-out
     focus:outline-none focus:ring-2 focus:ring-white/40
+    cursor-pointer select-none
     ${sizeClass}
   `;
 
