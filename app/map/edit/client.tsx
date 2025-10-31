@@ -1,5 +1,6 @@
 // app/map/edit/page.tsx
 "use client";
+
 // was previously the frontend page.tsx moved here for more seamless merge with main later
 
 import React, {
@@ -21,8 +22,10 @@ import {
   Environment,
   ContactShadows,
 } from "@react-three/drei";
-import { motion, type Variants } from "framer-motion";
-import { LinkAsButton } from "../../components/LinkAsButton";
+// UNUSED: framer-motion isn't used in this file
+// import { motion, type Variants } from "framer-motion";
+// UNUSED: LinkAsButton not used here
+// import { LinkAsButton } from "../../components/LinkAsButton";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 //import CreateTestOasisButton from "./CreateOasisAndEditButton";
@@ -134,7 +137,7 @@ function makeId() {
 }
 */
 
-/*-----------------added in --------------------*/
+/*----------------- compute defaults (kept) --------------------*/
 function computeDefaultTransforms(lists: WordListLite[]): Oasis3D[] {
   // Place oases on a ring by default
   const radius = 8;
@@ -151,6 +154,7 @@ function computeDefaultTransforms(lists: WordListLite[]): Oasis3D[] {
   });
 }
 
+/* OLD MERGE helper — no longer needed with loadSaved() 
 function mergeWithSaved(wordlists: WordListLite[]): Oasis3D[] {
   let savedById: Record<string, Oasis3D> = {};
   try {
@@ -178,17 +182,26 @@ function mergeWithSaved(wordlists: WordListLite[]): Oasis3D[] {
   } catch {}
   return merged;
 }
+*/
 
-
-/*
-function autoPosition(index: number): Vec3 {
-  const spacing = 3;
-  const cols = 5;
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  return [col * spacing, 0, row * spacing] as Vec3;
+/* safe load + debounced save */
+function loadSaved(): Record<string, Oasis3D> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_3D);
+    const arr: Oasis3D[] = raw ? JSON.parse(raw) : [];
+    return Object.fromEntries(arr.map((o) => [o.id, o]));
+  } catch {
+    return {};
+  }
 }
-  */
+
+function saveDebounced(instances: Oasis3D[]) {
+  // simple rAF debounce to avoid hammering localStorage
+  if ((saveDebounced as any)._t) cancelAnimationFrame((saveDebounced as any)._t);
+  (saveDebounced as any)._t = requestAnimationFrame(() => {
+    localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(instances));
+  });
+}
 
 /* ---------------- Models & Instances ---------------- */
 function OasisModel({ scale = 1 }: { scale?: number }) {
@@ -196,7 +209,6 @@ function OasisModel({ scale = 1 }: { scale?: number }) {
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
   return <primitive object={scene} scale={scale} />;
 }
-
 
 // Invisible plane used ONLY for click-to-place (avoid z-fighting with small y-offset)
 function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
@@ -217,7 +229,6 @@ function Ground({ onPlace }: { onPlace: (point: Vec3) => void }) {
     </mesh>
   );
 }
-  
 
 function OasisInstance({
   data,
@@ -337,19 +348,117 @@ function ControlsWithLimits({
   );
 }
 
-    
+/* ---------------- ADDED: GlideControlsUI (arrow pad for screen-aligned gliding) ---------------- */
+// This is the same motion control from your map page, lifted verbatim and scoped here.
+function GlideControlsUI({
+  controlsRef,
+  bounds,
+  step = 2,
+  duration = 500,
+}: {
+  controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  step?: number;
+  duration?: number;
+}) {
+  const rafRef = useRef<number | null>(null);
+
+  const glideScreen = (sx: number, sz: number) => {
+    const c = controlsRef.current;
+    if (!c) return;
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    const cam = c.object as THREE.PerspectiveCamera;
+
+    // Screen-aligned basis projected onto XZ plane
+    const forward = new THREE.Vector3();
+    cam.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    const up = new THREE.Vector3(0, 1, 0);
+    const right = forward.clone().cross(up).normalize();
+
+    // Map screen step to world delta
+    const worldDelta = new THREE.Vector3()
+      .addScaledVector(right, sx * step)
+      .addScaledVector(forward, -sz * step);
+
+    const start = performance.now();
+    const from = c.target.clone();
+    const unclampedTo = from.clone().add(worldDelta);
+    const to = new THREE.Vector3(
+      Math.min(bounds.maxX, Math.max(bounds.minX, unclampedTo.x)),
+      from.y,
+      Math.min(bounds.maxZ, Math.max(bounds.minZ, unclampedTo.z)),
+    );
+
+    const animate = (t: number) => {
+      const k = Math.min(1, (t - start) / duration);
+      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
+
+      const cur = from.clone().lerp(to, ease);
+      const off = new THREE.Vector3().subVectors(c.object.position, c.target);
+
+      c.target.copy(cur);
+      c.object.position.copy(cur).add(off);
+
+      if (k < 1) rafRef.current = requestAnimationFrame(animate);
+      else rafRef.current = null;
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+  };
+
+  return (
+    <div className="pointer-events-auto absolute right-4 top-4 z-20 flex flex-col gap-2">
+      <div className="flex gap-2">
+        <button
+          onClick={() => glideScreen(0, -1)}
+          className="rounded-md bg-white/90 px-3 py-2 text-sm shadow"
+        >
+          ↑
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => glideScreen(-1, 0)}
+          className="rounded-md bg-white/90 px-3 py-2 text-sm shadow -translate-x-12"
+        >
+          ←
+        </button>
+        <button
+          onClick={() => glideScreen(1, 0)}
+          className="rounded-md bg-white/90 px-3 py-2 text-sm shadow"
+        >
+          →
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => glideScreen(0, 1)}
+          className="rounded-md bg-white/90 px-3 py-2 text-sm shadow"
+        >
+          ↓
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* ---------------- UI animation ---------------- */
-const panelIn: Variants = {
-  hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    filter: "blur(0)",
-    transition: { duration: 0.45, ease: "easeOut" },
-  },
-};
+// ❌ UNUSED: panelIn is not used
+// const panelIn: Variants = {
+//   hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
+//   show: {
+//     opacity: 1,
+//     y: 0,
+//     scale: 1,
+//     filter: "blur(0)",
+//     transition: { duration: 0.45, ease: "easeOut" },
+//   },
+// };
 
 /* ---------------- Page ---------------- */
 export default function MapEditView({
@@ -365,20 +474,65 @@ export default function MapEditView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
+  // ✅ StrictMode init guard
+  const didInit = useRef(false);
+
   // Same bounds used on your Map page
   const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
 
-  // Build instances from server wordlists + saved transforms
+  // ❌ OLD: Build instances from server wordlists + saved transforms
+  // useEffect(() => {
+  //   setInstances(mergeWithSaved(wordlists));
+  // }, [wordlists]);
+
+  // ✅ NEW: Build instances (saved -> defaults), guarded against double-mount
   useEffect(() => {
-    setInstances(mergeWithSaved(wordlists));
+    if (didInit.current) return; // prevent double init in React StrictMode
+    didInit.current = true;
+
+    const savedById = loadSaved();
+    const defaults = computeDefaultTransforms(wordlists);
+
+    const merged = wordlists.map((wl) => {
+      const s = savedById[wl.id];
+      return s
+        ? { ...s, title: wl.title } // keep saved transform, refresh title from DB
+        : (defaults.find((d) => d.id === wl.id) as Oasis3D);
+    });
+
+    setInstances(merged);
   }, [wordlists]);
 
-  // Persist transforms
+  // ❌ OLD: Persist transforms directly every change
+  // useEffect(() => {
+  //   try {
+  //     localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(instances));
+  //   } catch {}
+  // }, [instances]);
+
+  // ✅ NEW: Debounced persistence after edits
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(instances));
-    } catch {}
+    if (!didInit.current) return;
+    saveDebounced(instances);
   }, [instances]);
+
+  // NEW: reconcile/prune whenever the server IDs set changes (after creates/deletes)
+  const idsKey = useMemo(
+    () => JSON.stringify(wordlists.map((w) => w.id).sort()),
+    [wordlists]
+  ); // NEW
+
+  useEffect(() => {
+    if (!didInit.current) return; // only run after initial build
+    const savedById = loadSaved();
+    const defaults = computeDefaultTransforms(wordlists);
+    const merged = wordlists.map((wl) => {
+      const s = savedById[wl.id];
+      return s ? { ...s, title: wl.title } : (defaults.find((d) => d.id === wl.id) as Oasis3D);
+    });
+    setInstances(merged);
+    saveDebounced(merged);
+  }, [idsKey]); // NEW
 
   // Mutators for selected
   const updateSelected = (fn: (o: Oasis3D) => Oasis3D) => {
@@ -397,9 +551,19 @@ export default function MapEditView({
   // Delete in DB
   const handleDeleteSelected = async () => {
     if (!selectedId) return;
+
+    // NEW: optimistic local removal + LS sync so the GLB disappears immediately
+    setInstances((prev) => {
+      const next = prev.filter((o) => o.id !== selectedId);
+      saveDebounced(next);
+      return next;
+    });
+    const deletingId = selectedId; // capture before clearing
+    setSelectedId(null);
+
     const fd = new FormData();
-    fd.append("listId", selectedId);
-    await deleteAction(fd); // server revalidates/redirects
+    fd.append("listId", deletingId);
+    await deleteAction(fd); // server revalidates/redirects; idsKey effect will reconcile if needed
   };
 
   // Create in DB
@@ -415,7 +579,7 @@ export default function MapEditView({
   };
 
   return (
-     <div className="w-full h-full">
+    <div className="w-full h-full">
       {/* ===== TOOLBAR (removed card/container wrapper) ===== */}
       {/* (was wrapped in centered card; now it's just a simple bar) */}
       <div className="p-3 flex flex-wrap items-center gap-2">
@@ -508,7 +672,8 @@ export default function MapEditView({
       </div>
 
       {/* ===== MAP CANVAS (removed outer card/wrapper divs) ===== */}
-      <div className="h-[70vh]">
+      {/* ADDED: 'relative' so the arrow pad can absolutely position over the canvas */}
+      <div className="h-[70vh] relative">
         <Canvas shadows camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }}>
           {/* Scene mood */}
           <color attach="background" args={["#000000"]} />
@@ -561,6 +726,9 @@ export default function MapEditView({
           {/* Controls + pan limits */}
           <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
         </Canvas>
+
+        {/* ADDED: Arrow pad overlay (same as Map page) */}
+        <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
       </div>
     </div>
   );

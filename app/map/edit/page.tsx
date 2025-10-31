@@ -79,6 +79,13 @@ export async function deleteListAction(formData: FormData) {
   await deleteList(id);
 }
 
+export async function createListAction(formData: FormData) {
+  "use server";
+  // `createList` already handles the "name" default, so we can just pass through.
+  await createList(formData);
+}
+
+
 // ---------- PAGE (server component) ----------
 type WordListRow = {
   word_list_id: string;
@@ -158,7 +165,7 @@ export default async function MapEditPage() {
           <MapEditView
             wordlists={wordlists}
             deleteAction={deleteListAction}
-            createAction={createList}
+            createAction={createListAction}
           />
         </div>
       </section>
