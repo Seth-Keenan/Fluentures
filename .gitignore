@@ -43,3 +43,10 @@ next-env.d.ts
 
 # temp files
 /data/wordlists/
+
+# macOS
+.DS_Store
+
+# env
+.env.local
+.env

@@ -5,7 +5,7 @@ export type WordItem = {
   id: string;            // matches words.id (string in TS. Its a uuid in db)
   target: string;
   english: string;
-  notes?: string | null;
+  notes?: string;
 };
 
 // The parent wordlist (an “oasis”)
@@ -30,6 +30,3 @@ export type DbWordRow = {
   notes: string | null;
 };
 
-export type WordListFile = {
-  items: WordItem[];
-};

@@ -1,15 +1,12 @@
+// app/page.tsx
 import { Metadata } from "next";
-import dynamic from "next/dynamic";
-import LoadingSpinner from "./components/LoadingSpinner";
-
-const LandingPage = dynamic(() => import("./LandingPage"), {
-  loading: () => <LoadingSpinner />,
-});
-
-export default function LandingPageWrapper() {
-  return <LandingPage />;
-}
+import LandingPage from "./LandingPage";
 
 export const metadata: Metadata = {
   title: "Fluentures",
+  description: "A lighter, friendlier way to learn languages.",
 };
+
+export default function Page() {
+  return <LandingPage />;
+}
