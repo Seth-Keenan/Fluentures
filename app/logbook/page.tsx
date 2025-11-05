@@ -5,18 +5,37 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import BookShell from "@/app/logbook/BookShell";
 import { getAllFavoritesForUser, type FavoriteWord } from "@/app/lib/actions/favoritesAction";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBolt, faClock, faBookmark, faListUl } from "@fortawesome/free-solid-svg-icons";
 
-// Simple item renderer
-function FavoriteRow({ w }: { w: FavoriteWord }) {
-  return (
-    <div className="rounded-lg border border-amber-900/15 bg-white/40 px-3 py-2 shadow-sm mb-2">
-      <div className="text-[15px] font-semibold text-amber-900/90">
-        {w.word_target ?? "(no target)"}
-      </div>
-      <div className="text-sm text-amber-900/70">{w.word_english ?? ""}</div>
-    </div>
-  );
-}
+import StatCard from "@/app/logbook/StatCard";
+import ProgressBar from "@/app/logbook/ProgressBar";
+import RecentList from "@/app/logbook/RecentList";
+import FavoritesPanel from "@/app/logbook/FavoritesPanel";
+import Leaderboard from "@/app/logbook/Leaderboard";
+
+// TODO: replace with real data (for Home page UI)
+const DATA = {
+  xp: 12450,
+  minutes: 732,
+  wordsSaved: 86,
+  listsMade: 7,
+  streakDays: 12,
+  recent: [
+    { word: "serendipity", note: "happy chance discovery" },
+    { word: "eloquent", note: "fluent or persuasive" },
+    { word: "ephemeral", note: "lasting a short time" },
+  ],
+  favorites: [
+    { word: "ubiquitous", example: "Smartphones are ubiquitous in modern life." },
+    { word: "camaraderie", example: "The team's camaraderie fueled late-night sprints." },
+  ],
+  leaderboard: ["You", "Mina", "Leo", "Harper"],
+};
+
+const level = Math.floor(DATA.xp / 1000) + 1;
+const into = DATA.xp % 1000;
+const toNext = 1000;
 
 // Utility: chunk an array into arrays of `size`
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -30,14 +49,18 @@ export default function LogbookPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch favorites once
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        console.log("🔍 Loading favorites...");
         const data = await getAllFavoritesForUser();
-        console.log("🔍 Favorites loaded:", data.length, "items");
-        setFavorites(data);
+        if (Array.isArray(data)) {
+          setFavorites(data);
+        } else {
+          console.log("[favorites debug output]", data);
+          setFavorites([]);
+        }
       } catch (err) {
         console.error("❌ Error loading favorites:", err);
         setError("Failed to load favorites");
@@ -47,128 +70,151 @@ export default function LogbookPage() {
     })();
   }, []);
 
-  // Layout rules: 2 columns per "page" (BookShell uses a 2-col grid)
-  const ITEMS_PER_COLUMN = 6; // Reduced for better display
-  const ITEMS_PER_PAGE = ITEMS_PER_COLUMN * 2; // because 2 columns
+  // Layout rules: 2 columns per “page” (BookShell uses a 2-col grid)
+  const ITEMS_PER_COLUMN = 6;
+  const ITEMS_PER_PAGE = ITEMS_PER_COLUMN * 2;
 
-  // Split into physical "pages" (each page = two columns)
-  const pageChunks = useMemo(() => {
-    console.log("🔍 Creating page chunks from", favorites.length, "favorites");
-    return chunk(favorites, ITEMS_PER_PAGE);
-  }, [favorites, ITEMS_PER_PAGE]);
+  // Split favorites into 2-column spreads
+  const favChunks = useMemo(() => chunk(favorites, ITEMS_PER_PAGE), [favorites, ITEMS_PER_PAGE]);
 
-  // Build the pages array expected by <BookShell pages={...}>
+  // Build all pages (Home first, then Favorites spreads)
   const pages = useMemo(() => {
-    console.log("🔍 Building pages, loading:", loading, "pageChunks:", pageChunks.length);
-
+    // Loading / error fallbacks
     if (loading) {
       return [
         <div key="loading" className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          {/* LEFT */}
           <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
-            <div className="mt-4 text-amber-900/70">Loading your favorites...</div>
+            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">Logbook</h2>
+            <div className="mt-4 text-amber-900/70">Loading…</div>
           </div>
-          {/* RIGHT */}
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
-            <div className="animate-pulse">
-              <div className="h-4 bg-amber-900/20 rounded mb-2"></div>
-              <div className="h-4 bg-amber-900/20 rounded mb-2 w-3/4"></div>
-              <div className="h-4 bg-amber-900/20 rounded mb-2 w-1/2"></div>
-            </div>
-          </div>
-        </div>
+          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
+        </div>,
       ];
     }
 
     if (error) {
       return [
         <div key="error" className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          {/* LEFT */}
           <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
+            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">Logbook</h2>
             <div className="mt-4 text-red-600">{error}</div>
           </div>
-          {/* RIGHT */}
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
-            <p className="text-amber-900/70 text-sm italic">
-              Please try refreshing the page.
-            </p>
-          </div>
-        </div>
+          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
+        </div>,
       ];
     }
 
-    if (!pageChunks.length || favorites.length === 0) {
-      return [
-        <div key="empty" className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          {/* LEFT */}
-          <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
-            <div className="mt-4 text-amber-900/70">
-              You haven`t favorited any words yet.
-            </div>
-            <div className="mt-4 p-4 bg-amber-900/10 rounded-lg">
-              <p className="text-sm text-amber-900/80">
-                To add favorites, go to any word list and click the heart icon next to words you want to save.
-              </p>
-            </div>
-          </div>
-          {/* RIGHT */}
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
-            <p className="text-amber-900/70 text-sm italic">
-              Tip: Tap the bookmark icon on any word to add it here.
-            </p>
+    // --- PAGE 1: HOME (your original design) ---
+    const homePage = (
+      <>
+        {/* LEFT PAGE */}
+        <div className="pr-8 md:pr-10">
+          <h2 className="text-amber-900/90 text-2xl font-semibold">Recently learned</h2>
+          <RecentList items={DATA.recent} />
+
+          <div className="mt-6 h-px w-full bg-amber-900/20" />
+
+          <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">My stats</h3>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <StatCard
+              label="Experience"
+              value={`${DATA.xp.toLocaleString()} XP`}
+              icon={<FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-indigo-600" />}
+              hint={`Level ${level}`}
+              footer={<ProgressBar value={into} max={toNext} />}
+            />
+            <StatCard
+              label="Time Spent"
+              value={`${Math.floor(DATA.minutes / 60)}h ${DATA.minutes % 60}m`}
+              icon={<FontAwesomeIcon icon={faClock} className="h-5 w-5 text-indigo-600" />}
+              hint={`${DATA.minutes} minutes total`}
+            />
+            <StatCard
+              label="Words Saved"
+              value={DATA.wordsSaved}
+              icon={<FontAwesomeIcon icon={faBookmark} className="h-5 w-5 text-indigo-600" />}
+              hint="Keep collecting vocabulary!"
+            />
+            <StatCard
+              label="Lists Made"
+              value={DATA.listsMade}
+              icon={<FontAwesomeIcon icon={faListUl} className="h-5 w-5 text-indigo-600" />}
+              hint="Organize your learning"
+            />
           </div>
         </div>
-      ];
-    }
 
-    return pageChunks.map((slice, idx) => {
-      // Left column gets first half, right column gets second half
-      const leftCol = slice.slice(0, ITEMS_PER_COLUMN);
-      const rightCol = slice.slice(ITEMS_PER_COLUMN);
+        {/* RIGHT PAGE */}
+        <div className="md:pl-12 lg:pl-14 border-t md:border-t-0 md:border-l border-amber-900/20">
+          <Leaderboard names={DATA.leaderboard} />
 
-      return (
-        <div key={`page-${idx}`} className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          {/* LEFT PAGE */}
-          <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">
-              My Favorites {pageChunks.length > 1 ? `· Page ${idx + 1}` : ""}
-            </h2>
-            <div className="space-y-2">
-              {leftCol.map((w) => (
-                <FavoriteRow key={w.word_id} w={w} />
-              ))}
-            </div>
-            {leftCol.length === 0 && (
-              <div className="text-amber-900/50 text-sm italic">
-                No more items on this side
-              </div>
-            )}
+          <div className="mt-6">
+            <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
+              Add Friends
+            </button>
           </div>
+        </div>
+      </>
+    );
 
-          {/* RIGHT PAGE */}
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
-            <div className="md:pt-0 pt-6">
-              <div className="space-y-2">
-                {rightCol.map((w) => (
-                  <FavoriteRow key={w.word_id} w={w} />
-                ))}
-              </div>
-              {rightCol.length === 0 && leftCol.length > 0 && (
-                <div className="text-amber-900/50 text-sm italic">
-                  Continue on next page →
+    // --- FAVORITES PAGES (using FavoritesPanel) ---
+    const favoritePages =
+      favChunks.length === 0
+        ? [
+            <>
+              {/* LEFT */}
+              <div className="pr-6">
+                <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
+                <div className="mt-4 text-amber-900/70">
+                  You haven&apos;t favorited any words yet.
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    });
-  }, [loading, error, pageChunks, favorites.length, ITEMS_PER_COLUMN]);
+                <div className="mt-4 p-4 bg-amber-900/10 rounded-lg">
+                  <p className="text-sm text-amber-900/80">
+                    Go to any word list and tap the heart icon to add favorites.
+                  </p>
+                </div>
+                <p className="mt-6 text-amber-900/60 text-sm italic">← Flip back for Home</p>
+              </div>
+              {/* RIGHT */}
+              <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
+            </>,
+          ]
+        : favChunks.map((slice, idx) => {
+            const leftCol = slice.slice(0, ITEMS_PER_COLUMN);
+            const rightCol = slice.slice(ITEMS_PER_COLUMN);
 
-  console.log("🔍 Final pages array:", pages.length, "pages");
+            const toFav = (w: FavoriteWord) => ({
+              word: w.word_target ?? "(no target)",
+              example: w.word_english ?? "",
+            });
+
+            return (
+              <div key={`fav-${idx}`} className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                {/* LEFT */}
+                <div className="pr-6">
+                  <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">
+                    My Favorites · Page {idx + 1}
+                  </h2>
+                  <FavoritesPanel items={leftCol.map(toFav)} />
+                </div>
+
+                {/* RIGHT */}
+                <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
+                  <div className="md:pt-0 pt-6">
+                    <FavoritesPanel items={rightCol.map(toFav)} />
+                  </div>
+                  <div className="mt-6 text-amber-900/60 text-sm italic">
+                    {idx === 0 ? "← Flip back for Home" : "← Previous page"}
+                  </div>
+                </div>
+              </div>
+            );
+          });
+
+    // Return all pages: Home first, then Favorites spreads
+    return [homePage, ...favoritePages];
+  }, [loading, error, favorites.length, favChunks, ITEMS_PER_COLUMN]);
 
   return (
     <BookShell
