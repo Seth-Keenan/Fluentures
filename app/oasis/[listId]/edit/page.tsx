@@ -247,7 +247,7 @@ export default function EditOasisPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-semibold text-white drop-shadow">
-                  Edit Oasis — Word List
+                  Edit Oasis — {meta?.name ?? "Word List"}
                 </h1>
                 <p className="text-sm text-white/80">
                   {items.length}/{MAX_ITEMS} {items.length === 1 ? "entry" : "entries"}
@@ -292,7 +292,7 @@ export default function EditOasisPage() {
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
               <input
                 className="min-w-[260px] flex-1 rounded-xl border border-white/20 bg-white/90 px-4 py-2 text-sm outline-none placeholder:text-neutral-400 shadow-inner focus:ring-2 focus:ring-amber-400/60 text-gray-900"
-                placeholder="Oasis name"
+                placeholder={meta?.name ?? "Oasis name"}
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
               />
@@ -364,7 +364,13 @@ export default function EditOasisPage() {
                       <div className="col-span-3 flex flex-col gap-1">
                         <input
                           className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                          placeholder="こんにちは"
+                          placeholder={
+                            meta?.language === "Japanese"
+                              ? "こんにちは"
+                              : meta?.language === "Spanish"
+                              ? "hola"
+                              : meta?.name ?? "Hej"
+                          }
                           value={item.target}
                           maxLength={TARGET_MAX}
                           onChange={(e) => updateField(item.id, "target", e.target.value)}
