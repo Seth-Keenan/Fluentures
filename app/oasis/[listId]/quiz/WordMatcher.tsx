@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 
@@ -34,6 +34,7 @@ const item: Variants = {
 
 export default function WordMatcher() {
   const { listId, meta, words, loading } = useOasisData();
+  const prefersReducedMotion = useReducedMotion();
 
   // Build pairs from real data (filter blanks)
   const items: MatchItem[] = useMemo(
@@ -106,13 +107,49 @@ export default function WordMatcher() {
     }
   };
 
-  if (!listId) return <div className="p-6">Missing list id.</div>;
-  if (loading) return <div className="p-6">Loading oasis…</div>;
+  if (!listId) return <div className="p-6 text-gray-900">Missing list id.</div>;
+
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/95 p-6 shadow-md ring-1 ring-black/5">
+          <div className="inline-flex items-center justify-center rounded-full bg-emerald-50 px-4 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+            Preparing Word Matcher…
+          </div>
+
+          <div className="h-2 w-48 overflow-hidden rounded-full bg-gray-200 ring-1 ring-black/5">
+            <motion.div
+              className="h-full w-1/3 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400"
+              initial={{ x: "-120%" }}
+              animate={
+                prefersReducedMotion
+                  ? { x: "0%", width: "100%" }
+                  : { x: ["-120%", "260%"] }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0.8, ease: "easeOut" }
+                  : { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+              }
+            />
+          </div>
+
+          <div className="flex flex-col items-center gap-2 text-xs text-gray-700">
+            <span className="h-6 w-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+            <p className="text-center max-w-xs">
+              Fetching your oasis words. Your matching game will start in a moment.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
-      <div className="p-6">
+      <div className="p-6 text-gray-900">
         <p className="mb-2">No words in this oasis yet.</p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600">
           Add words in <strong>Edit Oasis</strong> to play Word Matcher.
         </p>
       </div>
@@ -138,7 +175,10 @@ export default function WordMatcher() {
           </span>
         </div>
 
-        <Button onClick={reset} className="!rounded-lg !px-3 !py-1.5 !cursor-pointer">
+        <Button
+          onClick={reset}
+          className="!rounded-lg !px-3 !py-1.5 !cursor-pointer"
+        >
           Reset
         </Button>
       </div>
@@ -159,7 +199,10 @@ export default function WordMatcher() {
                 Oasis: <strong>{meta?.name ?? "Oasis"}</strong> — Great matching!
               </p>
             </div>
-            <Button onClick={reset} className="!rounded-lg !px-4 !py-2 !cursor-pointer">
+            <Button
+              onClick={reset}
+              className="!rounded-lg !px-4 !py-2 !cursor-pointer"
+            >
               Play again
             </Button>
           </div>
@@ -176,7 +219,9 @@ export default function WordMatcher() {
               animate="show"
               className="rounded-xl bg-white/95 ring-1 ring-black/5 p-3 shadow-sm"
             >
-              <div className="mb-2 text-sm font-semibold text-gray-700">English</div>
+              <div className="mb-2 text-sm font-semibold text-gray-700">
+                English
+              </div>
               <div className="grid grid-cols-1 gap-2">
                 {items.map((m) => {
                   const matched = isMatched(m.id);
@@ -229,7 +274,11 @@ export default function WordMatcher() {
                     <motion.div
                       key={`target-${m.id}`}
                       variants={item}
-                      animate={isWrong ? { x: [0, -6, 6, -4, 4, 0] } : "show"}
+                      animate={
+                        isWrong
+                          ? { x: [0, -6, 6, -4, 4, 0] }
+                          : "show"
+                      }
                       transition={isWrong ? { duration: 0.35 } : undefined}
                       whileHover={{ y: matched ? 0 : -2 }}
                       whileTap={{ scale: matched ? 1 : 0.98 }}
@@ -255,7 +304,7 @@ export default function WordMatcher() {
           </div>
 
           {/* Helper hint */}
-          <div className="text-center text-xs text-gray-600 mt-1">
+          <div className="mt-1 text-center text-xs text-gray-600">
             Select a word on the left, then its translation on the right.
           </div>
         </>

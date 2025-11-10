@@ -6,11 +6,14 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
-import { requestSentence, sendSentenceChat } from "@/app/lib/actions/geminiSentenceAction";
+import {
+  requestSentence,
+  sendSentenceChat,
+} from "@/app/lib/actions/geminiSentenceAction";
 
 /** Minimal history type (matches your API) */
 type HistoryItem = { role: "user" | "model"; parts: { text: string }[] };
-const toUser  = (text: string): HistoryItem => ({ role: "user",  parts: [{ text }] });
+const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
 const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 export default function SentencesPage() {
@@ -19,7 +22,10 @@ export default function SentencesPage() {
 
   // Targets from oasis
   const targets = useMemo(
-    () => words.map(w => (w.target ?? "").trim()).filter(Boolean),
+    () =>
+      words
+        .map((w) => (w.target ?? "").trim())
+        .filter(Boolean),
     [words]
   );
 
@@ -45,20 +51,20 @@ export default function SentencesPage() {
   const generateSentence = async (word: string) => {
     if (!listId) return;
     setBusyFor(word);
-    setSentences(prev => ({ ...prev, [word]: "Generating..." }));
+    setSentences((prev) => ({ ...prev, [word]: "Generating..." }));
     try {
       const s = await requestSentence({
         listId,
         word,
         language: meta?.language ?? undefined,
       });
-      setSentences(prev => ({
+      setSentences((prev) => ({
         ...prev,
         [word]: s || " Error generating sentence",
       }));
     } catch (err) {
       console.error("Sentence request failed:", err);
-      setSentences(prev => ({ ...prev, [word]: "Request failed" }));
+      setSentences((prev) => ({ ...prev, [word]: "Request failed" }));
     } finally {
       setBusyFor(null);
     }
@@ -82,7 +88,7 @@ export default function SentencesPage() {
     if (!chatInput.trim() || !listId || isSending) return;
 
     const userMsg = chatInput.trim();
-    setChatLog(prev => [...prev, `You: ${userMsg}`]);
+    setChatLog((prev) => [...prev, `You: ${userMsg}`]);
     setChatInput("");
 
     const history = [...apiHistory, toUser(userMsg)];
@@ -91,14 +97,14 @@ export default function SentencesPage() {
       const reply = await sendSentenceChat(userMsg, history, { listId });
       const replyText = reply?.text ?? null;
       if (replyText) {
-        setChatLog(prev => [...prev, `Gemini: ${replyText}`]);
+        setChatLog((prev) => [...prev, `Gemini: ${replyText}`]);
         setApiHistory([...history, toModel(replyText)]);
       } else {
-        setChatLog(prev => [...prev, "Gemini: Chat failed"]);
+        setChatLog((prev) => [...prev, "Gemini: Chat failed"]);
       }
     } catch (err) {
       console.error("Chat failed:", err);
-      setChatLog(prev => [...prev, "Gemini: Chat failed"]);
+      setChatLog((prev) => [...prev, "Gemini: Chat failed"]);
     } finally {
       setIsSending(false);
     }
@@ -111,8 +117,88 @@ export default function SentencesPage() {
     }
   };
 
-  if (!listId) return <div className="p-6">Missing list id.</div>;
-  if (loading)  return <div className="p-6">Loading oasis…</div>;
+  if (!listId) return <div className="p-6 text-white">Missing list id.</div>;
+
+  if (loading) {
+    return (
+      <div className="relative min-h-screen w-full overflow-hidden">
+        <motion.img
+          src="/desert.png"
+          alt="Desert dunes"
+          className="absolute inset-0 h-full w-full object-cover"
+          initial={{ scale: 1 }}
+          animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
+
+        {!prefersReducedMotion && (
+          <>
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.35), rgba(0,0,0,0))",
+              }}
+              animate={{ y: [0, 18, 0], x: [0, 12, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
+              }}
+              animate={{ y: [0, -16, 0], x: [0, -10, 0] }}
+              transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </>
+        )}
+
+        <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.45 }}
+            className="w-[min(92vw,28rem)] rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-xl text-center"
+          >
+            <div className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-xs font-medium text-white/90 ring-1 ring-white/25">
+              Preparing your oasis…
+            </div>
+
+            <h1 className="mt-4 text-2xl font-semibold text-white">
+              Loading example sentences
+            </h1>
+            <p className="mt-2 text-sm text-white/80">
+              We’re reading your words and generating sentences tailored to this oasis.
+            </p>
+
+            <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-white/10 ring-1 ring-white/20">
+              <div className="h-full w-1/3 animate-[loadingStripe_1.4s_infinite] rounded-full bg-gradient-to-r from-white/40 via-white/90 to-white/40" />
+            </div>
+
+            <div className="mt-6 flex flex-col items-center gap-3 text-xs text-white/75">
+              <span className="h-6 w-6 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
+              <p>Tip: you can tweak the oasis later in the Edit Oasis screen.</p>
+            </div>
+          </motion.div>
+        </div>
+
+        <style jsx>{`
+          @keyframes loadingStripe {
+            0% {
+              transform: translateX(-120%);
+            }
+            100% {
+              transform: translateX(260%);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   const headerSubtitle = (() => {
     const done = Object.values(sentences).filter(Boolean).length;
@@ -170,7 +256,10 @@ export default function SentencesPage() {
         {/* Top bar */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="text-white/80 text-sm">
-            {meta?.name ?? "Oasis"} <span className="opacity-70">• {meta?.language ?? "—"} • {targets.length} words</span>
+            {meta?.name ?? "Oasis"}{" "}
+            <span className="opacity-70">
+              • {meta?.language ?? "—"} • {targets.length} words
+            </span>
           </div>
           <LinkAsButton
             href={`/oasis/${listId}`}
@@ -189,7 +278,9 @@ export default function SentencesPage() {
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold text-white drop-shadow">Example Sentences</h1>
+              <h1 className="text-2xl font-semibold text-white drop-shadow">
+                Example Sentences
+              </h1>
               <p className="text-sm text-white/80">{headerSubtitle}</p>
             </div>
             {initializing ? (
@@ -219,18 +310,26 @@ export default function SentencesPage() {
 
             {targets.length === 0 ? (
               <div className="rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-white/85">
-                No words yet. Add some in <span className="font-medium">Edit Oasis</span>.
+                No words yet. Add some in{" "}
+                <span className="font-medium">Edit Oasis</span>.
               </div>
             ) : (
               <div className="space-y-4">
                 {targets.map((word) => {
-                  const value = sentences[word] || (initializing ? "Loading..." : "No sentence yet");
-                  const isBusy = busyFor === word || value === "Generating...";
+                  const value =
+                    sentences[word] ||
+                    (initializing ? "Loading..." : "No sentence yet");
+                  const isBusy =
+                    busyFor === word || value === "Generating...";
                   return (
                     <motion.div
                       key={word}
                       whileHover={{ y: -2 }}
-                      transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 250,
+                        damping: 20,
+                      }}
                       className="relative overflow-hidden rounded-xl border border-white/15 bg-white/5 p-3 ring-1 ring-white/20"
                     >
                       {/* shimmer overlay when generating */}
@@ -281,13 +380,19 @@ export default function SentencesPage() {
               {chatLog.length === 0 ? (
                 <p className="text-sm text-white/70">
                   Ask about the generated sentences. Press{" "}
-                  <kbd className="rounded bg-white/20 px-1.5 py-0.5">Enter</kbd> to send,{" "}
-                  <kbd className="rounded bg-white/20 px-1.5 py-0.5">Shift+Enter</kbd> for a new line.
+                  <kbd className="rounded bg白/20 px-1.5 py-0.5">Enter</kbd> to
+                  send,{" "}
+                  <kbd className="rounded bg白/20 px-1.5 py-0.5">
+                    Shift+Enter
+                  </kbd>{" "}
+                  for a new line.
                 </p>
               ) : (
                 chatLog.map((line, i) => {
                   const isYou = line.startsWith("You:");
-                  const text = line.replace(/^You:\s?/, "").replace(/^Gemini:\s?/, "");
+                  const text = line
+                    .replace(/^You:\s?/, "")
+                    .replace(/^Gemini:\s?/, "");
                   return (
                     <div
                       key={i}
@@ -319,7 +424,7 @@ export default function SentencesPage() {
                 className="min-h-[3rem] flex-1 resize-y rounded-xl border border-white/20 bg-white/5 p-3 text-sm text-white placeholder-white/60 outline-none ring-1 ring-white/20 focus:ring-2 focus:ring-white/60"
               />
               <Button
-                className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30 disabled:opacity-60"
+                className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg白/30 disabled:opacity-60"
                 onClick={sendChat}
                 disabled={isSending || !chatInput.trim()}
               >
@@ -330,7 +435,8 @@ export default function SentencesPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-white/80">
-          Tip: Regenerate tricky words and ask the chat to compare or simplify the sentences.
+          Tip: Regenerate tricky words and ask the chat to compare or simplify the
+          sentences.
         </p>
       </div>
     </div>
