@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 type DisplayNameState = { name: string; loading: boolean; error?: string };
+type UserRow = {
+        full_name?: string | null;
+        fname?: string | null;
+        lname?: string | null; 
+      };
 
 export function useDisplayName(): DisplayNameState {
   const supabase = createClientComponentClient();
@@ -21,22 +26,22 @@ export function useDisplayName(): DisplayNameState {
       }
 
       // 1) Try Users table (prefer full_name; fallback to fname/lname)
-      const { data: row, error: rowErr } = await supabase
+      const { data: userRow, error: rowErr } = await supabase
         .from("Users")
         .select("fname")
         .eq("user_id", user.id)
         .single();
-
-      const pickUsersName = () => {
+      
+      const pickUsersName = (row?: UserRow | null): string => {
         if (!row) return "";
-        const fromFull = (row as any)?.full_name?.trim?.();
+        const fromFull = row.full_name?.trim?.();
         if (fromFull) return fromFull;
-        const f = (row as any)?.fname?.trim?.() ?? "";
-        const l = (row as any)?.lname?.trim?.() ?? "";
+        const f = row.fname?.trim?.() ?? "";
+        const l = row.lname?.trim?.() ?? "";
         return `${f} ${l}`.trim();
       };
 
-      let name = pickUsersName();
+      let name = pickUsersName(userRow);
 
       // 2) Fallback: auth user_metadata name fields (NO email fallback)
       if (!name) {

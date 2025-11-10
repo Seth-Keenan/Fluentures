@@ -7,7 +7,6 @@ import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { requestSentence, sendSentenceChat } from "@/app/lib/actions/geminiSentenceAction";
-import { useRouter } from "next/navigation";
 
 /** Minimal history type (matches your API) */
 type HistoryItem = { role: "user" | "model"; parts: { text: string }[] };
@@ -15,7 +14,7 @@ const toUser  = (text: string): HistoryItem => ({ role: "user",  parts: [{ text 
 const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 export default function SentencesPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const { listId, meta, words, loading } = useOasisData();
 
   // Targets from oasis

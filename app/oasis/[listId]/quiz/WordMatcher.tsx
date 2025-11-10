@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
-import { LinkAsButton } from "@/app/components/LinkAsButton";
 
 type MatchItem = {
   id: string;       // stable id from DB

@@ -15,7 +15,6 @@ import {
 } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faBolt,
   faClock,
   faBookmark,
   faUsers,
@@ -55,10 +54,10 @@ const fadeInUp: Variants = {
   },
 };
 
-const containerStagger = (delay = 0.08): Variants => ({
-  hidden: {},
-  show: { transition: { when: "beforeChildren", staggerChildren: delay } },
-});
+// const containerStagger = (delay = 0.08): Variants => ({
+//   hidden: {},
+//   show: { transition: { when: "beforeChildren", staggerChildren: delay } },
+// });
 
 /* -----------------------------
    Small components

@@ -349,7 +349,7 @@ function GlideControlsUI({
 // current -> camera position is set in <Canvas camera={position:[9,7,9], fov:46}>.
 export default function MapView({
   wordlists,
-  selectedLanguage,
+  // selectedLanguage,
 }: {
   wordlists: WordListLite[];
   selectedLanguage: string | null;
@@ -401,10 +401,10 @@ export default function MapView({
   }, [wordlists]);
   // -----------------------------------------
 
-  const openPacket = (id: string) => {
-    //router.push(`/oasis?id=${id}`);
-    router.push(`/oasis/${id}`);
-  };
+  // const openPacket = (id: string) => {
+  //   //router.push(`/oasis?id=${id}`);
+  //   router.push(`/oasis/${id}`);
+  // };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

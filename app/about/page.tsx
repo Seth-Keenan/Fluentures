@@ -7,7 +7,8 @@ import {
   faFlag,        // Mission
   faLayerGroup,  // What we build
   faHeart,       // Why it works
-  faCheckCircle, // bullet embellishments
+  faCheckCircle,
+  IconDefinition, // bullet embellishments
 } from "@fortawesome/free-solid-svg-icons";
 
 const container: Variants = {
@@ -25,7 +26,7 @@ function Card({
   title,
   children,
 }: {
-  icon: any;
+  icon: IconDefinition;
   title: string;
   children: React.ReactNode;
 }) {
