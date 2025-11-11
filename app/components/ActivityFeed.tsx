@@ -39,8 +39,8 @@ export default function ActivityFeed() {
         return `${userEmail} created a new word list: "${activity.activity_data.name}"`
       case 'study_session':
         return `${userEmail} completed a study session`
-      case 'achievement':
-        return `${userEmail} earned an achievement: ${activity.activity_data.name}`
+      //case 'achievement':
+      //  return `${userEmail} earned an achievement: ${activity.activity_data.name}`
       default:
         return `${userEmail} did something`
     }
