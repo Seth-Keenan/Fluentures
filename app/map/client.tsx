@@ -399,12 +399,6 @@ export default function MapView({
       );
     }
   }, [wordlists]);
-  // -----------------------------------------
-
-  // const openPacket = (id: string) => {
-  //   //router.push(`/oasis?id=${id}`);
-  //   router.push(`/oasis/${id}`);
-  // };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

@@ -1,4 +1,3 @@
-// app/oasis/story/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +30,7 @@ export default function StoryPage() {
   const [story, setStory] = useState("");
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState("");
-  const [isSending, setIsSending] = useState(false); // chat send state
+  const [isSending, setIsSending] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
   const prefersReducedMotion = useReducedMotion();
 
@@ -96,7 +95,7 @@ export default function StoryPage() {
               Loading your story
             </h1>
             <p className="mt-2 text-sm text-white/80">
-              We're crafting a tale based on the vocabulary in this oasis.
+              We&apos;re crafting a tale based on the vocabulary in this oasis.
             </p>
 
             <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-white/10 ring-1 ring-white/20">
@@ -288,7 +287,6 @@ export default function StoryPage() {
             transition={{ duration: 0.35, delay: 0.05 }}
             className="relative rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
           >
-            {/* subtle shine */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 hover:opacity-100"
@@ -309,7 +307,6 @@ export default function StoryPage() {
             </div>
 
             <div className="relative">
-              {/* shimmer while generating */}
               {story === "Generating..." && (
                 <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent" />
@@ -337,7 +334,6 @@ export default function StoryPage() {
               <h2 className="text-lg font-semibold text-white">Chat</h2>
             </div>
 
-            {/* Log */}
             <div className="relative flex-1 space-y-2 overflow-y-auto rounded-xl border border-white/15 bg-white/5 p-3">
               {chatLog.length === 0 ? (
                 <p className="text-sm text-white/70">
@@ -372,7 +368,6 @@ export default function StoryPage() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Composer */}
             <div className="mt-3 flex items-end gap-2">
               <textarea
                 value={chatInput}
