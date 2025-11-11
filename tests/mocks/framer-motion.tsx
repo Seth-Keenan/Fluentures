@@ -1,55 +1,43 @@
-import React, { ForwardedRef } from "react";
+// tests/__mocks__/framer-motion.tsx
+import React, { forwardRef } from "react";
 
-type MotionDivProps = React.HTMLAttributes<HTMLDivElement> & {
-  whileTap?: unknown;
-  whileHover?: unknown;
-  variants?: unknown;
+type MotionProps = React.HTMLAttributes<HTMLDivElement> & {
   initial?: unknown;
   animate?: unknown;
   exit?: unknown;
+  variants?: unknown;
   transition?: unknown;
+  whileTap?: unknown;
+  whileHover?: unknown;
   viewport?: unknown;
   whileInView?: unknown;
 };
 
-const MotionDiv = React.forwardRef<HTMLDivElement, MotionDivProps>(
-  (props, ref: ForwardedRef<HTMLDivElement>) => {
-    const {
-      whileTap,
-      whileHover,
-      variants,
-      initial,
-      animate,
-      exit,
-      transition,
-      viewport,
-      whileInView,
-      ...rest
-    } = props;
-    return <div ref={ref} {...rest} />;
-  }
-);
-
+// simple "just render a div" motion component
+const MotionDiv = forwardRef<HTMLDivElement, MotionProps>((props, ref) => {
+  const { children, ...rest } = props;
+  return (
+    <div ref={ref} {...rest}>
+      {children}
+    </div>
+  );
+});
 MotionDiv.displayName = "MotionDiv";
 
-const fakeMotionValue = {
-  get: () => 0,
-  set: (_v: number) => {
-  },
-  on: (_e: string, _cb: () => void) => () => {
-  },
-};
-
-export const motion = new Proxy(
+// proxy so motion.img / motion.div / motion.section all return MotionDiv
+const motion = new Proxy(
   {},
   {
     get: () => MotionDiv,
   }
+) as unknown as typeof import("framer-motion").motion;
+
+// your page calls useReducedMotion
+const useReducedMotion = (): boolean => true;
+
+// optional, in case something else imports it
+const AnimatePresence = ({ children }: { children?: React.ReactNode }) => (
+  <>{children}</>
 );
 
-export const useReducedMotion = () => true;
-export const useScroll = () => ({ scrollY: fakeMotionValue });
-export const useMotionValueEvent = () => undefined;
-export const useTransform = () => 0;
-export const useInView = () => true;
-export const animate = async () => undefined;
+export { motion, useReducedMotion, AnimatePresence };
