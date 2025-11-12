@@ -217,7 +217,7 @@ export default function EditOasisPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/55" />
 
         {/* Shell */}
-        <div className="relative z-10 mx-auto w-[min(92vw,72rem)] p-4 pb-8">
+        <div className="relative z-10 pt-24 mx-auto w-[min(92vw,72rem)] p-4 pb-8">
           {/* Top bar: status + back */}
           <div className="mb-4 flex items-center justify-end gap-3">
             <span

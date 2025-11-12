@@ -401,7 +401,7 @@ export default function MapView({
   }, [wordlists]);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden pt-18">
       {/* Background image & glow blobs */}
       <img src="/desert.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />

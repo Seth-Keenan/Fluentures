@@ -244,7 +244,7 @@ export default function StoryPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
 
       {/* Content shell */}
-      <div className="relative z-10 mx-auto w-[min(92vw,68rem)] p-4 pb-8">
+      <div className="relative z-10 pt-24 mx-auto w-[min(92vw,68rem)] p-4 pb-8">
         {/* Top bar */}
         <div className="mb-4 flex items-center justify-between">
           <div className="text-white/85 text-sm">

@@ -62,33 +62,12 @@ export default async function MapEditPage() {
     language: r.language,
   }));
 
-  return (
-    <div className="relative flex flex-col items-center min-h-screen p-6 gap-5 w-full">
-      <header className="w-full max-w-6xl flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold">Edit Map</h1>
-          <span className="inline-flex items-center rounded-md border px-3 py-1.5 text-xs text-neutral-700 bg-white/80">
-            <span className="mr-1 opacity-70">Language:</span>
-            <strong>{selectedLanguage ?? "All"}</strong>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <LinkAsButton href="/map" className="btn">
-            Back
-          </LinkAsButton>
-        </div>
-      </header>
-
-      {/* 3D editor */}
-      <section className="w-full max-w-6xl rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="h-[70vh]">
-          <MapEditView
-            wordlists={wordlists}
-            deleteAction={deleteListAction}
-            createAction={createListAction}
-          />
-        </div>
-      </section>
-    </div>
-  );
+return (
+  <MapEditView
+    wordlists={wordlists}
+    selectedLanguage={selectedLanguage}
+    deleteAction={deleteListAction}
+    createAction={createListAction}
+  />
+);
 }

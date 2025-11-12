@@ -88,7 +88,7 @@ export default async function OasisIndex() {
   }));
 
   return (
-  <div className="relative min-h-screen w-full overflow-hidden">
+  <div className="relative min-h-screen w-full overflow-hidden ">
     {/*COMMENTED OUT: The server’s duplicate UI (badge + header). 
         These are already shown in the client’s MapView with better styling. */}
 

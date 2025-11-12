@@ -227,7 +227,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden pt-16">
       {/* Background */}
       <motion.img
         src="/desert.png"
