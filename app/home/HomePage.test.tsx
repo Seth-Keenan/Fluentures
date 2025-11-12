@@ -1,118 +1,81 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import HomePage from "./page";
+import React from "react";
 
-const mockUseSession = vi.fn();
 
-type LinkProps = {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-};
+vi.mock("framer-motion", async () => {
+  const mod = await import("@/tests/mocks/framer-motion");
+  return mod;
+});
 
-vi.mock("@supabase/auth-helpers-react", () => ({
-  useSession: () => mockUseSession(),
+const mockUseDisplayName = vi.fn(() => ({ name: "guest", loading: false }));
+vi.mock("@/app/lib/hooks/useDisplayName", () => ({
+  useDisplayName: () => mockUseDisplayName(),
 }));
 
 vi.mock("@/app/components/LinkAsButton", () => ({
-  LinkAsButton: ({ href, children, className }: LinkProps) => (
+  LinkAsButton: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
     <a href={href} className={className}>
       {children}
     </a>
   ),
 }));
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
+vi.mock("@/app/components/SettingsButton", () => ({
+  __esModule: true,
+  default: () => <div data-testid="settings-gear" />,
 }));
 
+import HomePage from "./page";
 
 describe("HomePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseDisplayName.mockReturnValue({ name: "guest", loading: false });
   });
 
-  it("renders welcome message for guest when no session", () => {
-    mockUseSession.mockReturnValue(null);
+  it("renders welcome message for guest when hook returns guest", () => {
+    mockUseDisplayName.mockReturnValue({ name: "guest", loading: false });
 
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: /welcome!/i })).toBeInTheDocument();
-    expect(screen.getByText(/Pick where you’d like to go next./i)).toBeInTheDocument();
-    expect(screen.getByText(/guest/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /welcome, guest!/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/pick where you’d like to go next\./i)
+    ).toBeInTheDocument();
   });
 
-  it("renders welcome message with user name from metadata", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "john@example.com",
-        user_metadata: {
-          name: "John Doe",
-        },
-      },
-    });
+  it("renders welcome message with user name from hook", () => {
+    mockUseDisplayName.mockReturnValue({ name: "John Doe", loading: false });
 
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: /welcome, john doe!/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /welcome, john doe!/i })
+    ).toBeInTheDocument();
     expect(screen.getByText("John Doe")).toBeInTheDocument();
   });
 
-  it("renders welcome message with full_name from metadata", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "jane@example.com",
-        user_metadata: {
-          full_name: "Jane Smith",
-        },
-      },
-    });
+  it("shows loading state when hook is loading", () => {
+    mockUseDisplayName.mockReturnValue({ name: "", loading: true });
 
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: /welcome, jane smith!/i })).toBeInTheDocument();
-  });
-
-  it("renders welcome message with combined first and last name", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "bob@example.com",
-        user_metadata: {
-          first_name: "Bob",
-          last_name: "Johnson",
-        },
-      },
-    });
-
-    render(<HomePage />);
-
-    expect(screen.getByRole("heading", { name: /welcome, bob johnson!/i })).toBeInTheDocument();
-  });
-
-  it("falls back to titleized email local part when no name metadata", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "john_doe-123@example.com",
-        user_metadata: {},
-      },
-    });
-
-    render(<HomePage />);
-
-    expect(screen.getByRole("heading", { name: /welcome, john doe 123!/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /welcome…/i })).toBeInTheDocument();
+    expect(screen.getByText(/loading…/i)).toBeInTheDocument();
   });
 
   it("renders all navigation links", async () => {
-    mockUseSession.mockReturnValue(null);
-
     render(<HomePage />);
 
     await waitFor(() => {
@@ -123,8 +86,6 @@ describe("HomePage", () => {
   });
 
   it("navigation links have correct href attributes", async () => {
-    mockUseSession.mockReturnValue(null);
-
     render(<HomePage />);
 
     await waitFor(() => {
@@ -135,61 +96,26 @@ describe("HomePage", () => {
   });
 
   it("renders footer text", () => {
-    mockUseSession.mockReturnValue(null);
-
     render(<HomePage />);
 
-    expect(screen.getByText(/explore, connect, and keep track of your journey/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/explore, connect, and keep track of your journey/i)
+    ).toBeInTheDocument();
   });
 
-  it("prioritizes user_metadata name fields in correct order", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "test@example.com",
-        user_metadata: {
-          preferred_username: "TestUser",
-          username: "testuser123",
-          name: "Test Name",
-        },
-      },
-    });
-
+  it("shows the settings gear", () => {
     render(<HomePage />);
 
-    // Should prioritize 'name' over other fields
-    expect(screen.getByRole("heading", { name: /welcome, test name!/i })).toBeInTheDocument();
+    expect(screen.getByTestId("settings-gear")).toBeInTheDocument();
   });
 
-  it("handles given_name and family_name combination", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: "test@example.com",
-        user_metadata: {
-          given_name: "Alice",
-          family_name: "Wonder",
-        },
-      },
-    });
+  it("uses whatever name the hook returns", () => {
+    mockUseDisplayName.mockReturnValue({ name: "Alice Wonder", loading: false });
 
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: /welcome, alice wonder!/i })).toBeInTheDocument();
-  });
-
-  it("handles user with no email gracefully", () => {
-    mockUseSession.mockReturnValue({
-      user: {
-        id: "123",
-        email: undefined,
-        user_metadata: {},
-      },
-    });
-
-    render(<HomePage />);
-
-    // Should fall back to "Friend"
-    expect(screen.getByRole("heading", { name: /welcome, friend!/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /welcome, alice wonder!/i })
+    ).toBeInTheDocument();
   });
 });

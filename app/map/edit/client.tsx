@@ -5,7 +5,6 @@
 
 import React, {
   Suspense,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -59,6 +58,8 @@ const STORAGE_KEY_3D = "fluentures.oases.3d";
 
 const OASIS_URL = "/blenderModels/oasis2.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
+
+let saveDebounceHandle: number | null = null;
 
 /* ---------------- Desert background 3D model (GLB) ---------------- */
 function DesertBackground({
@@ -197,8 +198,10 @@ function loadSaved(): Record<string, Oasis3D> {
 
 function saveDebounced(instances: Oasis3D[]) {
   // simple rAF debounce to avoid hammering localStorage
-  if ((saveDebounced as any)._t) cancelAnimationFrame((saveDebounced as any)._t);
-  (saveDebounced as any)._t = requestAnimationFrame(() => {
+  if (saveDebounceHandle !== null) {
+    cancelAnimationFrame(saveDebounceHandle);
+  }
+  saveDebounceHandle = requestAnimationFrame(() => {
     localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(instances));
   });
 }

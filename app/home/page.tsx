@@ -13,6 +13,7 @@ import {
   faBookOpen,
   faCircleUser,
   faArrowRight,
+  IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import SettingsButtonGear from "@/app/components/SettingsButton";
 import { deserts } from "@/app/data/deserts";
@@ -27,6 +28,7 @@ const item: Variants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 18 } },
 };
+
 type Dest = { label: string; href: string; icon: IconDefinition; description: string };
 
 const DESTINATIONS: Dest[] = [

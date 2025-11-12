@@ -193,7 +193,6 @@ describe("LoginPage", () => {
       expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
     });
 
-    // Now submit again with success
     signInWithPasswordMock.mockResolvedValueOnce({ error: null });
 
     fireEvent.change(screen.getByPlaceholderText(/••••••••/i), {

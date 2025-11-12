@@ -1,7 +1,6 @@
-// app/oasis/story/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
@@ -10,7 +9,7 @@ import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction
 import type { HistoryItem } from "@/app/types/gemini";
 
 /** typed helpers so role is "user" | "model" */
-const toUser  = (text: string): HistoryItem => ({ role: "user",  parts: [{ text }] });
+const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
 const toModel = (text: string): HistoryItem => ({ role: "model", parts: [{ text }] });
 
 /** helper: build a brief vocab prompt from your list */
@@ -31,7 +30,7 @@ export default function StoryPage() {
   const [story, setStory] = useState("");
   const [chatLog, setChatLog] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState("");
-  const [isSending, setIsSending] = useState(false); // chat send state
+  const [isSending, setIsSending] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
   const prefersReducedMotion = useReducedMotion();
 
@@ -41,8 +40,88 @@ export default function StoryPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chatLog]);
 
-  if (!listId) return <p className="p-6">Missing list id.</p>;
-  if (loading)  return <p className="p-6">Loading oasis…</p>;
+  if (!listId) return <div className="p-6 text-white">Missing list id.</div>;
+
+  if (loading) {
+    return (
+      <div className="relative min-h-screen w-full overflow-hidden">
+        <motion.img
+          src="/desert.png"
+          alt="Desert dunes"
+          className="absolute inset-0 h-full w-full object-cover"
+          initial={{ scale: 1 }}
+          animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
+
+        {!prefersReducedMotion && (
+          <>
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(60% 60% at 50% 50%, rgba(124,58,237,0.35), rgba(0,0,0,0))",
+              }}
+              animate={{ y: [0, 18, 0], x: [0, 12, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
+              }}
+              animate={{ y: [0, -16, 0], x: [0, -10, 0] }}
+              transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </>
+        )}
+
+        <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.45 }}
+            className="w-[min(92vw,28rem)] rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-xl text-center"
+          >
+            <div className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-xs font-medium text-white/90 ring-1 ring-white/25">
+              Preparing your oasis…
+            </div>
+
+            <h1 className="mt-4 text-2xl font-semibold text-white">
+              Loading your story
+            </h1>
+            <p className="mt-2 text-sm text-white/80">
+              We&apos;re crafting a tale based on the vocabulary in this oasis.
+            </p>
+
+            <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-white/10 ring-1 ring-white/20">
+              <div className="h-full w-1/3 animate-[storyStripe_1.4s_infinite] rounded-full bg-gradient-to-r from-white/40 via-white/90 to-white/40" />
+            </div>
+
+            <div className="mt-6 flex flex-col items-center gap-3 text-xs text-white/75">
+              <span className="h-6 w-6 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
+              <p>Tip: after it loads, ask the chat to simplify or extend the story.</p>
+            </div>
+          </motion.div>
+        </div>
+
+        <style jsx>{`
+          @keyframes storyStripe {
+            0% {
+              transform: translateX(-120%);
+            }
+            100% {
+              transform: translateX(260%);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   // Generate a new story, scoped to this oasis
   const generateStory = async () => {
@@ -208,7 +287,6 @@ export default function StoryPage() {
             transition={{ duration: 0.35, delay: 0.05 }}
             className="relative rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
           >
-            {/* subtle shine */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 hover:opacity-100"
@@ -229,7 +307,6 @@ export default function StoryPage() {
             </div>
 
             <div className="relative">
-              {/* shimmer while generating */}
               {story === "Generating..." && (
                 <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent" />
@@ -257,18 +334,20 @@ export default function StoryPage() {
               <h2 className="text-lg font-semibold text-white">Chat</h2>
             </div>
 
-            {/* Log */}
             <div className="relative flex-1 space-y-2 overflow-y-auto rounded-xl border border-white/15 bg-white/5 p-3">
               {chatLog.length === 0 ? (
                 <p className="text-sm text-white/70">
                   Ask questions about the generated story. Press{" "}
                   <kbd className="rounded bg-white/20 px-1.5 py-0.5">Enter</kbd> to send,{" "}
-                  <kbd className="rounded bg-white/20 px-1.5 py-0.5">Shift+Enter</kbd> for a new line.
+                  <kbd className="rounded bg-white/20 px-1.5 py-0.5">Shift+Enter</kbd> for a
+                  new line.
                 </p>
               ) : (
                 chatLog.map((line, i) => {
                   const isYou = line.startsWith("You:");
-                  const text = line.replace(/^You:\s?/, "").replace(/^Camel:\s?/, "");
+                  const text = line
+                    .replace(/^You:\s?/, "")
+                    .replace(/^Camel:\s?/, "");
                   return (
                     <div
                       key={i}
@@ -289,7 +368,6 @@ export default function StoryPage() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Composer */}
             <div className="mt-3 flex items-end gap-2">
               <textarea
                 value={chatInput}
@@ -313,14 +391,6 @@ export default function StoryPage() {
         <p className="mt-4 text-center text-xs text-white/80">
           Tip: Generate a fresh story, then quiz the “Camel” assistant with questions about it.
         </p>
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="mx-auto max-w-6xl pt-6">
-        <div className="flex gap-3">
-          <LinkAsButton href={`/oasis/${listId}`} className="btn">Back</LinkAsButton>
-        </div>
-        
       </div>
     </div>
   );

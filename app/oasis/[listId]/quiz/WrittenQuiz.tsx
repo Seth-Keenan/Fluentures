@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion, type Variants, useReducedMotion } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { requestQuizSentence } from "@/app/lib/actions/geminiQuizAction";
@@ -45,16 +45,17 @@ const norm = (s: string) => s.trim().toLowerCase();
 
 export default function WrittenQuiz() {
   const { listId, meta, words, loading } = useOasisData();
+  const prefersReducedMotion = useReducedMotion();
 
   // Build pool from real oasis data
   const pool = useMemo(
     () =>
       words
-        .map(w => ({
+        .map((w) => ({
           target: (w.target ?? "").trim(),
           english: (w.english ?? "").trim(),
         }))
-        .filter(w => w.target && w.english),
+        .filter((w) => w.target && w.english),
     [words]
   );
 
@@ -77,8 +78,18 @@ export default function WrittenQuiz() {
   const [shakeKey, setShakeKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const availableWords = pool.length;
+
   useEffect(() => {
-    if (started) setTimeout(() => inputRef.current?.focus(), 60);
+    if (availableWords > 0 && count > availableWords) {
+      setCount(availableWords);
+    }
+  }, [availableWords, count]);
+
+  useEffect(() => {
+    if (started) {
+      setTimeout(() => inputRef.current?.focus(), 60);
+    }
   }, [started, idx]);
 
   const current = quizWords[idx];
@@ -93,7 +104,10 @@ export default function WrittenQuiz() {
   }, [current, mode]);
 
   const startQuiz = useCallback(() => {
-    const chosen = pickShuffled(pool, count);
+    const maxQuestions = Math.min(count, pool.length);
+    if (maxQuestions <= 0) return;
+
+    const chosen = pickShuffled(pool, maxQuestions);
     setQuizWords(chosen);
     setIdx(0);
     setScore(0);
@@ -116,7 +130,12 @@ export default function WrittenQuiz() {
   const onNext = useCallback(() => {
     if (!submitted) return;
     const next = idx + 1;
-    if (next >= quizWords.length) return;
+
+    if (next >= quizWords.length) {
+      setIdx(quizWords.length);
+      return;
+    }
+
     setIdx(next);
     setInput("");
     setSubmitted(false);
@@ -143,7 +162,6 @@ export default function WrittenQuiz() {
     try {
       setGenLoading(true);
       setExample(null);
-      // ✅ use your server action signature from the first code
       const sentence = await requestQuizSentence({
         listId,
         word: current.target,
@@ -157,9 +175,43 @@ export default function WrittenQuiz() {
     }
   }, [current, listId, meta?.language]);
 
-  if (!mounted) return <p className="p-6">Loading…</p>;
-  if (!listId) return <div className="p-6">Missing list id.</div>;
-  if (loading) return <div className="p-6">Loading oasis…</div>;
+  const LoadingCard = ({ label }: { label: string }) => (
+    <div className="w-full flex items-center justify-center p-4">
+      <div className="w-[min(92vw,32rem)] rounded-2xl bg-white/95 ring-1 ring-black/5 shadow-md px-6 py-5 flex flex-col items-center gap-4">
+        <div className="inline-flex items-center justify-center rounded-full bg-emerald-50 px-4 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+          {label}
+        </div>
+
+        <div className="h-2 w-40 overflow-hidden rounded-full bg-gray-200 ring-1 ring-black/5">
+          <motion.div
+            className="h-full w-1/3 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400"
+            initial={{ x: "-120%" }}
+            animate={
+              prefersReducedMotion
+                ? { x: "0%", width: "100%" }
+                : { x: ["-120%", "260%"] }
+            }
+            transition={
+              prefersReducedMotion
+                ? { duration: 0.8, ease: "easeOut" }
+                : { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+            }
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-2 text-xs text-gray-700">
+          <span className="h-6 w-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          <p className="text-center max-w-xs">
+            Getting your oasis ready. Your written quiz will begin in a moment.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!mounted) return <LoadingCard label="Preparing quiz…" />;
+  if (!listId) return <div className="p-6 text-gray-900">Missing list id.</div>;
+  if (loading) return <LoadingCard label="Loading oasis words…" />;
 
   // Finished
   if (started && idx >= quizWords.length) {
@@ -179,18 +231,19 @@ export default function WrittenQuiz() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-2xl sm:text-3xl font-semibold text-white text-center"
+            className="text-2xl sm:text-3xl font-semibold text-black text-center"
           >
             Quiz Complete!
           </motion.h2>
 
-          <div className="mt-6 space-y-4 text-center text-white/90">
+          <div className="mt-6 space-y-4 text-center text-black/90">
             <div className="text-lg">
-              Score: <span className="font-semibold">{score}</span> / {quizWords.length}
+              Score: <span className="font-semibold">{score}</span> /{" "}
+              {quizWords.length}
             </div>
-            <div className="text-sm text-white/80">Accuracy: {pct}%</div>
+            <div className="text-sm text-black/80">Accuracy: {pct}%</div>
 
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/20 ring-1 ring-white/25">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 ring-1 ring-black/5">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
@@ -200,14 +253,11 @@ export default function WrittenQuiz() {
             </div>
 
             <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <Button onClick={() => setStarted(false)} className="!cursor-pointer">
-                Restart
-              </Button>
               <Button
-                onClick={() => (window.location.href = `/oasis/${listId}`)}
-                className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30 !cursor-pointer"
+                onClick={startQuiz}
+                className="!rounded-lg !px-4 !py-2 !cursor-pointer"
               >
-                Back to Oasis
+                Play again
               </Button>
             </div>
           </div>
@@ -230,10 +280,17 @@ export default function WrittenQuiz() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-white text-2xl sm:text-3xl font-semibold text-center"
+            className="text-black text-2xl sm:text-3xl font-semibold text-center"
           >
             Start Your Quiz — {meta?.name ?? "Oasis"}
           </motion.h1>
+
+          <p className="mt-2 text-center text-xs text-black/70">
+            You currently have{" "}
+            <span className="font-semibold">{availableWords}</span>{" "}
+            word{availableWords === 1 ? "" : "s"} in this oasis. The quiz will
+            use up to that many questions.
+          </p>
 
           <motion.div
             variants={rowIn}
@@ -242,7 +299,9 @@ export default function WrittenQuiz() {
             className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
             <div>
-              <label className="block text-sm text-white/85 mb-1">Number of Questions</label>
+              <label className="block text-sm text-black/85 mb-1">
+                Number of Questions
+              </label>
               <select
                 value={count}
                 onChange={(e) => setCount(Number(e.target.value))}
@@ -250,23 +309,37 @@ export default function WrittenQuiz() {
                 aria-label="Select number of questions"
               >
                 {[5, 10, 15, 20].map((n) => (
-                  <option key={n} value={n}>
+                  <option
+                    key={n}
+                    value={n}
+                    disabled={availableWords > 0 && n > availableWords}
+                  >
                     {n}
                   </option>
                 ))}
+                {availableWords > 0 &&
+                  ![5, 10, 15, 20].includes(availableWords) && (
+                    <option value={availableWords}>
+                      {availableWords} (max available)
+                    </option>
+                  )}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-white/85 mb-1">Mode</label>
+              <label className="block text-sm text-black/85 mb-1">Mode</label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as Mode)}
                 className="w-full rounded-lg bg-white/90 px-3 py-2 text-gray-900 shadow ring-1 ring-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer"
                 aria-label="Select quiz direction"
               >
-                <option value="en-to-target">English → {meta?.language ?? "Target language"}</option>
-                <option value="target-to-en">{meta?.language ?? "Target language"} → English</option>
+                <option value="en-to-target">
+                  English → {meta?.language ?? "Target language"}
+                </option>
+                <option value="target-to-en">
+                  {meta?.language ?? "Target language"} → English
+                </option>
               </select>
             </div>
           </motion.div>
@@ -276,7 +349,11 @@ export default function WrittenQuiz() {
               onClick={startQuiz}
               className="!cursor-pointer"
               disabled={pool.length === 0}
-              title={pool.length === 0 ? "Add words in Edit Oasis first" : "Start Quiz"}
+              title={
+                pool.length === 0
+                  ? "Add words in Edit Oasis first"
+                  : "Start Quiz"
+              }
             >
               {pool.length ? "Start Quiz" : "Add words in Edit Oasis first"}
             </Button>
@@ -288,7 +365,9 @@ export default function WrittenQuiz() {
 
   // In-progress
   const progressPct = quizWords.length
-    ? Math.round(((idx + (submitted ? 1 : 0)) / quizWords.length) * 100)
+    ? Math.round(
+        ((idx + (submitted ? 1 : 0)) / quizWords.length) * 100
+      )
     : 0;
 
   return (
@@ -301,11 +380,12 @@ export default function WrittenQuiz() {
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
-          <div className="text-white/90">
+          <div className="text-black/90">
             <div className="text-sm">
               Question {idx + 1} / {quizWords.length}
             </div>
-            <div className="mt-1 h-2 w-48 overflow-hidden rounded-full bg-white/20 ring-1 ring-white/25">
+            {/* progress bar with outline */}
+            <div className="mt-1 h-2 w-48 overflow-hidden rounded-full bg-gray-200 ring-1 ring-black/5">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPct}%` }}
@@ -315,7 +395,7 @@ export default function WrittenQuiz() {
             </div>
           </div>
 
-          <div className="text-white/90 text-sm">
+          <div className="text-black/90 text-sm">
             Score: <span className="font-semibold">{score}</span>
           </div>
         </div>
@@ -328,7 +408,9 @@ export default function WrittenQuiz() {
           className="mt-6 rounded-xl bg-white/90 p-4 text-center text-gray-900 ring-1 ring-white/30 shadow"
         >
           <div className="text-sm text-gray-700">Translate</div>
-          <div className="mt-1 text-2xl font-semibold tracking-wide">{prompt}</div>
+          <div className="mt-1 text-2xl font-semibold tracking-wide">
+            {prompt}
+          </div>
         </motion.div>
 
         {/* Input with shake on wrong */}
@@ -351,7 +433,9 @@ export default function WrittenQuiz() {
             disabled={submitted}
             className={[
               "w-full rounded-xl bg-white/90 px-4 py-3 text-gray-900 ring-1 ring-white/30 shadow focus:outline-none focus:ring-2 focus:ring-indigo-300",
-              submitted && isCorrect === false ? "outline outline-2 outline-rose-400" : "",
+              submitted && isCorrect === false
+                ? "outline outline-2 outline-rose-400"
+                : "",
             ].join(" ")}
             placeholder="Type your answer…"
             aria-label="Your answer"
@@ -361,13 +445,17 @@ export default function WrittenQuiz() {
         {/* Actions */}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Button onClick={onSubmit} disabled={submitted} className="!cursor-pointer disabled:!cursor-not-allowed">
+            <Button
+              onClick={onSubmit}
+              disabled={submitted}
+              className="!cursor-pointer disabled:!cursor-not-allowed"
+            >
               Submit
             </Button>
             <Button
               onClick={onNext}
               disabled={!submitted}
-              className="!bg-white/15 hover:!bg-white/25 !text-white !ring-1 !ring-white/30 !cursor-pointer disabled:!cursor-not-allowed"
+              className="!cursor-pointer disabled:!cursor-not-allowed"
             >
               Next
             </Button>
@@ -394,7 +482,9 @@ export default function WrittenQuiz() {
                   : "text-rose-300 font-medium"
               }
             >
-              {isCorrect ? "Correct! 🎉" : (
+              {isCorrect ? (
+                "Correct! 🎉"
+              ) : (
                 <>
                   Incorrect. Correct answer:{" "}
                   <span className="font-semibold">{correctAnswer}</span>
@@ -410,9 +500,9 @@ export default function WrittenQuiz() {
             variants={rowIn}
             initial="hidden"
             animate="show"
-            className="mt-4 rounded-xl bg-white/10 p-3 text-white/90 ring-1 ring-white/20"
+            className="mt-4 rounded-xl bg-white/10 p-3 text-black/90 ring-1 ring-white/20"
           >
-            <span className="text-white/70 mr-2">Example:</span>
+            <span className="text-black/70 mr-2">Example:</span>
             {example}
           </motion.p>
         )}

@@ -1,97 +1,158 @@
-// LandingPage.test.tsx (or page.test.tsx for app/page.tsx)
-import { render, screen, waitFor } from "@testing-library/react";
+import React from "react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import LandingPage from "./LandingPage";
 
-type LinkProps = {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  "aria-label"?: string;
-};
+vi.mock("framer-motion", async () => {
+  const ReactMod = await import("react");
 
-vi.mock("./components/LinkAsButton", () => ({
-  LinkAsButton: ({ href, children, className, "aria-label": ariaLabel }: LinkProps) => (
+  type MotionDivProps = React.HTMLAttributes<HTMLDivElement> & {
+    whileHover?: unknown;
+    whileTap?: unknown;
+    variants?: unknown;
+    initial?: unknown;
+    animate?: unknown;
+    exit?: unknown;
+    transition?: unknown;
+    viewport?: unknown;
+    whileInView?: unknown;
+  };
+
+  const stripMotionProps = (props: MotionDivProps): React.HTMLAttributes<HTMLDivElement> => {
+    const rest = { ...props };
+    delete rest.whileHover;
+    delete rest.whileTap;
+    delete rest.variants;
+    delete rest.initial;
+    delete rest.animate;
+    delete rest.exit;
+    delete rest.transition;
+    delete rest.viewport;
+    delete rest.whileInView;
+    return rest;
+  };
+
+  const MotionDiv = ReactMod.forwardRef<HTMLDivElement, MotionDivProps>((props, ref) => {
+    return <div ref={ref} {...stripMotionProps(props)} />;
+  });
+  MotionDiv.displayName = "MockMotionDiv";
+
+  const createMotionValue = (initial = 0) => {
+    let value = initial;
+    const listeners: Array<(v: number) => void> = [];
+    return {
+      get: () => value,
+      set: (v: number) => {
+        value = v;
+        listeners.forEach((l) => l(value));
+      },
+      onChange: (cb: (v: number) => void) => {
+        listeners.push(cb);
+        return () => {
+          const idx = listeners.indexOf(cb);
+          if (idx !== -1) listeners.splice(idx, 1);
+        };
+      },
+      on: (event: string, cb: (v: number) => void) => {
+        if (event === "change") {
+          listeners.push(cb);
+          return () => {
+            const idx = listeners.indexOf(cb);
+            if (idx !== -1) listeners.splice(idx, 1);
+          };
+        }
+        return () => {};
+      },
+    };
+  };
+
+  return {
+    motion: new Proxy(
+      {},
+      {
+        get: () => MotionDiv,
+      }
+    ),
+    useReducedMotion: () => true,
+    useScroll: () => ({ scrollY: createMotionValue(0) }),
+    useTransform: () => 0,
+    useInView: () => true,
+    useAnimation: () => ({ start: async () => {} }),
+    useMotionValue: (initial?: number) => createMotionValue(initial ?? 0),
+    useMotionValueEvent: (
+      mv: { onChange?: (cb: (v: number) => void) => () => void } | undefined,
+      _event: string,
+      cb: (v: number) => void
+    ) => {
+      if (mv?.onChange) {
+        mv.onChange(cb);
+      }
+    },
+    animate: async () => {},
+  };
+});
+
+vi.mock("@/app/components/LinkAsButton", () => {
+  interface LinkProps {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+    "aria-label"?: string;
+  }
+
+  const LinkAsButton = ({ href, children, className, "aria-label": ariaLabel }: LinkProps) => (
     <a href={href} className={className} aria-label={ariaLabel}>
       {children}
     </a>
-  ),
-}));
+  );
 
-import Home from "./LandingPage";
+  return { LinkAsButton };
+});
 
 describe("Landing Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders the welcome heading and description", () => {
-    render(<Home />);
+  it("renders the hero heading and description", () => {
+    render(<LandingPage />);
 
-    expect(screen.getByRole("heading", { name: /welcome to fluentures/i })).toBeInTheDocument();
-    expect(screen.getByText(/jump back in or create a new account to get started/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/fluentures makes language learning/i)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/create your own vocabulary lists/i)
+    ).toBeInTheDocument();
   });
 
-  it("renders login button with correct attributes", async () => {
-    render(<Home />);
+  it("renders the feature chips", () => {
+    render(<LandingPage />);
 
-    await waitFor(() => {
-      const loginLink = screen.getByRole("link", { name: /log in/i });
-      expect(loginLink).toBeInTheDocument();
-      expect(loginLink).toHaveAttribute("href", "/login");
-    });
+    expect(
+      screen.getByText(/custom lists & preferred language/i)
+    ).toBeInTheDocument();
+
+    const quizzes = screen.getAllByText(/quizzes/i);
+    expect(quizzes.length).toBeGreaterThan(0);
   });
 
-  it("renders signup button with correct attributes", async () => {
-    render(<Home />);
-
-    await waitFor(() => {
-      const signupLink = screen.getByRole("link", { name: /sign up/i });
-      expect(signupLink).toBeInTheDocument();
-      expect(signupLink).toHaveAttribute("href", "/signup");
-    });
+  it("renders the glass panel container", () => {
+    const { container } = render(<LandingPage />);
+    const glass = container.querySelector(".backdrop-blur-xl");
+    expect(glass).toBeInTheDocument();
   });
 
-  it("renders both navigation buttons", async () => {
-    render(<Home />);
-
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: /log in/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /sign up/i })).toBeInTheDocument();
-    });
+  it("renders the background layer", () => {
+    const { container } = render(<LandingPage />);
+    const bg = container.querySelector('[src="/desert.png"]');
+    expect(bg).toBeInTheDocument();
   });
 
-  it("renders footer text", () => {
-    render(<Home />);
+  it("does NOT render login/signup links in hero (current layout)", () => {
+    render(<LandingPage />);
 
-    expect(screen.getByText(/-camelCase-/i)).toBeInTheDocument();
-  });
-
-  it("renders background image", () => {
-    render(<Home />);
-
-    const backgroundImage = screen.getByAltText(/background/i);
-    expect(backgroundImage).toBeInTheDocument();
-    expect(backgroundImage).toHaveAttribute("src", "/desert.png");
-  });
-
-  it("has proper structure with glass panel container", () => {
-    const { container } = render(<Home />);
-
-    // Check for glassmorphism classes
-    const glassPanel = container.querySelector(".backdrop-blur-xl");
-    expect(glassPanel).toBeInTheDocument();
-  });
-
-  it("displays buttons after ready state timeout", async () => {
-    render(<Home />);
-
-    // Buttons should appear after animation delay
-    await waitFor(
-      () => {
-        expect(screen.getByRole("link", { name: /log in/i })).toBeInTheDocument();
-        expect(screen.getByRole("link", { name: /sign up/i })).toBeInTheDocument();
-      },
-      { timeout: 1000 }
-    );
+    expect(screen.queryByRole("link", { name: /log in/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /sign up/i })).toBeNull();
   });
 });

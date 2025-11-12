@@ -33,7 +33,9 @@ async function getCurrentLanguageForUser(
   return data?.language ?? null;
 }
 
-export async function getAllFavoritesForUser(): Promise<FavoriteWord[]> {
+export type FavoritesResult = FavoriteWord[] | Record<string, unknown>;
+
+export async function getAllFavoritesForUser(): Promise<FavoritesResult> {
   const supabase = await getSupabaseServerActionClient();
 
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
@@ -72,7 +74,7 @@ export async function getAllFavoritesForUser(): Promise<FavoriteWord[]> {
   }
 
   if (!joinErr && joined && joined.length > 0) {
-    return joined.map((w: any) => ({
+    return joined.map((w: FavoriteWord) => ({
       word_id: w.word_id,
       word_target: w.word_target,
       word_english: w.word_english,
