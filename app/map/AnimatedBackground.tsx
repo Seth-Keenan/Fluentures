@@ -1,18 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 export default function AnimatedBackground() {
+  const desert = deserts.find(d => d.name === "Namib Desert")!;
   return (
-    <>
-      <motion.img
-        src="/desert.png"
-        alt="Desert background"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+      src={desert.src}
+      alt={desert.name}
+      wikiUrl={desert.wikiUrl}
+    >
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
       <motion.div
         aria-hidden
@@ -34,6 +33,6 @@ export default function AnimatedBackground() {
         animate={{ y: [0, -16, 0], x: [0, -8, 0] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
-    </>
+      </PageBackground>
   );
 }
