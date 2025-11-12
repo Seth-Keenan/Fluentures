@@ -28,7 +28,7 @@ export default function PageBackground({ src, alt, wikiUrl, children }: Readonly
       />
 
       {/* Overlay (optional, maybe take out??) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50 pointer-events-none" />
 
       {/* Info button */}
       {wikiUrl && (
@@ -36,7 +36,7 @@ export default function PageBackground({ src, alt, wikiUrl, children }: Readonly
           href={wikiUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-4 right-4 flex items-center justify-center rounded-full bg-black/50 p-2 text-white backdrop-blur-md hover:bg-black/70 transition"
+          className="absolute top-4 right-4 z-20 flex items-center justify-center rounded-full bg-black/20 p-2 text-gray-300 backdrop-blur-md hover:bg-black/60 transition"
           aria-label={`More information about ${alt}`}
         >
           <Info className="h-5 w-5" />

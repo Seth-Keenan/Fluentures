@@ -17,6 +17,8 @@ import {
   faFilter,
 } from "@fortawesome/free-solid-svg-icons";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 type Post = {
   id: string;
@@ -108,6 +110,8 @@ export default function CommunityPage() {
   const [newName, setNewName] = useState("");
   const [newStatus, setNewStatus] = useState<Friend["status"]>("Online");
   const [newNote, setNewNote] = useState("");
+
+  const desert = deserts.find(d => d.name === "Atacama Desert")!;
 
   useEffect(() => {
     setPosts(loadPosts());
@@ -229,14 +233,11 @@ export default function CommunityPage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background */}
-      <motion.img
-        src="/desert.png"
-        alt="Background"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8">
@@ -466,6 +467,7 @@ export default function CommunityPage() {
 
         <div className="h-10" />
       </div>
+      </PageBackground>
     </div>
   );
 }

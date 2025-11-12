@@ -3,8 +3,9 @@
 import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 import { LinkAsButton } from "../components/LinkAsButton";
 import MapView from "./client"; // Client component for displaying the 3D map
-import PageBackground from "@/app/components/PageBackground";
 import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
+import AnimatedBackground from "./AnimatedBackground";
 
 type WordListRow = {
   word_list_id: string;
@@ -19,7 +20,7 @@ export const metadata = {
 
 export default async function OasisIndex() {
   const supabase = await getSupabaseServerActionClient();
-  const desert = deserts.find((d) => d.name === "Namib Desert")!;
+  const desert = deserts.find(d => d.name === "Namib Desert")!;
 
   // Auth
   const {
@@ -30,17 +31,13 @@ export default async function OasisIndex() {
   if (userError || !user) {
     console.error("Auth error:", userError?.message);
     return (
-      <PageBackground
-        src={desert.src}
-        alt={desert.name}
-        wikiUrl={desert.wikiUrl}
-      >
+      <AnimatedBackground name="Namib Desert">
         <div className="flex flex-col items-center justify-center h-screen">
           <h2 className="text-xl font-semibold mb-2 text-white">Not logged in</h2>
           <p className="text-sm text-white/70">Please log in to view your word lists.</p>
           <LinkAsButton href="/home" className="btn mt-4">Back to Home</LinkAsButton>
         </div>
-      </PageBackground>
+      </AnimatedBackground>
     );
   }
 
@@ -101,15 +98,16 @@ export default async function OasisIndex() {
       alt={desert.name}
       wikiUrl={desert.wikiUrl}
     >
-      {/* This renders the interactive client scene (with styled header + edit button). */}
-      <MapView wordlists={wordlists} selectedLanguage={selectedLanguage} />
 
-      {/* Optional empty-state messaging */}
-      {hasFilter && rows.length === 0 && (
-        <div className="relative z-10 mx-auto my-4 w-[min(95vw,72rem)] text-sm text-white/85">
-          No word lists for <strong>{selectedLanguage}</strong> yet.
-        </div>
-      )}
+        {/* This renders the interactive client scene (with styled header + edit button). */}
+        <MapView wordlists={wordlists} selectedLanguage={selectedLanguage} />
+
+        {/* Optional empty-state messaging */}
+        {hasFilter && rows.length === 0 && (
+          <div className="relative z-10 mx-auto my-4 w-[min(95vw,72rem)] text-sm text-white/85">
+            No word lists for <strong>{selectedLanguage}</strong> yet.
+          </div>
+        )}
     </PageBackground>
   );
 }

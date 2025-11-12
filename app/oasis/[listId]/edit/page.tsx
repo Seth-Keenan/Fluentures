@@ -14,6 +14,8 @@ import {
   getWordListMeta,
   type WordListMeta,
 } from "@/app/lib/actions/wordlistAction";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 /** Hard caps */
 const MAX_ITEMS = 20;
@@ -50,6 +52,9 @@ export default function EditOasisPage() {
     () => JSON.stringify(items) !== lastSavedJSON,
     [items, lastSavedJSON]
   );
+
+  // ui extras
+  const desert = deserts.find(d => d.name === "Death Valley")!;
 
   // initial load
   useEffect(() => {
@@ -175,14 +180,11 @@ export default function EditOasisPage() {
     <>
       <div className="relative min-h-screen w-full overflow-hidden">
         {/* Background (animated) */}
-        <motion.img
-          src="/desert.png"
-          alt="Desert dunes"
-          className="absolute inset-0 h-full w-full object-cover"
-          initial={{ scale: 1 }}
-          animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        />
+        <PageBackground
+          src={desert.src}
+          alt={desert.name}
+          wikiUrl={desert.wikiUrl}
+        >
         {/* Aurora blobs */}
         <motion.div
           aria-hidden
@@ -478,6 +480,7 @@ export default function EditOasisPage() {
             <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
           </p>
         </div>
+        </PageBackground>
       </div>
 
       <ConfirmDialog
