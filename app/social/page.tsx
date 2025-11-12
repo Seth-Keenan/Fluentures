@@ -15,6 +15,8 @@ import {
   faXmark,
   faMagnifyingGlass,
   faFilter,
+  faUserPlus,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 
@@ -23,21 +25,37 @@ type Post = {
   user: string;
   text: string;
   tags: string[];
-  createdAt: number; // ms
+  createdAt: number;
   likes: number;
   liked?: boolean;
   comments: { id: string; user: string; text: string; createdAt: number }[];
 };
 
 type Friend = {
-  id: string;
-  name: string;
-  status: "Online" | "Away" | "Offline";
-  note?: string;
+  friendship_id: string;
+  user_id: string;
+  friend_id: string;
+  status: string;
+  friendInfo?: {
+    username: string;
+    avatar_url?: string;
+  };
+  created_at: string;
+};
+
+type Activity = {
+  activity_id: string;
+  activity_type: string;
+  activity_data: any;
+  created_at: string;
+  user: {
+    user_id: string;
+    username: string;
+    avatar_url?: string;
+  };
 };
 
 const POSTS_KEY = "fluentures.community.posts.v1";
-const FRIENDS_KEY = "fluentures.community.friends.v1";
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -67,19 +85,8 @@ function loadPosts(): Post[] {
     return [];
   }
 }
-function saveFriends(friends: Friend[]) {
-  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends));
-}
-function loadFriends(): Friend[] {
-  try {
-    const raw = localStorage.getItem(FRIENDS_KEY);
-    return raw ? (JSON.parse(raw) as Friend[]) : [];
-  } catch {
-    return [];
-  }
-}
-function formatTime(ts: number) {
-  const d = new Date(ts);
+function formatTime(ts: number | string) {
+  const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
   return d.toLocaleString();
 }
 function avatarGradient(seed: string) {
@@ -93,26 +100,150 @@ export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
 
   const [me] = useState("You");
+  const [view, setView] = useState<"posts" | "friends" | "activity">("posts");
 
+  // Posts (local demo)
   const [posts, setPosts] = useState<Post[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "liked" | "mine">("all");
   const [tagFilter, setTagFilter] = useState<string>("");
-
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
 
+  // Real Friends from DB
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
   const [friendSearch, setFriendSearch] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newStatus, setNewStatus] = useState<Friend["status"]>("Online");
-  const [newNote, setNewNote] = useState("");
+  const [newFriendUsername, setNewFriendUsername] = useState("");
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // Activity Feed
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
   useEffect(() => {
     setPosts(loadPosts());
-    setFriends(loadFriends());
+    loadFriends();
+    loadPendingRequests();
+    loadActivities();
   }, []);
+
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  // Load friends from API
+  const loadFriends = async () => {
+    try {
+      const response = await fetch('/api/friends/list?type=accepted');
+      const data = await response.json();
+      if (data.friends) {
+        const friendsWithInfo = await Promise.all(
+          data.friends.map(async (friendship: Friend) => {
+            const friendId = friendship.user_id !== friendship.friend_id 
+              ? friendship.friend_id 
+              : friendship.user_id;
+            const userResponse = await fetch(`/api/users/${friendId}`);
+            const userData = await userResponse.json();
+            return {
+              ...friendship,
+              friendInfo: userData.user || { username: 'Unknown' }
+            };
+          })
+        );
+        setFriends(friendsWithInfo);
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error);
+    }
+  };
+
+  const loadPendingRequests = async () => {
+    try {
+      const response = await fetch('/api/friends/list?type=pending');
+      const data = await response.json();
+      if (data.friends) {
+        const requestsWithInfo = await Promise.all(
+          data.friends.map(async (friendship: Friend) => {
+            const userResponse = await fetch(`/api/users/${friendship.user_id}`);
+            const userData = await userResponse.json();
+            return {
+              ...friendship,
+              friendInfo: userData.user || { username: 'Unknown' }
+            };
+          })
+        );
+        setPendingRequests(requestsWithInfo);
+      }
+    } catch (error) {
+      console.error('Error loading pending requests:', error);
+    }
+  };
+
+  const loadActivities = async () => {
+    setLoadingActivities(true);
+    try {
+      const response = await fetch('/api/activity/feed');
+      const data = await response.json();
+      if (data.activities) {
+        setActivities(data.activities);
+      }
+    } catch (error) {
+      console.error('Error loading activities:', error);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const sendFriendRequest = async () => {
+    if (!newFriendUsername.trim()) {
+      showMessage('error', 'Please enter a username');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/friends/send-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friend_username: newFriendUsername.trim() })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        showMessage('success', 'Friend request sent!');
+        setNewFriendUsername('');
+        loadFriends();
+      } else {
+        showMessage('error', data.error || 'Failed to send request');
+      }
+    } catch (error) {
+      showMessage('error', 'Error sending request');
+    }
+  };
+
+  const respondToRequest = async (friendshipId: string, action: 'accept' | 'reject') => {
+    try {
+      const response = await fetch('/api/friends/respond', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendship_id: friendshipId, action })
+      });
+
+      if (response.ok) {
+        showMessage('success', `Friend request ${action}ed`);
+        loadFriends();
+        loadPendingRequests();
+        if (action === 'accept') loadActivities();
+      } else {
+        const data = await response.json();
+        showMessage('error', data.error || `Failed to ${action} request`);
+      }
+    } catch (error) {
+      showMessage('error', `Error ${action}ing request`);
+    }
+  };
 
   const allTags = useMemo(() => {
     const s = new Set<string>();
@@ -133,15 +264,12 @@ export default function CommunityPage() {
   }, [posts, filter, tagFilter, query, me]);
 
   const filteredFriends = useMemo(() => {
-    let arr = friends.slice().sort((a, b) => a.name.localeCompare(b.name));
+    let arr = friends.slice().sort((a, b) => 
+      (a.friendInfo?.username || '').localeCompare(b.friendInfo?.username || '')
+    );
     if (friendSearch.trim()) {
       const q = friendSearch.trim().toLowerCase();
-      arr = arr.filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          (f.note || "").toLowerCase().includes(q) ||
-          f.status.toLowerCase().includes(q)
-      );
+      arr = arr.filter((f) => f.friendInfo?.username.toLowerCase().includes(q));
     }
     return arr;
   }, [friends, friendSearch]);
@@ -167,6 +295,7 @@ export default function CommunityPage() {
     setText("");
     setTags("");
   }
+
   function toggleLike(id: string) {
     const next = posts.map((p) =>
       p.id === id
@@ -180,6 +309,7 @@ export default function CommunityPage() {
     setPosts(next);
     savePosts(next);
   }
+
   function addComment(id: string, comment: string) {
     if (!comment.trim()) return;
     const next = posts.map((p) =>
@@ -193,41 +323,71 @@ export default function CommunityPage() {
     setPosts(next);
     savePosts(next);
   }
+
   function deletePost(id: string) {
     const next = posts.filter((p) => p.id !== id);
     setPosts(next);
     savePosts(next);
   }
 
-  function addFriend() {
-    if (!newName.trim()) return;
-    const f: Friend = {
-      id: uid(),
-      name: newName.trim(),
-      status: newStatus,
-      note: newNote.trim() || undefined,
-    };
-    const next = [...friends, f];
-    setFriends(next);
-    saveFriends(next);
-    setNewName("");
-    setNewStatus("Online");
-    setNewNote("");
-    setAdding(false);
-  }
-  function updateFriend(updated: Friend) {
-    const next = friends.map((f) => (f.id === updated.id ? updated : f));
-    setFriends(next);
-    saveFriends(next);
-  }
-  function deleteFriend(id: string) {
-    const next = friends.filter((f) => f.id !== id);
-    setFriends(next);
-    saveFriends(next);
-  }
+  const formatActivity = (activity: Activity) => {
+    const username = activity.user.username || 'Unknown User';
+
+    switch (activity.activity_type) {
+      case 'word_added':
+        return {
+          icon: '📝',
+          text: `${username} added "${activity.activity_data?.word}" to their vocabulary`,
+          color: 'bg-green-500/20 border-green-500/30'
+        };
+      case 'wordlist_created':
+        return {
+          icon: '📚',
+          text: `${username} created a new word list: "${activity.activity_data?.name}"`,
+          color: 'bg-blue-500/20 border-blue-500/30'
+        };
+      case 'study_session':
+        return {
+          icon: '✍️',
+          text: `${username} completed a study session`,
+          color: 'bg-purple-500/20 border-purple-500/30'
+        };
+      case 'achievement':
+        return {
+          icon: '🏆',
+          text: `${username} earned an achievement: ${activity.activity_data?.name}`,
+          color: 'bg-yellow-500/20 border-yellow-500/30'
+        };
+      default:
+        return {
+          icon: '📌',
+          text: `${username} did something`,
+          color: 'bg-gray-500/20 border-gray-500/30'
+        };
+    }
+  };
+
+  const getTimeAgo = (date: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return new Date(date).toLocaleDateString();
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Message Toast */}
+      {message && (
+        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+          message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          {message.text}
+        </div>
+      )}
+
       {/* Background */}
       <motion.img
         src="/desert.png"
@@ -250,7 +410,7 @@ export default function CommunityPage() {
           <div>
             <h1 className="text-white text-3xl sm:text-4xl font-semibold">Community</h1>
             <p className="text-white/85 mt-1">
-              Share progress, cheer friends, and keep your learning circle close
+              Share progress, connect with friends, and track learning together
             </p>
           </div>
 
@@ -264,205 +424,297 @@ export default function CommunityPage() {
           </div>
         </motion.div>
 
-        {/* Main grid */}
+        {/* View Tabs */}
         <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+          className="mt-6 flex gap-2"
         >
-          {/* Left: Composer + Feed */}
-          <motion.div variants={item} className="lg:col-span-2">
-            {/* Composer */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
-              <div className="flex items-start gap-3">
-                {/* avatar */}
-                <div
-                  className="h-10 w-10 shrink-0 rounded-full ring-2 ring-white/60"
-                  style={{ background: avatarGradient(me) }}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      className="w-full bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Share what you learned today…"
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={createPost}
-                      className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 ring-1 ring-white/20 transition px-3 py-2"
-                    >
-                      <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-                      Post
-                    </button>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      className="flex-1 bg-white/75 text-gray-900 rounded-lg px-3 py-1.5 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none text-sm"
-                      placeholder="Tags (comma-separated, e.g., vocab, travel)"
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+          <button
+            onClick={() => setView('activity')}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
+              view === 'activity'
+                ? 'bg-white text-gray-900'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            <FontAwesomeIcon icon={faUsers} className="mr-2 h-4 w-4" />
+            Friend Activity
+          </button>
+          <button
+            onClick={() => setView('friends')}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition relative ${
+              view === 'friends'
+                ? 'bg-white text-gray-900'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            <FontAwesomeIcon icon={faUserPlus} className="mr-2 h-4 w-4" />
+            Friends
+            {pendingRequests.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {pendingRequests.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setView('posts')}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
+              view === 'posts'
+                ? 'bg-white text-gray-900'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            <FontAwesomeIcon icon={faCommentDots} className="mr-2 h-4 w-4" />
+            Posts
+          </button>
+        </motion.div>
 
-            {/* Filters (mobile) */}
-            <div className="mt-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-4 lg:hidden">
-              <Filters
-                filter={filter}
-                setFilter={setFilter}
-                tagFilter={tagFilter}
-                setTagFilter={setTagFilter}
-                allTags={allTags}
-                query={query}
-                setQuery={setQuery}
-              />
-            </div>
-
-            {/* Feed */}
-            <motion.div variants={container} initial="hidden" animate="show" className="mt-4 space-y-3">
-              {filtered.length ? (
-                filtered.map((p) => (
-                  <PostCard
-                    key={p.id}
-                    post={p}
-                    me={me}
-                    onToggleLike={() => toggleLike(p.id)}
-                    onDelete={() => deletePost(p.id)}
-                    onComment={(t) => addComment(p.id, t)}
-                  />
-                ))
-              ) : (
-                <motion.div
-                  variants={item}
-                  className="rounded-xl bg-white/10 text-white p-6 text-center ring-1 ring-white/20"
-                >
-                  No posts yet. Share your first update!
-                </motion.div>
-              )}
-            </motion.div>
-          </motion.div>
-
-          {/* Right: Filters + Friends Manager */}
-          <motion.div variants={item} className="space-y-5">
-            {/* Filters */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5 sticky top-24">
-              <Filters
-                filter={filter}
-                setFilter={setFilter}
-                tagFilter={tagFilter}
-                setTagFilter={setTagFilter}
-                allTags={allTags}
-                query={query}
-                setQuery={setQuery}
-              />
-            </div>
-
-            {/* Friends Manager */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20 text-white/95">
-                  👥 <span className="text-sm font-medium">Friends</span>
-                </div>
+        {/* Content based on view */}
+        {view === 'activity' && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 max-w-3xl mx-auto"
+          >
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-white">Friend Activity</h2>
                 <button
-                  type="button"
-                  onClick={() => setAdding((v) => !v)}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 transition px-3 py-1.5 text-sm"
+                  onClick={loadActivities}
+                  className="cursor-pointer text-white/80 hover:text-white text-sm"
                 >
-                  <FontAwesomeIcon icon={adding ? faXmark : faPlus} className="h-4 w-4" />
-                  {adding ? "Cancel" : "Add"}
+                  Refresh
                 </button>
               </div>
 
-              {/* Add Friend Form */}
-              {adding && (
-                <div className="mt-3 rounded-xl bg-white/90 p-3 ring-1 ring-white/30 shadow-sm">
-                  <div className="grid grid-cols-1 gap-2">
-                    <input
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                    />
-                    <select
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 focus:outline-none"
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value as Friend["status"])}
-                    >
-                      <option>Online</option>
-                      <option>Away</option>
-                      <option>Offline</option>
-                    </select>
-                    <input
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Note (optional)"
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                    />
-                    <div className="flex items-center gap-2 justify-end">
+              {loadingActivities ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">👥</div>
+                  <p className="text-white/80 text-lg mb-2">No activity yet</p>
+                  <p className="text-white/60 text-sm">
+                    Add friends to see their learning progress here!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activities.map((activity) => {
+                    const formatted = formatActivity(activity);
+                    return (
+                      <div
+                        key={activity.activity_id}
+                        className={`p-4 rounded-lg border-2 ${formatted.color} backdrop-blur-sm`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl">{formatted.icon}</div>
+                          <div className="flex-1">
+                            <p className="text-white">{formatted.text}</p>
+                            <p className="text-sm text-white/60 mt-1">
+                              {getTimeAgo(activity.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {view === 'friends' && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 max-w-3xl mx-auto space-y-5"
+          >
+            {/* Add Friend */}
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+              <h3 className="text-white font-semibold mb-3">Add Friend</h3>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter username"
+                  value={newFriendUsername}
+                  onChange={(e) => setNewFriendUsername(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendFriendRequest()}
+                  className="flex-1 bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none"
+                />
+                <button
+                  onClick={sendFriendRequest}
+                  className="cursor-pointer bg-emerald-500 text-white hover:bg-emerald-400 px-4 py-2 rounded-lg transition"
+                >
+                  <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                  Send Request
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Pending Requests */}
+            {pendingRequests.length > 0 && (
+              <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+                <h3 className="text-white font-semibold mb-3">Pending Requests</h3>
+                <div className="space-y-2">
+                  {pendingRequests.map((request) => (
+                    <div key={request.friendship_id} className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
+                      <span className="text-white">{request.friendInfo?.username}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => respondToRequest(request.friendship_id, 'accept')}
+                          className="cursor-pointer bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => respondToRequest(request.friendship_id, 'reject')}
+                          className="cursor-pointer bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Friends List */}
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-white font-semibold">Friends ({friends.length})</h3>
+                <div className="relative">
+                  <FontAwesomeIcon
+                    icon={faMagnifyingGlass}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70"
+                  />
+                  <input
+                    className="w-48 bg-white/10 pl-7 pr-2 py-1.5 rounded-lg text-sm text-white ring-1 ring-white/30 placeholder:text-white/60 focus:outline-none"
+                    placeholder="Search friends…"
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {filteredFriends.length === 0 ? (
+                <div className="text-center py-8 text-white/60">
+                  No friends yet. Add some above!
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredFriends.map((friend) => (
+                    <div key={friend.friendship_id} className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                      <div
+                        className="h-10 w-10 rounded-full ring-2 ring-white/60"
+                        style={{ background: avatarGradient(friend.friendInfo?.username || '') }}
+                      />
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{friend.friendInfo?.username}</p>
+                        <p className="text-white/60 text-xs">
+                          Friends since {new Date(friend.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {view === 'posts' && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+          >
+            {/* Left: Composer + Feed */}
+            <motion.div variants={item} className="lg:col-span-2">
+              {/* Composer */}
+              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="h-10 w-10 shrink-0 rounded-full ring-2 ring-white/60"
+                    style={{ background: avatarGradient(me) }}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="w-full bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none"
+                        placeholder="Share what you learned today…"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                      />
                       <button
                         type="button"
-                        onClick={() => {
-                          setAdding(false);
-                          setNewName("");
-                          setNewStatus("Online");
-                          setNewNote("");
-                        }}
-                        className="cursor-pointer rounded-md bg-white/60 hover:bg-white px-3 py-1 text-sm ring-1 ring-black/10 transition"
+                        onClick={createPost}
+                        className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 ring-1 ring-white/20 transition px-3 py-2"
                       >
-                        Cancel
+                        <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+                        Post
                       </button>
-                      <button
-                        type="button"
-                        onClick={addFriend}
-                        className="cursor-pointer inline-flex items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 text-sm ring-1 ring-white/20 transition"
-                      >
-                        <FontAwesomeIcon icon={faFloppyDisk} className="h-4 w-4" />
-                        Save
-                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        className="flex-1 bg-white/75 text-gray-900 rounded-lg px-3 py-1.5 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none text-sm"
+                        placeholder="Tags (comma-separated, e.g., vocab, travel)"
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Search */}
-              <div className="mt-3 relative">
-                <FontAwesomeIcon
-                  icon={faMagnifyingGlass}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70"
-                />
-                <input
-                  className="w-full rounded-lg bg-white/10 pl-7 pr-2 py-1.5 text-sm text-white ring-1 ring-white/30 placeholder:text-white/60 focus:outline-none"
-                  placeholder="Search friends…"
-                  value={friendSearch}
-                  onChange={(e) => setFriendSearch(e.target.value)}
-                />
               </div>
 
-              {/* Friends List */}
-              <div className="mt-3 space-y-2">
-                {filteredFriends.length ? (
-                  filteredFriends.map((f) => (
-                    <FriendRow
-                      key={f.id}
-                      friend={f}
-                      onSave={updateFriend}
-                      onDelete={() => deleteFriend(f.id)}
+              {/* Feed */}
+              <motion.div variants={container} initial="hidden" animate="show" className="mt-4 space-y-3">
+                {filtered.length ? (
+                  filtered.map((p) => (
+                    <PostCard
+                      key={p.id}
+                      post={p}
+                      me={me}
+                      onToggleLike={() => toggleLike(p.id)}
+                      onDelete={() => deletePost(p.id)}
+                      onComment={(t) => addComment(p.id, t)}
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl bg-white/10 text-white p-4 text-center ring-1 ring-white/20">
-                    No friends yet. Add one!
-                  </div>
+                  <motion.div
+                    variants={item}
+                    className="rounded-xl bg-white/10 text-white p-6 text-center ring-1 ring-white/20"
+                  >
+                    No posts yet. Share your first update!
+                  </motion.div>
                 )}
+              </motion.div>
+            </motion.div>
+
+            {/* Right: Filters */}
+            <motion.div variants={item} className="space-y-5">
+              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5 sticky top-24">
+                <Filters
+                  filter={filter}
+                  setFilter={setFilter}
+                  tagFilter={tagFilter}
+                  setTagFilter={setTagFilter}
+                  allTags={allTags}
+                  query={query}
+                  setQuery={setQuery}
+                />
               </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
+        )}
 
         <div className="h-10" />
       </div>
@@ -510,7 +762,7 @@ function Filters({
             {f[0].toUpperCase() + f.slice(1)}
           </button>
         ))}
-      </div>
+        </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <select
@@ -685,122 +937,5 @@ function PostCard({
         </div>
       </div>
     </motion.div>
-  );
-}
-
-function FriendRow({
-  friend,
-  onSave,
-  onDelete,
-}: {
-  friend: Friend;
-  onSave: (f: Friend) => void;
-  onDelete: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(friend.name);
-  const [status, setStatus] = useState<Friend["status"]>(friend.status);
-  const [note, setNote] = useState(friend.note || "");
-
-  const statusDot =
-    status === "Online" ? "bg-emerald-500" : status === "Away" ? "bg-amber-400" : "bg-gray-400";
-
-  return (
-    <div className="flex items-start justify-between rounded-xl bg-white/90 p-3 text-gray-900 ring-1 ring-white/30 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="relative">
-          <div
-            className="h-9 w-9 rounded-full ring-2 ring-white/80"
-            style={{ background: avatarGradient(friend.name) }}
-          />
-          <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${statusDot}`} />
-        </div>
-
-        {!editing ? (
-          <div>
-            <div className="font-semibold">{friend.name}</div>
-            <div className="text-[11px] text-gray-600">{friend.status}</div>
-            {friend.note ? <div className="text-sm text-gray-700 mt-1">{friend.note}</div> : null}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-2">
-            <input
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <select
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 focus:outline-none"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Friend["status"])}
-            >
-              <option>Online</option>
-              <option>Away</option>
-              <option>Offline</option>
-            </select>
-            <input
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-              placeholder="Note (optional)"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {!editing ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
-              title="Edit"
-            >
-              <FontAwesomeIcon icon={faPenToSquare} className="h-3 w-3" />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-rose-500 hover:bg-rose-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
-              title="Delete"
-            >
-              <FontAwesomeIcon icon={faTrashCan} className="h-3 w-3" />
-              Delete
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                onSave({ id: friend.id, name: name.trim() || friend.name, status, note: note.trim() || undefined });
-                setEditing(false);
-              }}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
-              title="Save"
-            >
-              <FontAwesomeIcon icon={faFloppyDisk} className="h-3 w-3" />
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setName(friend.name);
-                setStatus(friend.status);
-                setNote(friend.note || "");
-              }}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
-              title="Cancel"
-            >
-              <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-              Cancel
-            </button>
-          </>
-        )}
-      </div>
-    </div>
   );
 }
