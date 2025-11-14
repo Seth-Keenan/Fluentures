@@ -14,6 +14,8 @@ import {
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // ==== TYPES ==========================================================
@@ -114,6 +116,8 @@ export default function CommunityPage() {
   };
 
   // === LOAD INITIAL DATA ==============================================
+
+  const desert = deserts.find(d => d.name === "Atacama Desert")!;
 
   useEffect(() => {
     loadPosts();
@@ -578,15 +582,12 @@ export default function CommunityPage() {
       )}
 
       {/* Background */}
-      <motion.img
-        src="/desert.png"
-        alt="Background"
-        className="absolute inset-0 w-full h-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50"></div>
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
@@ -864,6 +865,7 @@ export default function CommunityPage() {
           </motion.div>
         )}
       </div>
+      </PageBackground>
     </div>
   );
 }
