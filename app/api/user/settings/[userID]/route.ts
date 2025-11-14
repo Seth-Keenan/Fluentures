@@ -8,19 +8,20 @@ export async function GET(
 ) {
   try {
     const supabase = await getSupabaseServerClient()
-    
+
     const { data: user, error } = await supabase
       .from('Users')
-      .select('user_id, username, avatar_url')
+      .select('user_id, social_username, avatar_url')
       .eq('user_id', params.userId)
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error || !user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     return NextResponse.json({ user })
   } catch (error) {
+    console.error('GET /api/users/[userId] error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

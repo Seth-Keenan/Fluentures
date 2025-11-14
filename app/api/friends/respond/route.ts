@@ -6,18 +6,18 @@ export async function PUT(req: Request) {
   try {
     const supabase = await getSupabaseServerClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
+
     if (userError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const { friendship_id, action } = await req.json() // action: 'accept' or 'reject'
+    const { friendship_id, action } = await req.json()
 
     if (!['accept', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    // Verify this request was sent to the current user
+    // 🔍 Only the receiver can accept/reject, and only pending requests
     const { data: friendship, error: fetchError } = await supabase
       .from('Friendships')
       .select('*')
@@ -27,14 +27,19 @@ export async function PUT(req: Request) {
       .single()
 
     if (fetchError || !friendship) {
-      return NextResponse.json({ error: 'Friend request not found' }, { status: 404 })
+      return NextResponse.json({
+        error: 'Friend request not found or not authorized'
+      }, { status: 404 })
     }
 
     const newStatus = action === 'accept' ? 'accepted' : 'rejected'
 
     const { data, error } = await supabase
       .from('Friendships')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
       .eq('friendship_id', friendship_id)
       .select()
       .single()
@@ -43,8 +48,12 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ message: `Friend request ${action}ed`, friendship: data })
+    return NextResponse.json({
+      message: `Friend request ${action}ed`,
+      friendship: data
+    })
   } catch (error) {
+    console.error('Respond error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
