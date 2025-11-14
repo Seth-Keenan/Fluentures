@@ -37,7 +37,7 @@ type Friend = {
   friend_id: string;
   status: string;
   friendInfo?: {
-    username: string;
+    social_username: string;
     avatar_url?: string;
   };
   created_at: string;
@@ -50,7 +50,7 @@ type Activity = {
   created_at: string;
   user: {
     user_id: string;
-    username: string;
+    social_username: string;
     avatar_url?: string;
   };
 };
@@ -265,11 +265,11 @@ export default function CommunityPage() {
 
   const filteredFriends = useMemo(() => {
     let arr = friends.slice().sort((a, b) => 
-      (a.friendInfo?.username || '').localeCompare(b.friendInfo?.username || '')
+      (a.friendInfo?.social_username || '').localeCompare(b.friendInfo?.social_username || '')
     );
     if (friendSearch.trim()) {
       const q = friendSearch.trim().toLowerCase();
-      arr = arr.filter((f) => f.friendInfo?.username.toLowerCase().includes(q));
+      arr = arr.filter((f) => f.friendInfo?.social_username.toLowerCase().includes(q));
     }
     return arr;
   }, [friends, friendSearch]);
@@ -331,7 +331,7 @@ export default function CommunityPage() {
   }
 
   const formatActivity = (activity: Activity) => {
-    const username = activity.user.username || 'Unknown User';
+    const username = activity.user.social_username || 'Unknown User';
 
     switch (activity.activity_type) {
       case 'word_added':
@@ -565,7 +565,7 @@ export default function CommunityPage() {
                 <div className="space-y-2">
                   {pendingRequests.map((request) => (
                     <div key={request.friendship_id} className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
-                      <span className="text-white">{request.friendInfo?.username}</span>
+                      <span className="text-white">{request.friendInfo?.social_username}</span>
                       <div className="flex gap-2">
                         <button
                           onClick={() => respondToRequest(request.friendship_id, 'accept')}
@@ -614,10 +614,10 @@ export default function CommunityPage() {
                     <div key={friend.friendship_id} className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
                       <div
                         className="h-10 w-10 rounded-full ring-2 ring-white/60"
-                        style={{ background: avatarGradient(friend.friendInfo?.username || '') }}
+                        style={{ background: avatarGradient(friend.friendInfo?.social_username || '') }}
                       />
                       <div className="flex-1">
-                        <p className="text-white font-medium">{friend.friendInfo?.username}</p>
+                        <p className="text-white font-medium">{friend.friendInfo?.social_username}</p>
                         <p className="text-white/60 text-xs">
                           Friends since {new Date(friend.created_at).toLocaleDateString()}
                         </p>
