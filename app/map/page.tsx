@@ -1,11 +1,8 @@
 // app/map/page.tsx
-
 import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 import { LinkAsButton } from "../components/LinkAsButton";
-import MapView from "./client"; // Client component for displaying the 3D map
-import { deserts } from "@/app/data/deserts";
-import PageBackground from "@/app/components/PageBackground";
-import AnimatedBackground from "./AnimatedBackground";
+import MapView from "./client";
+import { createOasis } from "./actions";
 
 type WordListRow = {
   word_list_id: string;
@@ -20,7 +17,6 @@ export const metadata = {
 
 export default async function OasisIndex() {
   const supabase = await getSupabaseServerActionClient();
-  const desert = deserts.find(d => d.name === "Namib Desert")!;
 
   // Auth
   const {
@@ -31,13 +27,15 @@ export default async function OasisIndex() {
   if (userError || !user) {
     console.error("Auth error:", userError?.message);
     return (
-      <AnimatedBackground name="Namib Desert">
-        <div className="flex flex-col items-center justify-center h-screen">
-          <h2 className="text-xl font-semibold mb-2 text-white">Not logged in</h2>
-          <p className="text-sm text-white/70">Please log in to view your word lists.</p>
-          <LinkAsButton href="/home" className="btn mt-4">Back to Home</LinkAsButton>
-        </div>
-      </AnimatedBackground>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h2 className="text-xl font-semibold mb-2">Not logged in</h2>
+        <p className="text-sm text-gray-500">
+          Please log in to view your word lists.
+        </p>
+        <LinkAsButton href="/home" className="btn mt-4">
+          Back to Home
+        </LinkAsButton>
+      </div>
     );
   }
 
@@ -49,7 +47,6 @@ export default async function OasisIndex() {
     .maybeSingle();
 
   if (settingError && settingError.code !== "PGRST116") {
-    // PGRST116 = no rows found for single() — safe to ignore if using maybeSingle()
     console.error("Failed to load user_settings:", {
       message: settingError.message,
       details: settingError.details,
@@ -60,7 +57,7 @@ export default async function OasisIndex() {
 
   const selectedLanguage = setting?.language?.trim() || null;
 
-  // 2) Fetch this user's wordlists, filtered by selected language (if set)
+  // Fetch this user's wordlists, filtered by selected language (if set)
   let query = supabase
     .from("WordList")
     .select("word_list_id, word_list_name, language")
@@ -68,7 +65,7 @@ export default async function OasisIndex() {
     .order("created_at", { ascending: true });
 
   if (selectedLanguage) {
-    query = query.eq("language", selectedLanguage); // exact match; make consistent in your data
+    query = query.eq("language", selectedLanguage);
   }
 
   const { data: lists, error } = await query;
@@ -83,7 +80,6 @@ export default async function OasisIndex() {
   }
 
   const rows = (lists ?? []) as WordListRow[];
-  const hasFilter = !!selectedLanguage;
 
   // Map DB rows to client format
   const wordlists = rows.map((l) => ({
@@ -93,21 +89,13 @@ export default async function OasisIndex() {
   }));
 
   return (
-    <PageBackground
-      src={desert.src}
-      alt={desert.name}
-      wikiUrl={desert.wikiUrl}
-    >
-
-        {/* This renders the interactive client scene (with styled header + edit button). */}
-        <MapView wordlists={wordlists} selectedLanguage={selectedLanguage} />
-
-        {/* Optional empty-state messaging */}
-        {hasFilter && rows.length === 0 && (
-          <div className="relative z-10 mx-auto my-4 w-[min(95vw,72rem)] text-sm text-white/85">
-            No word lists for <strong>{selectedLanguage}</strong> yet.
-          </div>
-        )}
-    </PageBackground>
+    <div className="relative min-h-screen w-full overflow-hidden bg-slate-950">
+      {/* All interactive / 3D stuff is in the client component */}
+      <MapView
+        wordlists={wordlists}
+        selectedLanguage={selectedLanguage}
+        createAction={createOasis}
+      />
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-// app/map/page.tsx
+// app/map/MapViewClient.tsx
 "use client";
 
 import React, {
@@ -26,16 +26,12 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 type Vec3 = [number, number, number];
 
-// Lite type for wordlist in supa server
 export type WordListLite = {
   id: string;
   title: string;
   language: string | null;
 };
 
-// Oasis instance saved to localStorage and rendered into the scene.
-// "position" & "rotation" place each oasis; "scale" sets model size.
-// "title" is the on‑screen HTML label above the model.
 type Oasis3D = {
   id: string;
   position: Vec3;
@@ -46,20 +42,20 @@ type Oasis3D = {
 
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 
-// GLB model URLs
 const OASIS_URL = "/blenderModels/oasis2.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
 
-/* ---------------- Edge-anchorable Desert background (StrictMode-safe) ---------------- */
+/* ---------------- Desert background ---------------- */
+
 function DesertBackground({
   position = [0, 0, 0] as Vec3,
   rotation = [0, 0, 0] as Vec3,
   scale = 1,
   targetWidth = 60,
-  anchorX = "min", // "min" | "center" | "max"
-  anchorZ = "min", // "min" | "center" | "max"
-  targetX = -30, // world X for chosen X-edge
-  targetZ = -30, // world Z for chosen Z-edge bottom front edge for model
+  anchorX = "min",
+  anchorZ = "min",
+  targetX = -30,
+  targetZ = -30,
   computeWithRotation = true,
 }: {
   position?: Vec3;
@@ -76,30 +72,25 @@ function DesertBackground({
   const clone = useMemo(() => scene.clone(true), [scene]);
 
   useLayoutEffect(() => {
-    // Reset for StrictMode
     clone.position.set(0, 0, 0);
     clone.rotation.set(0, 0, 0);
     clone.scale.setScalar(1);
     clone.updateMatrixWorld(true);
 
-    // Fit to target width
     const authoredBox = new THREE.Box3().setFromObject(clone);
     const authoredSize = authoredBox.getSize(new THREE.Vector3());
     const s = authoredSize.x > 0 ? (targetWidth / authoredSize.x) * scale : scale;
     clone.scale.setScalar(s);
 
-    // Optionally rotate before measuring bounds for anchoring
     if (computeWithRotation) {
       clone.rotation.set(rotation[0], rotation[1], rotation[2]);
     }
     clone.updateMatrixWorld(true);
 
-    // Ground to y = 0
     const boxAfterScale = new THREE.Box3().setFromObject(clone);
     clone.position.y += -boxAfterScale.min.y;
     clone.updateMatrixWorld(true);
 
-    // Anchor to requested edges
     const box = new THREE.Box3().setFromObject(clone);
     const centerX = (box.min.x + box.max.x) / 2;
     const centerZ = (box.min.z + box.max.z) / 2;
@@ -109,7 +100,6 @@ function DesertBackground({
     clone.position.x += targetX - currentX;
     clone.position.z += targetZ - currentZ;
 
-    // External offset
     clone.position.x += position[0];
     clone.position.y += position[1];
     clone.position.z += position[2];
@@ -124,13 +114,8 @@ function DesertBackground({
   );
 }
 
-/* ---------------- Oasis model & instance ---------------- 
-* OasisInstance: clickable wrapper that:
-* - draws an invisible, larger hitbox for easier clicking
-* - renders the model itself
-* - shows a floating HTML label above the model
-* Clicking navigates to the oasis detail route via onOpen(id).
-*/
+/* ---------------- Oasis model & instance ---------------- */
+
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(OASIS_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -155,7 +140,6 @@ function OasisInstance({
         onOpen(data.id);
       }}
     >
-      {/* Larger invisible hit-box for easier clicking */}
       <mesh position={[0, 1.0 * data.scale, 0]} visible={false}>
         <boxGeometry args={[2 * data.scale, 2 * data.scale, 2 * data.scale]} />
         <meshBasicMaterial transparent opacity={0} />
@@ -163,7 +147,6 @@ function OasisInstance({
 
       <OasisModel scale={data.scale} />
 
-      {/* Floating label */}
       <Html
         position={[0, 1.7 * data.scale, 0]}
         center
@@ -184,10 +167,7 @@ function OasisInstance({
   );
 }
 
-/* ---------------- Pan limiter ->frame-based.   ---------------- 
-* Runs every frame, clamps OrbitControls.target to a rectangular region so the
-* user can't pan the camera outside the intended sand area. If the target is
-* clamped, the camera position is shifted by the same offset*/
+/* ---------------- Pan limiter & controls ---------------- */
 
 function PanLimiter({
   controls,
@@ -215,8 +195,6 @@ function PanLimiter({
   return null;
 }
 
-/* ---------------- OrbitControls wrapper ---------------- */
-// affects how the camera can be moved 
 function ControlsWithLimits({
   controlsRef,
   bounds,
@@ -231,12 +209,12 @@ function ControlsWithLimits({
         makeDefault
         enableDamping
         dampingFactor={0.08}
-        enableRotate={false} // “glide” feel — no free orbit
+        enableRotate={false}
         enablePan
         enableZoom
         minDistance={6}
         maxDistance={26}
-        minPolarAngle={0.9} // keep camera above horizon
+        minPolarAngle={0.9}
         maxPolarAngle={Math.PI / 2.1}
       />
       <PanLimiter controls={controlsRef} bounds={bounds} />
@@ -244,9 +222,8 @@ function ControlsWithLimits({
   );
 }
 
-/* ---------------- Arrow pad  ---------------- */
-//* - step: how far each tap tries to move in world units (before clamping)
-// - duration: how long the glide animation takes (ms)
+/* ---------------- Arrow pad ---------------- */
+
 function GlideControlsUI({
   controlsRef,
   bounds,
@@ -268,17 +245,14 @@ function GlideControlsUI({
 
     const cam = c.object as THREE.PerspectiveCamera;
 
-    // Screen-aligned basis projected onto XZ plane
     const forward = new THREE.Vector3();
     cam.getWorldDirection(forward);
     forward.y = 0;
     forward.normalize();
 
     const up = new THREE.Vector3(0, 1, 0);
-    // weird changes due to flipping model axis 
     const right = forward.clone().cross(up).normalize();
 
-    // Map screen step to world delta 
     const worldDelta = new THREE.Vector3()
       .addScaledVector(right, sx * step)
       .addScaledVector(forward, -sz * step);
@@ -294,7 +268,7 @@ function GlideControlsUI({
 
     const animate = (t: number) => {
       const k = Math.min(1, (t - start) / duration);
-      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k; 
+      const ease = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
 
       const cur = from.clone().lerp(to, ease);
       const off = new THREE.Vector3().subVectors(c.object.position, c.target);
@@ -345,27 +319,40 @@ function GlideControlsUI({
   );
 }
 
-/* ---------------- Page ---------------- */
-// current -> camera position is set in <Canvas camera={position:[9,7,9], fov:46}>.
-export default function MapView({
-  wordlists,
-  // selectedLanguage,
-}: {
+/* ---------------- Main client component ---------------- */
+
+type MapViewProps = {
   wordlists: WordListLite[];
   selectedLanguage: string | null;
-}) {
-// -----------------------------------------
+  createAction?: (fd: FormData) => Promise<void>;
+};
+
+export default function MapView({
+  wordlists,
+  selectedLanguage,
+  createAction,
+}: MapViewProps) {
   const router = useRouter();
   const [instances, setInstances] = useState<Oasis3D[]>([]);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
-  // Travel limits (match your anchored desert area; NEED to adjust because this isn't working how I thought it would
-  //Idea: bound using click limits left right up down. have zoom restrictions to keep user from exploring outside sand area
   const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
 
-  // -----------------------------------------
-  // CHANGED: merge Supabase wordlists with any saved localStorage layout.
-  //          If nothing saved, place them on a simple grid by default.
+  const handleOpen = (id: string) => {
+    router.push(`/oasis/${id}`);
+  };
+
+  const handleCreate = async () => {
+    if (!createAction) return;
+    const name =
+      typeof window !== "undefined"
+        ? (prompt("Name your new oasis:", "New Oasis") ?? "New Oasis")
+        : "New Oasis";
+    const fd = new FormData();
+    fd.append("name", name);
+    await createAction(fd); // server will redirect
+  };
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_3D);
@@ -378,7 +365,7 @@ export default function MapView({
           found ?? {
             id: wl.id,
             title: wl.title,
-            position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3, // grid default
+            position: [(i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6] as Vec3,
             rotation: [0, 0, 0],
             scale: 1,
           }
@@ -392,120 +379,242 @@ export default function MapView({
         wordlists.map((wl, i) => ({
           id: wl.id,
           title: wl.title,
-          position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3,
+          position: [(i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6] as Vec3,
           rotation: [0, 0, 0],
           scale: 1,
-        }))
+        })),
       );
     }
   }, [wordlists]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Background image & glow blobs */}
+      <img
+        src="/desert.png"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.35), rgba(0,0,0,0))",
+          animation: "float1 14s ease-in-out infinite",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
+          animation: "float2 16s ease-in-out infinite",
+        }}
+      />
 
-      {/* Header / actions */}
-      <header className="relative z-10 w-full">
-        <div className="mx-auto mt-6 flex w-[min(95vw,72rem)] items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl sm:px-6">
-          <div>
-            <h1 className="text-white text-2xl sm:text-3xl font-semibold">Map</h1>
-            <p className="text-white/85 text-sm">
-              Explore your saved oases in 3D. Click the arrows to explore.
-            </p>
+      {/* 📱 Mobile list view */}
+      <div className="relative z-10 block sm:hidden px-4 pt-6 pb-8">
+        <header className="mb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-lg font-semibold text-white">Your oases</h1>
+              <p className="text-xs text-white/70">
+                Tap an oasis to open it.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs text-white/85 ring-1 ring-white/20">
+              <span className="mr-1 opacity-75">Language:</span>
+              <strong>{selectedLanguage ?? "Any"}</strong>
+            </span>
           </div>
-          <div className="flex gap-2">
-            <LinkAsButton
-              href="/map/edit"
-              className="rounded-lg px-4 py-2 bg-white/90 !text-gray-900 hover:bg-white shadow-lg shadow-black/20 ring-1 ring-white/30 transition"
+
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={handleCreate}
+              className="flex-1 rounded-lg bg-white text-slate-900 px-4 py-2 text-sm font-medium shadow-md shadow-black/20 ring-1 ring-slate-200 active:translate-y-[1px] active:shadow-sm transition"
             >
-              Edit Map
-            </LinkAsButton>
+              Create oasis
+            </button>
             <LinkAsButton
               href="/home"
-              className="rounded-lg px-4 py-2 bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/30 transition"
+              className="flex-1 rounded-lg bg-white/5 text-white px-4 py-2 text-sm ring-1 ring-white/20"
             >
               Back
             </LinkAsButton>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 3D Canvas card */}
-      <section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
-        <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
-          <div className="h-[70vh] relative">
-            <Canvas
-              shadows
-              camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }} // slightly zoomed-in start
-            >
-              {/* Scene mood */}
-              <color attach="background" args={["#000000"]} />
-              <fog attach="fog" args={["#000000", 35, 120]} />
-
-              {/* Sun & environment */}
-              <Sky
-                distance={450000}
-                sunPosition={[25, 12, -20]}
-                mieCoefficient={0.01}
-                mieDirectionalG={0.9}
-                rayleigh={3}
-                turbidity={6}
-                inclination={0.49}
-                azimuth={0.25}
-              />
-              <Environment preset="sunset" />
-
-              {/* Lights */}
-              <ambientLight intensity={0.35} />
-              <directionalLight
-                position={[10, 12, 6]}
-                intensity={1.2}
-                castShadow
-                shadow-mapSize-width={2048}
-                shadow-mapSize-height={2048}
-              />
-              <directionalLight position={[-10, 6, -6]} intensity={0.25} />
-
-              {/* GLB background with an edge facing out */}
-              <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
-                <DesertBackground
-                  rotation={[0, Math.PI / 4, 0]} // rotate so edge (not corner) faces the viewer
-                  scale={1}
-                  targetWidth={60}
-                  anchorX="min"
-                  anchorZ="min"
-                  targetX={-30}
-                  targetZ={-30}
-                />
-              </Suspense>
-
-              {/* Model instances */}
-              <Suspense fallback={<Html center style={{ color: "white" }}>Loading oases…</Html>}>
-                {instances.map((o) => (
-                  <OasisInstance key={o.id} data={o} onOpen={(id) => router.push(`/oasis/${id}`)} />
-                ))}
-              </Suspense>
-
-              {/* Soft contact shadows */}
-              <ContactShadows position={[0, 0, 0]} scale={50} blur={2.4} opacity={0.5} far={15} />
-
-              {/* Controls + pan limits */}
-              <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
-            </Canvas>
-
-            {/* Arrow pad overlay outside map canvas */}
-            <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
+        {wordlists.length === 0 ? (
+          <div className="mt-4 rounded-xl bg-white/10 px-4 py-3 text-sm text-white/85 ring-1 ring-white/20">
+            {selectedLanguage ? (
+              <>
+                No oases yet for <strong>{selectedLanguage}</strong>.{" "}
+                <span className="opacity-80">
+                  Create one to start learning.
+                </span>
+              </>
+            ) : (
+              <>You don&apos;t have any oases yet. Create one to get started.</>
+            )}
           </div>
-        </div>
-      </section>
-
-      {/* Tiny footer hint */}
-      <div className="relative z-10 mx-auto mb-8 w-[min(95vw,72rem)]">
-        <p className="text-center text-xs text-white/70">
-          Tip: Use the arrow pad to glide. Scroll to zoom. Click an oasis to open it.
-        </p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {wordlists.map((oasis) => (
+              <button
+                key={oasis.id}
+                type="button"
+                onClick={() => handleOpen(oasis.id)}
+                className="w-full rounded-xl bg-white text-slate-900 px-4 py-3 text-left shadow-md shadow-black/20 ring-1 ring-slate-200 active:translate-y-[1px] active:shadow-sm transition"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">
+                      {oasis.title}
+                    </div>
+                    {oasis.language && (
+                      <div className="mt-0.5 text-[11px] text-slate-600">
+                        {oasis.language}
+                      </div>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-slate-900/5 px-2 py-1 text-[11px] font-medium text-slate-700">
+                    Open
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Local keyframes for floating blobs */}
+      {/* 💻 Desktop / tablet 3D map */}
+      <div className="hidden sm:block">
+        {/* Header / actions */}
+        <header className="relative z-10 w-full">
+          <div className="mx-auto mt-6 flex w-[min(95vw,72rem)] items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl sm:px-6">
+            <div>
+              <h1 className="text-white text-2xl sm:text-3xl font-semibold">
+                Map
+              </h1>
+              <p className="text-white/85 text-sm">
+                Explore your saved oases in 3D. Click the arrows to explore.
+              </p>
+              {selectedLanguage && (
+                <p className="mt-1 text-xs text-white/70">
+                  Language:{" "}
+                  <span className="font-semibold">{selectedLanguage}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="rounded-lg px-4 py-2 bg-white/90 text-gray-900 hover:bg-white shadow-lg shadow-black/20 ring-1 ring-white/30 text-sm font-medium transition"
+              >
+                Create oasis
+              </button>
+              <LinkAsButton
+                href="/home"
+                className="rounded-lg px-4 py-2 bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/30 transition"
+              >
+                Back
+              </LinkAsButton>
+            </div>
+          </div>
+        </header>
+
+        {/* 3D Canvas card */}
+        <section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
+          <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
+            <div className="h-[70vh] relative">
+              <Canvas
+                shadows
+                camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }}
+              >
+                <color attach="background" args={["#000000"]} />
+                <fog attach="fog" args={["#000000", 35, 120]} />
+
+                <Sky
+                  distance={450000}
+                  sunPosition={[25, 12, -20]}
+                  mieCoefficient={0.01}
+                  mieDirectionalG={0.9}
+                  rayleigh={3}
+                  turbidity={6}
+                  inclination={0.49}
+                  azimuth={0.25}
+                />
+                <Environment preset="sunset" />
+
+                <ambientLight intensity={0.35} />
+                <directionalLight
+                  position={[10, 12, 6]}
+                  intensity={1.2}
+                  castShadow
+                  shadow-mapSize-width={2048}
+                  shadow-mapSize-height={2048}
+                />
+                <directionalLight position={[-10, 6, -6]} intensity={0.25} />
+
+                <Suspense
+                  fallback={
+                    <Html center style={{ color: "white" }}>
+                      Loading sand…
+                    </Html>
+                  }
+                >
+                  <DesertBackground
+                    rotation={[0, Math.PI / 4, 0]}
+                    scale={1}
+                    targetWidth={60}
+                    anchorX="min"
+                    anchorZ="min"
+                    targetX={-30}
+                    targetZ={-30}
+                  />
+                </Suspense>
+
+                <Suspense
+                  fallback={
+                    <Html center style={{ color: "white" }}>
+                      Loading oases…
+                    </Html>
+                  }
+                >
+                  {instances.map((o) => (
+                    <OasisInstance key={o.id} data={o} onOpen={handleOpen} />
+                  ))}
+                </Suspense>
+
+                <ContactShadows
+                  position={[0, 0, 0]}
+                  scale={50}
+                  blur={2.4}
+                  opacity={0.5}
+                  far={15}
+                />
+
+                <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
+              </Canvas>
+
+              <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
+            </div>
+          </div>
+        </section>
+
+        <div className="relative z-10 mx-auto mb-8 w-[min(95vw,72rem)]">
+          <p className="text-center text-xs text-white/70">
+            Tip: Use the arrow pad to glide. Scroll to zoom. Click an oasis to
+            open it.
+          </p>
+        </div>
+      </div>
+
       <style jsx>{`
         @keyframes float1 {
           0% {

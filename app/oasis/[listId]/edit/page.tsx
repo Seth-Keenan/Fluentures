@@ -321,8 +321,8 @@ export default function EditOasisPage() {
               }}
             />
 
-            {/* Header row */}
-            <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-white/15 bg-white/10 p-3 text-white/95 backdrop-blur-xl">
+            {/* Header row (desktop only) */}
+            <div className="sticky top-0 z-10 hidden grid-cols-12 gap-2 border-b border-white/15 bg-white/10 p-3 text-white/95 backdrop-blur-xl sm:grid">
               <div className="col-span-3 font-semibold">
                 {meta?.language ?? "Target Language"}
               </div>
@@ -360,125 +360,148 @@ export default function EditOasisPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
                       whileHover={{ y: -2 }}
-                      className="grid grid-cols-12 items-start gap-2 border-b border-white/10 p-2"
+                      className="border-b border-white/10 p-3 sm:p-2"
                     >
-                      {/* Target */}
-                      <div className="col-span-3 flex flex-col gap-1">
-                        <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                          placeholder={
-                            meta?.language === "Japanese"
-                              ? "こんにちは"
-                              : meta?.language === "Spanish"
-                              ? "hola"
-                              : meta?.name ?? "Hej"
-                          }
-                          value={item.target}
-                          maxLength={TARGET_MAX}
-                          onChange={(e) => updateField(item.id, "target", e.target.value)}
-                          aria-describedby={`target-help-${item.id}`}
-                        />
-                        <div className="flex items-center justify-between">
-                          <span
-                            id={`target-help-${item.id}`}
-                            className={`text-[11px] ${
-                              targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {targetLen >= TARGET_MAX ? "Reached 50 character limit" : "\u00A0"}
+                      <div className="flex flex-col gap-3 sm:grid sm:grid-cols-12 sm:items-start sm:gap-2">
+                        {/* Target */}
+                        <div className="flex flex-col gap-1 sm:col-span-3">
+                          {/* Mobile label */}
+                          <span className="text-[11px] text-white/65 sm:hidden">
+                            {meta?.language ?? "Target"}
                           </span>
-                          <span
-                            className={`text-[11px] ${
-                              targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {targetLen}/{TARGET_MAX}
-                          </span>
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder={
+                              meta?.language === "Japanese"
+                                ? "こんにちは"
+                                : meta?.language === "Spanish"
+                                ? "hola"
+                                : meta?.name ?? "Hej"
+                            }
+                            value={item.target}
+                            maxLength={TARGET_MAX}
+                            onChange={(e) => updateField(item.id, "target", e.target.value)}
+                            aria-describedby={`target-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`target-help-${item.id}`}
+                              className={`text-[11px] ${
+                                targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {targetLen >= TARGET_MAX ? "Reached 50 character limit" : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {targetLen}/{TARGET_MAX}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* English */}
-                      <div className="col-span-3 flex flex-col gap-1">
-                        <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                          placeholder="hello"
-                          value={item.english}
-                          maxLength={ENGLISH_MAX}
-                          onChange={(e) => updateField(item.id, "english", e.target.value)}
-                          aria-describedby={`english-help-${item.id}`}
-                        />
-                        <div className="flex items-center justify-between">
-                          <span
-                            id={`english-help-${item.id}`}
-                            className={`text-[11px] ${
-                              englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {englishLen >= ENGLISH_MAX ? "Reached 50 character limit" : "\u00A0"}
-                          </span>
-                          <span
-                            className={`text-[11px] ${
-                              englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {englishLen}/{ENGLISH_MAX}
-                          </span>
+                        {/* English */}
+                        <div className="flex flex-col gap-1 sm:col-span-3">
+                          {/* Mobile label */}
+                          <span className="text-[11px] text-white/65 sm:hidden">English</span>
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder="hello"
+                            value={item.english}
+                            maxLength={ENGLISH_MAX}
+                            onChange={(e) => updateField(item.id, "english", e.target.value)}
+                            aria-describedby={`english-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`english-help-${item.id}`}
+                              className={`text-[11px] ${
+                                englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {englishLen >= ENGLISH_MAX ? "Reached 50 character limit" : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {englishLen}/{ENGLISH_MAX}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Notes */}
-                      <div className="col-span-5 flex flex-col gap-1">
-                        <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                          placeholder="Any notes (e.g., part of speech, hints)"
-                          value={item.notes ?? ""}
-                          maxLength={NOTES_MAX}
-                          onChange={(e) => updateField(item.id, "notes", e.target.value)}
-                          aria-describedby={`notes-help-${item.id}`}
-                        />
-                        <div className="flex items-center justify-between">
-                          <span
-                            id={`notes-help-${item.id}`}
-                            className={`text-[11px] ${
-                              notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {notesLen >= NOTES_MAX ? "Reached 100 character limit" : "\u00A0"}
-                          </span>
-                          <span
-                            className={`text-[11px] ${
-                              notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
-                            }`}
-                          >
-                            {notesLen}/{NOTES_MAX}
-                          </span>
+                        {/* Notes */}
+                        <div className="flex flex-col gap-1 sm:col-span-5">
+                          {/* Mobile label */}
+                          <span className="text-[11px] text-white/65 sm:hidden">Notes</span>
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder="Any notes (e.g., part of speech, hints)"
+                            value={item.notes ?? ""}
+                            maxLength={NOTES_MAX}
+                            onChange={(e) => updateField(item.id, "notes", e.target.value)}
+                            aria-describedby={`notes-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`notes-help-${item.id}`}
+                              className={`text-[11px] ${
+                                notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {notesLen >= NOTES_MAX ? "Reached 100 character limit" : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                              }`}
+                            >
+                              {notesLen}/{NOTES_MAX}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Actions */}
-                      <div className="col-span-1 flex items-center justify-end">
-                        <Button
-                          className="destructive !py-1.5 !px-3 ring-1 ring-white/20 hover:ring-white/40"
-                          onClick={() => handleDeleteClick(item.id)}
-                          aria-label="Delete entry"
-                          title="Delete entry"
-                        >
-                          Delete
-                        </Button>
+                        {/* Actions / Delete */}
+                        <div className="flex justify-end sm:col-span-1 sm:items-center">
+                          <Button
+                            className="destructive !py-1.5 !px-3 ring-1 ring-white/20 hover:ring-white/40"
+                            onClick={() => handleDeleteClick(item.id)}
+                            aria-label="Delete entry"
+                            title="Delete entry"
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </motion.div>
                   );
                 })}
+
             </div>
           </motion.div>
 
-          {/* Footer tip */}
-          <p className="mt-4 text-center text-xs text-white/80">
-            Tip: Use <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
-            <kbd className="rounded bg-white/20 px-1">S</kbd> to save,{" "}
-            <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
-            <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
+          {/* Desktop-only tip */}
+          <p className="mt-4 hidden text-center text-xs text-white/80 sm:block">
+            Tip: Use <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>
+            + <kbd className="rounded bg-white/20 px-1">S</kbd> to save,{" "}
+            <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>
+            + <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
           </p>
+
+          {/* Mobile-only Save Button */}
+          <div className="mt-4 block sm:hidden w-full">
+            <Button
+              onClick={save}
+              disabled={saving}
+              className="w-full py-3 text-base bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+
         </div>
         </PageBackground>
       </div>

@@ -376,21 +376,32 @@ export default function OasisHubPage() {
 
           {!loading && !error && words.length > 0 && (
             <div className="overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 border-b border-white/10 px-4 py-3 text-sm font-semibold opacity-90">
-                <div className="col-span-2">Favorite</div>
-                <div className="col-span-5">{meta?.language ?? "Target"}</div>
-                <div className="col-span-5">English</div>
+              <div
+                className="
+                  grid grid-cols-3 sm:grid-cols-12 
+                  gap-2 border-b border-white/10 px-4 py-3 text-sm font-semibold opacity-90
+                "
+              >
+                <div className="sm:col-span-2">Favorite</div>
+                <div className="sm:col-span-5">{meta?.language ?? "Target"}</div>
+                <div className="sm:col-span-5">English</div>
               </div>
+
               <div className="divide-y divide-white/10">
                 {words.map((w) => {
                   const fav = !!w.is_favorite;
                   const isBusy = pending.has(w.id);
+
                   return (
                     <div
                       key={w.id}
-                      className="grid grid-cols-12 items-center gap-2 px-4 py-2 text-sm"
+                      className="
+                        grid grid-cols-3 sm:grid-cols-12 
+                        items-center gap-2 px-4 py-2 text-sm
+                      "
                     >
-                      <div className="col-span-2">
+                      {/* Favorite */}
+                      <div className="flex justify-start sm:col-span-2">
                         <button
                           type="button"
                           aria-label={fav ? "Remove from favorites" : "Add to favorites"}
@@ -399,24 +410,32 @@ export default function OasisHubPage() {
                           className={[
                             "inline-flex items-center gap-2 rounded-full px-2 py-1 transition",
                             "focus:outline-none focus:ring-2 focus:ring-amber-300/60",
-                            isBusy ? "cursor-not-allowed opacity-60" : "hover:bg-rose-100/20 active:scale-[0.98]",
+                            isBusy
+                              ? "cursor-not-allowed opacity-60"
+                              : "hover:bg-rose-100/20 active:scale-[0.98]",
                           ].join(" ")}
-                          title={fav ? "Unfavorite" : "Favorite"}
                         >
                           <svg
                             viewBox="0 0 24 24"
-                            className={`h-5 w-5 ${fav ? "fill-rose-400 stroke-rose-400" : "fill-none stroke-rose-300"}`}
+                            className={`h-5 w-5 ${
+                              fav
+                                ? "fill-rose-400 stroke-rose-400"
+                                : "fill-none stroke-rose-300"
+                            }`}
                             strokeWidth="1.8"
-                            aria-hidden="true"
                           >
                             <path d="M16.5 3.5c-1.8 0-3.2 1-4.5 2.7C10.7 4.5 9.3 3.5 7.5 3.5 5 3.5 3 5.5 3 8c0 4.5 5.7 7.8 8.5 11 2.8-3.2 8.5-6.5 8.5-11 0-2.5-2-4.5-4.5-4.5z" />
                           </svg>
                         </button>
                       </div>
-                      <div className="col-span-5">
+
+                      {/* Target */}
+                      <div className="truncate text-left sm:col-span-5">
                         {w.word_target ?? <span className="opacity-60">—</span>}
                       </div>
-                      <div className="col-span-5">
+
+                      {/* English */}
+                      <div className="truncate text-left sm:col-span-5">
                         {w.word_english ?? <span className="opacity-60">—</span>}
                       </div>
                     </div>
