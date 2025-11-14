@@ -6,7 +6,6 @@ import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useDisplayName } from "@/app/lib/hooks/useDisplayName";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faUsers,
   faMapLocationDot,
