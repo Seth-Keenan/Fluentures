@@ -44,7 +44,7 @@ export default function RegisterSocialUsernamePage() {
       }
 
       show("success", "Username saved!");
-      setTimeout(() => router.push("/community"), 900);
+      setTimeout(() => router.push("/social"), 900);
 
     } catch (e) {
       show("error", "Unexpected server error.");
