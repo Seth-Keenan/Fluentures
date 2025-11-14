@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
-import type { WordListFile, WordItem } from "@/app/types/wordlist";
+import type { WordItem } from "@/app/types/wordlist";
 
 const DATA_DIR = path.join(process.cwd(), "data", "wordlists");
 const FILE_PATH = path.join(DATA_DIR, "default.json");
+
+type WordListFile = {
+  name?: string;
+  description?: string;
+  items: WordItem[];
+};
 
 async function ensureFile(): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });

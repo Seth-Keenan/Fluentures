@@ -12,6 +12,7 @@ import {
   faBookOpen,
   faCircleUser,
   faArrowRight,
+  IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import SettingsButtonGear from "@/app/components/SettingsButton";
 
@@ -25,7 +26,7 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 18 } },
 };
 
-type Dest = { label: string; href: string; icon: any; description: string };
+type Dest = { label: string; href: string; icon: IconDefinition; description: string };
 
 const DESTINATIONS: Dest[] = [
   { label: "Social",   href: "/social",  icon: faUsers,          description: "Share progress with your friends" },

@@ -14,7 +14,6 @@ import RecentList from "@/app/logbook/RecentList";
 import FavoritesPanel from "@/app/logbook/FavoritesPanel";
 import Leaderboard from "@/app/logbook/Leaderboard";
 
-// TODO: replace with real data (for Home page UI)
 const DATA = {
   xp: 12450,
   minutes: 732,
@@ -37,7 +36,6 @@ const level = Math.floor(DATA.xp / 1000) + 1;
 const into = DATA.xp % 1000;
 const toNext = 1000;
 
-// Utility: chunk an array into arrays of `size`
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -49,7 +47,6 @@ export default function LogbookPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch favorites once
   useEffect(() => {
     (async () => {
       try {
@@ -70,16 +67,14 @@ export default function LogbookPage() {
     })();
   }, []);
 
-  // Layout rules: 2 columns per “page” (BookShell uses a 2-col grid)
   const ITEMS_PER_COLUMN = 6;
   const ITEMS_PER_PAGE = ITEMS_PER_COLUMN * 2;
 
-  // Split favorites into 2-column spreads
-  const favChunks = useMemo(() => chunk(favorites, ITEMS_PER_PAGE), [favorites, ITEMS_PER_PAGE]);
+  const favChunks = useMemo(() => {
+    return chunk(favorites, ITEMS_PER_PAGE);
+  }, [favorites, ITEMS_PER_PAGE]);
 
-  // Build all pages (Home first, then Favorites spreads)
   const pages = useMemo(() => {
-    // Loading / error fallbacks
     if (loading) {
       return [
         <div key="loading" className="grid grid-cols-1 md:grid-cols-2 gap-0">
@@ -104,7 +99,6 @@ export default function LogbookPage() {
       ];
     }
 
-    // --- PAGE 1: HOME (your original design) ---
     const homePage = (
       <>
         {/* LEFT PAGE */}
@@ -158,7 +152,6 @@ export default function LogbookPage() {
       </>
     );
 
-    // --- FAVORITES PAGES (using FavoritesPanel) ---
     const favoritePages =
       favChunks.length === 0
         ? [
@@ -166,9 +159,7 @@ export default function LogbookPage() {
               {/* LEFT */}
               <div className="pr-6">
                 <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
-                <div className="mt-4 text-amber-900/70">
-                  You haven&apos;t favorited any words yet.
-                </div>
+                <div className="mt-4 text-amber-900/70">You haven&apos;t favorited any words yet.</div>
                 <div className="mt-4 p-4 bg-amber-900/10 rounded-lg">
                   <p className="text-sm text-amber-900/80">
                     Go to any word list and tap the heart icon to add favorites.
@@ -212,9 +203,8 @@ export default function LogbookPage() {
             );
           });
 
-    // Return all pages: Home first, then Favorites spreads
     return [homePage, ...favoritePages];
-  }, [loading, error, favorites.length, favChunks, ITEMS_PER_COLUMN]);
+  }, [loading, error, favChunks, ITEMS_PER_COLUMN]);
 
   return (
     <BookShell

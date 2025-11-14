@@ -16,7 +16,9 @@ export async function getSelectedLanguageFor(userId: string) {
 
 export async function createList(formData: FormData) {
   const supa = await getSupabaseServerActionClient();
-  const { data: { user } } = await supa.auth.getUser();
+  const {
+    data: { user },
+  } = await supa.auth.getUser();
   if (!user) redirect("/home");
 
   const name = (formData.get("name") as string)?.trim() || "New Oasis";
@@ -42,7 +44,9 @@ export async function createList(formData: FormData) {
 
 export async function deleteList(listId: string) {
   const supa = await getSupabaseServerActionClient();
-  const { data: { user } } = await supa.auth.getUser();
+  const {
+    data: { user },
+  } = await supa.auth.getUser();
   if (!user) redirect("/home");
 
   const { error } = await supa
@@ -58,4 +62,15 @@ export async function deleteList(listId: string) {
 
   revalidatePath("/map/edit");
   redirect("/map/edit?flash=Deleted&type=success");
+}
+
+/** form-friendly wrapper */
+export async function deleteListAction(formData: FormData) {
+  const id = String(formData.get("listId") || "");
+  if (!id) return;
+  await deleteList(id);
+}
+
+export async function createListAction(formData: FormData) {
+  await createList(formData);
 }

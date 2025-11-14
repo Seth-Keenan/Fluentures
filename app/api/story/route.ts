@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     if (!vocabHint && listId) {
       const supabase = await getSupabaseServerRouteClient();
       const { data: words, error } = await supabase
-        .from("WordList")
+        .from("Word")
         .select("word_target, word_english")
         .eq("word_list_id", listId)
         .limit(50);
