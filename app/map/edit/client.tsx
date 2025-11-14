@@ -658,7 +658,7 @@ export default function MapEditView({
           </>
         ) : (
           <div className="flex w-full items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-300">
               Tip: Select an oasis, then click the sand to reposition. Use the controls to move/rotate/scale.
             </div>
             {createAction && (

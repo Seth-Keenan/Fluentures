@@ -15,6 +15,8 @@ import {
   faArrowLeft,       // Back
   faWandMagicSparkles, // Accent badge
 } from "@fortawesome/free-solid-svg-icons";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 type Mode = "matching" | "written" | null;
 
@@ -39,6 +41,9 @@ export default function Quiz() {
   const prefersReducedMotion = useReducedMotion();
   const listId = useListId();
 
+  const desert = deserts.find(d => d.name === "Danakil Desert")!;
+
+
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 300);
     return () => clearTimeout(t);
@@ -49,14 +54,11 @@ export default function Quiz() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background (parallax zoom) */}
-      <motion.img
-        src="/desert.png"
-        alt="Desert background"
-        className="absolute inset-0 h-full w-full object-cover will-change-transform"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
 
       {/* Heat-haze band */}
       <div className="pointer-events-none absolute inset-x-0 top-[22%] h-12 opacity-60">
@@ -289,6 +291,7 @@ export default function Quiz() {
           </p>
         )}
       </div>
+      </PageBackground>
     </div>
   );
 }

@@ -12,6 +12,8 @@ import ProgressBar from "@/app/logbook/ProgressBar";
 import RecentList from "@/app/logbook/RecentList";
 import FavoritesPanel from "@/app/logbook/FavoritesPanel";
 import Leaderboard from "@/app/logbook/Leaderboard";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 const DATA = {
   xp: 12450,
@@ -45,7 +47,8 @@ export default function LogbookPage() {
   const [favorites, setFavorites] = useState<FavoriteWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const desert = deserts.find(d => d.name === "Wadi Rum Desert")!;
+  
   useEffect(() => {
     (async () => {
       try {
@@ -206,19 +209,25 @@ export default function LogbookPage() {
   }, [loading, error, favChunks, ITEMS_PER_COLUMN]);
 
   return (
-    <BookShell
-      pages={pages}
-      showPageControls={pages.length > 1}
-      rightExtras={
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-          <Link
-            href="/map"
-            className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
-          >
-            Back to Map
-          </Link>
-        </div>
-      }
-    />
+    <PageBackground
+      src={desert.src}
+      alt={desert.name}
+      wikiUrl={desert.wikiUrl}
+    >
+      <BookShell
+        pages={pages}
+        showPageControls={pages.length > 1}
+        rightExtras={
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+            <Link
+              href="/map"
+              className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
+            >
+              Back to Map
+            </Link>
+          </div>
+        }
+      />
+    </PageBackground>
   );
 }
