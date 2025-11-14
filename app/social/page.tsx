@@ -99,6 +99,7 @@ export default function CommunityPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "liked" | "mine">("all");
   const [tagFilter, setTagFilter] = useState("");
+  const [visibilityView, setVisibilityView] = useState<"all" | "public" | "friends">("all");
 
   // FRIENDS
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -530,8 +531,16 @@ export default function CommunityPage() {
       );
     }
 
+    // visibility filters: "friends" = posts from friends (and you), "public" = posts from non-friends
+    const friendIds = friends.map((f) => f.friendInfo?.user_id).filter(Boolean) as string[];
+    if (visibilityView === "friends") {
+      arr = arr.filter((p) => (p.user_id && friendIds.includes(p.user_id)) || p.user_id === currentUserId);
+    } else if (visibilityView === "public") {
+      arr = arr.filter((p) => !(p.user_id && friendIds.includes(p.user_id)) && p.user_id !== currentUserId);
+    }
+
     return arr;
-  }, [posts, filter, tagFilter, query]);
+  }, [posts, filter, tagFilter, query, visibilityView, friends, currentUserId]);
 
   const filteredFriends = useMemo(() => {
     let arr = [...friends].sort((a, b) =>
@@ -727,6 +736,8 @@ export default function CommunityPage() {
                   allTags={allTags}
                   query={query}
                   setQuery={setQuery}
+                  visibilityView={visibilityView}
+                  setVisibilityView={setVisibilityView}
                 />
               </div>
             </motion.div>
@@ -848,7 +859,7 @@ export default function CommunityPage() {
           >
             <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-8 text-center">
               <h3 className="text-white text-2xl font-semibold mb-2">Template Activities</h3>
-              <p className="text-white/70">Coming soon — templates to spark your practice and learning.</p>
+              <p className="text-white/70">Coming soon... Maybe.</p>
             </motion.div>
           </motion.div>
         )}
@@ -869,6 +880,8 @@ function Filters({
   allTags,
   query,
   setQuery,
+  visibilityView,
+  setVisibilityView,
 }: {
   filter: "all" | "liked" | "mine";
   setFilter: (v: "all" | "liked" | "mine") => void;
@@ -877,12 +890,29 @@ function Filters({
   allTags: string[];
   query: string;
   setQuery: (v: string) => void;
+  visibilityView: "all" | "public" | "friends";
+  setVisibilityView: (v: "all" | "public" | "friends") => void;
 }) {
   return (
     <div className="text-white">
-      <div className="inline-flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full ring-1 ring-white/20">
-        <FontAwesomeIcon icon={faFilter} className="h-4 w-4" />
-        <span className="text-sm">Filters</span>
+      <div className="flex items-center gap-3">
+        <div className="inline-flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full ring-1 ring-white/20">
+          <FontAwesomeIcon icon={faFilter} className="h-4 w-4" />
+          <span className="text-sm">Filters</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <label className="text-white/70 text-sm">Visibility:</label>
+          <select
+            value={visibilityView}
+            onChange={(e) => setVisibilityView(e.target.value as any)}
+            className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30"
+          >
+            <option value="all">Everyone</option>
+            <option value="friends">Friends only</option>
+            <option value="public">Public only</option>
+          </select>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
