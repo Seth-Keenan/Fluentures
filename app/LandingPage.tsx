@@ -29,6 +29,8 @@ import {
   faWandMagicSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import BackToTop from "./components/BackToTop";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 /* -----------------------------
    Reveal helpers
@@ -38,6 +40,7 @@ function useRevealControls(amount = 0.25) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount });
   const controls = useAnimation();
+
   useEffect(() => {
     controls.start(inView ? "show" : "hidden");
   }, [inView, controls]);
@@ -190,17 +193,18 @@ export default function LandingEngaging() {
     []
   );
 
+  // desert bg selection
+  const desert = deserts.find(d => d.name === "Atacama Desert")!;
+
+
   return (
     <div className="relative w-full overflow-x-hidden">
       {/* Background */}
-      <motion.img
-        src="/desert.png"
-        alt="Background"
-        className="fixed inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       {/* Decorative glow blobs */}
@@ -467,6 +471,7 @@ export default function LandingEngaging() {
       {/* Spacer + BackToTop */}
       <div className="h-10" />
       <BackToTop threshold={300} />
+      </PageBackground>
     </div>
   );
 }
