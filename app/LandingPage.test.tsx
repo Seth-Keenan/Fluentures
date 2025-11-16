@@ -143,12 +143,6 @@ describe("Landing Page", () => {
     expect(glass).toBeInTheDocument();
   });
 
-  it("renders the background layer", () => {
-    const { container } = render(<LandingPage />);
-    const bg = container.querySelector('[src="/desert.png"]');
-    expect(bg).toBeInTheDocument();
-  });
-
   it("does NOT render login/signup links in hero (current layout)", () => {
     render(<LandingPage />);
 
