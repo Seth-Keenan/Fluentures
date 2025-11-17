@@ -154,3 +154,4 @@ export default function BookShell({ children, rightExtras, pages = [], showPageC
     </motion.div>
   </div>
 );
+}
