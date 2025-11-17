@@ -47,6 +47,7 @@ export default function RegisterSocialUsernamePage() {
       setTimeout(() => router.push("/social"), 900);
 
     } catch (e) {
+      console.log(e);
       show("error", "Unexpected server error.");
     } finally {
       setLoading(false);
