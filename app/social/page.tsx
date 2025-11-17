@@ -569,7 +569,7 @@ export default function CommunityPage() {
   // ===================================================================
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden ">
 
       {/* Toast */}
       {message && (
@@ -587,7 +587,6 @@ export default function CommunityPage() {
         alt={desert.name}
         wikiUrl={desert.wikiUrl}
       >
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
 

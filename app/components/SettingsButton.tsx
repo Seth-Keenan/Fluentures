@@ -37,8 +37,8 @@ export default function SettingsButtonGear() {
 <Image
   src="/Icons/laternGear.png"
   alt="Settings"
-  width={90}
-  height={90}
+  width={80}
+  height={80}
   className="
     opacity-80
     rounded-full

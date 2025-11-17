@@ -23,6 +23,7 @@ vi.mock("framer-motion", async () => {
       </div>
     );
   });
+  
   MotionDiv.displayName = "MotionDiv";
 
   const MotionImg = forwardRef<

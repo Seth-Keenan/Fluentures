@@ -28,7 +28,23 @@ export default function PageBackground({ src, alt, wikiUrl, children }: Readonly
       />
 
       {/* Overlay (optional, maybe take out??) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50 pointer-events-none" />
+      {/* Nah bestie keeping this in and getting rid of the individual page gradiants */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/60 to-black/30 pointer-events-none" />
+
+      {/* Noise overlay in progress */}
+      <div
+        className="
+        pointer-events-none
+        absolute inset-0
+      
+        bg-repeat
+        mix-blend-overlay
+        opacity-[.45]          
+        blur-[1.5px]            /* slight blur */
+        scale-[1.3]             /* amplifies grain size */
+        "
+      />
+
 
       {/* Info button */}
       {wikiUrl && (
@@ -36,7 +52,7 @@ export default function PageBackground({ src, alt, wikiUrl, children }: Readonly
           href={wikiUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-4 right-4 z-20 flex items-center justify-center rounded-full bg-black/20 p-2 text-gray-300 backdrop-blur-md hover:bg-black/60 transition"
+          className="absolute top-24 right-4 z-20 flex items-center justify-center rounded-full bg-black/20 p-2 text-gray-300 backdrop-blur-md hover:bg-black/60 transition"
           aria-label={`More information about ${alt}`}
         >
           <Info className="h-5 w-5" />
@@ -44,7 +60,7 @@ export default function PageBackground({ src, alt, wikiUrl, children }: Readonly
       )}
 
       {/* Page content */}
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 pt-24">{children}</div>
     </div>
   );
 }

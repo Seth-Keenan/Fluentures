@@ -13,7 +13,6 @@ export default function AnimatedBackground() {
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"

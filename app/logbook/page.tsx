@@ -219,7 +219,7 @@ export default function LogbookPage() {
         pages={pages}
         showPageControls={pages.length > 1}
         rightExtras={
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+          <div className="absolute top-1 left-1/2 -translate-x-1/2">
             <Link
               href="/map"
               className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"

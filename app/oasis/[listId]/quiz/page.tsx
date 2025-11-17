@@ -97,7 +97,6 @@ export default function Quiz() {
       />
 
       {/* Soft gradient overlay for contrast */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       {/* Shell */}
       <div className="relative z-10 mx-auto flex min-h-screen w-[min(92vw,64rem)] flex-col items-center justify-center p-4">
