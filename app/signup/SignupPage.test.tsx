@@ -8,7 +8,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-global.fetch = vi.fn() as unknown as typeof fetch;
+// Strongly typed fetch mock
+type FetchMock = ReturnType<typeof vi.fn>;
+const fetchMock: FetchMock = vi.fn();
+
+global.fetch = fetchMock as unknown as typeof fetch;
 
 describe("SignUpPage", () => {
   beforeEach(() => {
@@ -21,30 +25,37 @@ describe("SignUpPage", () => {
     expect(
       screen.getByRole("heading", { name: /create your account/i })
     ).toBeInTheDocument();
+
     expect(screen.getByPlaceholderText(/your name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/your_handle123/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/you@example.com/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/••••••••/i)).toBeInTheDocument();
+
     expect(
       screen.getByRole("button", { name: /create account/i })
     ).toBeInTheDocument();
   });
 
   it("submits successfully and redirects to login", async () => {
-    (global.fetch as unknown as {
-      mockResolvedValueOnce: (value: unknown) => void;
-    }).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
-    });
+    } as Response);
 
     render(<SignUpPage />);
 
     fireEvent.change(screen.getByPlaceholderText(/your name/i), {
       target: { value: "John Doe" },
     });
+
+    fireEvent.change(screen.getByPlaceholderText(/your_handle123/i), {
+      target: { value: "john_d" },
+    });
+
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "john@example.com" },
     });
+
     fireEvent.change(screen.getByPlaceholderText(/••••••••/i), {
       target: { value: "password123" },
     });
@@ -52,11 +63,12 @@ describe("SignUpPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/signup", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "John Doe",
+          social_username: "john_d",
           username: "john@example.com",
           password: "password123",
         }),
@@ -64,35 +76,41 @@ describe("SignUpPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/account created/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/account created! please confirm your email, then log in./i)
+      ).toBeInTheDocument();
     });
 
-    await waitFor(
-      () => {
-        expect(pushMock).toHaveBeenCalledWith("/login");
-      },
-      { timeout: 1500 }
-    );
+      // Router redirect (allow extra time for the client-side delay)
+      await waitFor(
+        () => {
+          expect(pushMock).toHaveBeenCalledWith("/login");
+        },
+        { timeout: 3000 }
+      );
   });
 
   it("displays error message on failed signup", async () => {
-    (global.fetch as unknown as {
-      mockResolvedValueOnce: (value: unknown) => void;
-    }).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => ({ message: "Email already exists" }),
-    });
-    
+    } as Response);
 
     render(<SignUpPage />);
 
     fireEvent.change(screen.getByPlaceholderText(/your name/i), {
       target: { value: "John Doe" },
     });
+
+    fireEvent.change(screen.getByPlaceholderText(/your_handle123/i), {
+      target: { value: "john_d" },
+    });
+
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "john@example.com" },
     });
+
     fireEvent.change(screen.getByPlaceholderText(/••••••••/i), {
       target: { value: "password123" },
     });

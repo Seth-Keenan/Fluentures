@@ -42,8 +42,20 @@ export default function SignUpPage() {
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
+    const rawSocial = (formData.get("social_username") as string) || "";
+    const social_username = rawSocial.trim().replace(/^@+/, "");
+
+    // Client-side format validation: only letters, numbers, dashes and underscores; 3-30 chars
+    const socialRegex = /^[A-Za-z0-9_-]{3,30}$/;
+    if (!socialRegex.test(social_username)) {
+      setError("Social handle must be 3–30 characters and contain only letters, numbers, dashes or underscores.");
+      setLoading(false);
+      return;
+    }
+
     const body = {
       name: (formData.get("name") as string) || "",
+      social_username,
       username: (formData.get("username") as string) || "",
       password: (formData.get("password") as string) || "",
     };
@@ -118,8 +130,8 @@ export default function SignUpPage() {
         >
           <div className="text-center mb-6">
             <h1 className="text-white text-3xl sm:text-4xl font-semibold">Create your account</h1>
-            <p className="mt-2 text-white/80 text-sm sm:text-base">
-              Upon sign up, you must confirm your email before logging in.
+            <p className="mt-2 text-yellow-400 text-sm sm:text-base">
+              Upon sign up, you must confirm your email before logging in!
             </p>
           </div>
 
@@ -127,7 +139,7 @@ export default function SignUpPage() {
             {/* Name */}
             <div>
               <label htmlFor="name" className="text-sm text-white/90 mb-1 block">
-                Name
+                First Name
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700">
@@ -142,6 +154,27 @@ export default function SignUpPage() {
                   className="w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 pl-10 pr-4 py-3 ring-1 ring-white/30 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 />
               </div>
+            </div>
+
+            {/* Social username (required) */}
+            <div>
+              <label htmlFor="social_username" className="text-sm text-white/90 mb-1 block">
+                Social handle
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700">
+                  <FontAwesomeIcon icon={faUser} className="h-4 w-4" />
+                </span>
+                <input
+                  id="social_username"
+                  name="social_username"
+                  type="text"
+                  required
+                  placeholder="your_handle123"
+                  className="w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 pl-10 pr-4 py-3 ring-1 ring-white/30 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/70">Allowed: letters, numbers, dashes and underscores — 3–30 characters.</p>
             </div>
 
             {/* Username (Email) */}
@@ -191,6 +224,8 @@ export default function SignUpPage() {
                 </button>
               </div>
             </div>
+
+            {/* (moved) social field removed from here */}
 
             {/* Feedback */}
             {error && (
