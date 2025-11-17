@@ -1,0 +1,29 @@
+// // app/api/user/settings/[userID]/route.ts
+
+// import { NextResponse } from "next/server"
+// import { getSupabaseServerClient } from "@/app/lib/hooks/supabaseServerClient"
+
+// export async function GET(
+//   req: Request,
+//   context: any) {
+//   try {
+//     const supabase = await getSupabaseServerClient()
+
+//     const userID = context.params?.userID
+
+//     const { data: user, error } = await supabase
+//       .from("Users")
+//       .select("user_id, social_username, avatar_url")
+//       .eq("user_id", userID)
+//       .maybeSingle()
+
+//     if (error || !user) {
+//       return NextResponse.json({ error: "User not found" }, { status: 404 })
+//     }
+
+//     return NextResponse.json({ user })
+//   } catch (error) {
+//     console.error("GET /api/user/settings/[userID] error:", error)
+//     return NextResponse.json({ error: "Server error" }, { status: 500 })
+//   }
+// }
