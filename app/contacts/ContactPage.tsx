@@ -9,14 +9,14 @@ const TEAM = [
     linkedin: "https://www.linkedin.com/in/seth-ek/",
   },
   {
-    name: "Member Two",
-    role: "Product Designer",
+    name: "Angela Amaro",
+    role: "Design and 3D",
     linkedin: "https://www.linkedin.com/in/member-two",
   },
   {
-    name: "Member Three",
-    role: "Full-Stack Engineer",
-    linkedin: "https://www.linkedin.com/in/member-three",
+    name: "Kody McNamara",
+    role: "Social",
+    linkedin: "https://www.linkedin.com/in/robert-mcnamara-930001220",
   },
   {
     name: "Seth Keenan",
@@ -24,14 +24,14 @@ const TEAM = [
     linkedin: "https://www.linkedin.com/in/sethkeenan4002",
   },
   {
-    name: "Member Five",
-    role: "DevOps Engineer",
-    linkedin: "https://www.linkedin.com/in/member-five",
+    name: "Evie Wilbur",
+    role: "AI Engineer",
+    linkedin: "https://www.linkedin.com/in/evelyn-wilbur-ba108b324",
   },
   {
-    name: "Member Six",
+    name: "Seohyun (Jay) Kim",
     role: "Mobile Developer",
-    linkedin: "https://www.linkedin.com/in/member-six",
+    linkedin: "https://www.linkedin.com/in/seohyun-kim-595814352",
   },
 ];
 
