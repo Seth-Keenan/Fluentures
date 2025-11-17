@@ -1,8 +1,9 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import ContactsPage from "./page";
 
+// Mock framer-motion so tests don't choke on animations
 vi.mock("framer-motion", async () => {
   const ReactModule = await import("react");
   const { forwardRef } = ReactModule;
@@ -57,22 +58,31 @@ vi.mock("framer-motion", async () => {
   };
 });
 
-describe("ContactsPage", () => {
-  it("renders contact form and shows thank-you message after submit", () => {
+describe("TeamPage", () => {
+  it("renders heading, repo link, and all team members", () => {
     render(<ContactsPage />);
 
-    expect(screen.getByRole("heading", { name: /contact us/i })).toBeInTheDocument();
+    // Heading
+    expect(
+      screen.getByRole("heading", { name: /meet the team/i })
+    ).toBeInTheDocument();
 
-    const nameInput = screen.getByLabelText(/name/i);
-    const emailInput = screen.getByLabelText(/email/i);
-    const messageInput = screen.getByLabelText(/message/i);
+    // GitHub repo button with correct href
+    const repoLink = screen.getByRole("link", { name: /view github repo/i });
+    expect(repoLink).toBeInTheDocument();
+    expect(repoLink).toHaveAttribute(
+      "href",
+      "https://github.com/Seth-Keenan/Fluentures"
+    );
 
-    fireEvent.change(nameInput, { target: { value: "Ada Lovelace" } });
-    fireEvent.change(emailInput, { target: { value: "ada@example.com" } });
-    fireEvent.change(messageInput, { target: { value: "Just saying hi" } });
+    // Specific member text
+    expect(screen.getByText("Seth Keenan")).toBeInTheDocument();
+    expect(
+      screen.getByText(/QA, Optimization, and Hosting/i)
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /send/i }));
-
-    expect(screen.getByText(/thanks! we/i)).toBeInTheDocument();
+    // There should be 6 LinkedIn links (one per team member)
+    const linkedinLinks = screen.getAllByRole("link", { name: /linkedin/i });
+    expect(linkedinLinks).toHaveLength(6);
   });
 });

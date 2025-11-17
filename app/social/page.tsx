@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHeart,
@@ -28,7 +28,6 @@ type Post = {
   tags: string[];
   createdAt: number;
   likes: number;
-  liked?: boolean;
   liked_by: string[];
   comments: {
     id: string;
@@ -86,7 +85,7 @@ function formatTime(ts: number | string) {
 // =====================================================================
 
 export default function CommunityPage() {
-  const prefersReducedMotion = useReducedMotion();
+  // const prefersReducedMotion = a();
   const supabase = createClientComponentClient();
 
   // === STATE ==========================================================
@@ -106,7 +105,7 @@ export default function CommunityPage() {
   // FRIENDS
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
-  const [friendSearch, setFriendSearch] = useState("");
+  const [friendSearch] = useState("");
   const [newFriendUsername, setNewFriendUsername] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -187,27 +186,32 @@ export default function CommunityPage() {
       }
 
       // Map posts
-      const mapped: Post[] = postsRows.map((r: any) => {
-        const createdAt =
-          typeof r.created_at === "string"
-            ? new Date(r.created_at).getTime()
-            : r.created_at ?? Date.now();
+      const mapped: Post[] = postsRows.map((r: unknown) => {
+        const row = r as Record<string, unknown>;
 
-        const liked_by = Array.isArray(r.liked_by) ? r.liked_by : [];
+        const createdAt =
+          typeof row.created_at === "string"
+            ? new Date(row.created_at).getTime()
+            : (row.created_at as number | undefined) ?? Date.now();
+
+        const liked_by = Array.isArray(row.liked_by)
+          ? (row.liked_by as string[])
+          : [];
 
         return {
-          id: String(r.id),
-          user_id: r.user_id ? String(r.user_id) : undefined,
-          user: r.Users?.social_username ?? "Unknown",
-          text: r.text ?? "",
-          tags: Array.isArray(r.tags) ? r.tags : [],
+          id: String(row.id),
+          user_id: row.user_id ? String(row.user_id as string) : undefined,
+          user: (row.Users as { social_username?: string } | undefined)?.social_username ?? "Unknown",
+          text: (row.text as string) ?? "",
+          tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
           createdAt,
-          likes: r.likes ?? liked_by.length,
+          likes: (row.likes as number) ?? liked_by.length,
           liked_by,
-          liked: false, // will update later when user is known
           comments: [],
         };
       });
+
+
 
       // Load comments
       const postIds = mapped.map((p) => p.id);
@@ -223,9 +227,10 @@ export default function CommunityPage() {
         if (cErr) {
           console.error("loadComments error:", cErr);
         } else {
-          const byPost: Record<string, any[]> = {};
+          type CommentRow = Record<string, unknown>;
+          const byPost: Record<string, CommentRow[]> = {};
 
-          cRows.forEach((c: any) => {
+          (cRows as CommentRow[]).forEach((c) => {
             const pid = String(c.post_id);
             if (!byPost[pid]) byPost[pid] = [];
             byPost[pid].push(c);
@@ -235,12 +240,12 @@ export default function CommunityPage() {
             const arr = byPost[p.id] || [];
             p.comments = arr.map((c) => ({
               id: String(c.id),
-              user: c.Users?.social_username ?? "Unknown",
-              text: c.text ?? "",
+              user: ((c as Record<string, unknown>).Users as { social_username?: string } | undefined)?.social_username ?? "Unknown",
+              text: (c.text as string) ?? "",
               createdAt:
                 typeof c.created_at === "string"
-                  ? new Date(c.created_at).getTime()
-                  : c.created_at ?? Date.now(),
+                  ? new Date(c.created_at as string).getTime()
+                  : (c.created_at as number) ?? Date.now(),
             }));
           });
         }
@@ -253,9 +258,6 @@ export default function CommunityPage() {
 
       if (user) {
         setCurrentUserId(user.id);
-        mapped.forEach((p) => {
-          p.liked = p.liked_by.includes(user.id);
-        });
       }
 
       setPosts(mapped);
@@ -311,7 +313,6 @@ export default function CommunityPage() {
         createdAt: new Date(inserted.created_at).getTime(),
         likes: 0,
         liked_by: [],
-        liked: false,
         comments: [],
       };
 
@@ -365,11 +366,10 @@ export default function CommunityPage() {
         prev.map((p) =>
           p.id === id
             ? {
-                ...p,
-                liked_by: nextLikedBy,
-                likes: nextLikedBy.length,
-                liked: nextLikedBy.includes(user.id),
-              }
+              ...p,
+              liked_by: nextLikedBy,
+              likes: nextLikedBy.length,
+            }
             : p
         )
       );
@@ -516,12 +516,9 @@ export default function CommunityPage() {
   const filteredPosts = useMemo(() => {
     let arr = [...posts].sort((a, b) => b.createdAt - a.createdAt);
 
-    if (filter === "liked") arr = arr.filter((p) => p.liked);
+    if (filter === "liked") arr = arr.filter((p) => p.liked_by.includes(currentUserId ?? ""));
     if (filter === "mine") {
-      // replaced with username match
-      // user fetch per post is already a string social_username
-      const myName = posts.find((p) => p.liked)?.user || ""; // or fetch logged-in user once
-      arr = arr.filter((p) => p.user === myName);
+      arr = arr.filter((p) => p.user_id === currentUserId);
     }
 
     if (tagFilter) arr = arr.filter((p) => p.tags.includes(tagFilter));
@@ -588,282 +585,280 @@ export default function CommunityPage() {
         wikiUrl={desert.wikiUrl}
       >
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="flex justify-between flex-col sm:flex-row gap-4 sm:items-end"
-        >
-          <div>
-            <h1 className="text-4xl text-white font-semibold">Community</h1>
-            <p className="text-white/85 mt-1">
-              Share progress, connect with friends, and learn together
-            </p>
-          </div>
-
-          <LinkAsButton
-            href="/home"
-            className="!cursor-pointer px-6 py-3 rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition"
-          >
-            Back to Home
-          </LinkAsButton>
-        </motion.div>
-
-        {/* Tabs */}
-        <motion.div
-          className="mt-6 flex gap-2"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <button
-            onClick={() => setView("posts")}
-            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
-              view === "posts"
-                ? "bg-white text-gray-900"
-                : "bg-white/20 text-white hover:bg-white/30"
-            }`}
-          >
-            Posts
-          </button>
-
-          <button
-            onClick={() => setView("friends")}
-            className={`cursor-pointer px-4 py-2 rounded-lg transition relative ${
-              view === "friends"
-                ? "bg-white text-gray-900"
-                : "bg-white/20 text-white hover:bg-white/30"
-            }`}
-          >
-            Friends
-            {pendingRequests.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                {pendingRequests.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setView("templates")}
-            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
-              view === "templates"
-                ? "bg-white text-gray-900"
-                : "bg-white/20 text-white hover:bg-white/30"
-            }`}
-          >
-            Activity
-          </button>
-        </motion.div>
-
-        {/* POSTS TAB  */}
-        {view === "posts" && (
+          {/* Header */}
           <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="flex justify-between flex-col sm:flex-row gap-4 sm:items-end"
           >
-            {/* Left column */}
-            <motion.div variants={item} className="lg:col-span-2">
+            <div>
+              <h1 className="text-4xl text-white font-semibold">Community</h1>
+              <p className="text-white/85 mt-1">
+                Share progress, connect with friends, and learn together
+              </p>
+            </div>
 
-              {/* Composer */}
-              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
-                <div className="flex items-start gap-3">
+            <LinkAsButton
+              href="/home"
+              className="!cursor-pointer px-6 py-3 rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition"
+            >
+              Back to Home
+            </LinkAsButton>
+          </motion.div>
 
-                  <div
-                    className="h-10 w-10 rounded-full ring-2 ring-white/60 shrink-0"
-                    style={{ background: avatarGradient("me") }}
-                  />
+          {/* Tabs */}
+          <motion.div
+            className="mt-6 flex gap-2"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <button
+              onClick={() => setView("posts")}
+              className={`cursor-pointer px-4 py-2 rounded-lg transition ${view === "posts"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+                }`}
+            >
+              Posts
+            </button>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <input
-                        className="w-full bg-white/80 text-gray-900 px-3 py-2 rounded-lg ring-1 ring-white/30"
-                        placeholder="Share what you learned today…"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                      />
-                      <button
-                        onClick={createPost}
-                        className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-2 rounded-lg ring-1 ring-white/20 transition"
-                      >
-                        <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-                        Post
-                      </button>
-                    </div>
+            <button
+              onClick={() => setView("friends")}
+              className={`cursor-pointer px-4 py-2 rounded-lg transition relative ${view === "friends"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+                }`}
+            >
+              Friends
+              {pendingRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {pendingRequests.length}
+                </span>
+              )}
+            </button>
 
-                    <input
-                      className="mt-2 w-full bg-white/75 text-gray-900 px-3 py-1.5 rounded-lg ring-1 ring-white/30"
-                      placeholder="Tags (comma-separated)"
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
+            <button
+              onClick={() => setView("templates")}
+              className={`cursor-pointer px-4 py-2 rounded-lg transition ${view === "templates"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+                }`}
+            >
+              Activity
+            </button>
+          </motion.div>
+
+          {/* POSTS TAB  */}
+          {view === "posts" && (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+            >
+              {/* Left column */}
+              <motion.div variants={item} className="lg:col-span-2">
+
+                {/* Composer */}
+                <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+                  <div className="flex items-start gap-3">
+
+                    <div
+                      className="h-10 w-10 rounded-full ring-2 ring-white/60 shrink-0"
+                      style={{ background: avatarGradient("me") }}
                     />
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="w-full bg-white/80 text-gray-900 px-3 py-2 rounded-lg ring-1 ring-white/30"
+                          placeholder="Share what you learned today…"
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                        />
+                        <button
+                          onClick={createPost}
+                          className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-2 rounded-lg ring-1 ring-white/20 transition"
+                        >
+                          <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+                          Post
+                        </button>
+                      </div>
+
+                      <input
+                        className="mt-2 w-full bg-white/75 text-gray-900 px-3 py-1.5 rounded-lg ring-1 ring-white/30"
+                        placeholder="Tags (comma-separated)"
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Posts feed */}
-              <motion.div className="mt-4 space-y-3" variants={container} initial="hidden" animate="show">
-                {filteredPosts.length ? (
-                  filteredPosts.map((p) => (
-                    <PostCard
-                      key={p.id}
-                      post={p}
-                      onToggleLike={() => toggleLike(p.id)}
-                      onDelete={() => deletePost(p.id)}
-                      canDelete={currentUserId !== null && currentUserId === p.user_id}
-                      onComment={(txt) => addComment(p.id, txt)}
-                    />
-                  ))
-                ) : (
-                  <motion.div variants={item} className="text-center p-6 bg-white/10 text-white rounded-xl">
-                    No posts yet. Share something!
-                  </motion.div>
-                )}
+                {/* Posts feed */}
+                <motion.div className="mt-4 space-y-3" variants={container} initial="hidden" animate="show">
+                  {filteredPosts.length ? (
+                    filteredPosts.map((p) => (
+                      <PostCard
+                        key={p.id}
+                        post={p}
+                        currentUserId={currentUserId}
+                        onToggleLike={() => toggleLike(p.id)}
+                        onDelete={() => deletePost(p.id)}
+                        canDelete={currentUserId !== null && currentUserId === p.user_id}
+                        onComment={(txt) => addComment(p.id, txt)}
+                      />
+                    ))
+                  ) : (
+                    <motion.div variants={item} className="text-center p-6 bg-white/10 text-white rounded-xl">
+                      No posts yet. Share something!
+                    </motion.div>
+                  )}
+                </motion.div>
+              </motion.div>
+
+              {/* Right column – Filters */}
+              <motion.div variants={item} className="space-y-5">
+                <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 sticky top-24">
+                  <Filters
+                    filter={filter}
+                    setFilter={setFilter}
+                    tagFilter={tagFilter}
+                    setTagFilter={setTagFilter}
+                    allTags={allTags}
+                    query={query}
+                    setQuery={setQuery}
+                    visibilityView={visibilityView}
+                    setVisibilityView={setVisibilityView}
+                  />
+                </div>
               </motion.div>
             </motion.div>
+          )}
 
-            {/* Right column – Filters */}
-            <motion.div variants={item} className="space-y-5">
-              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 sticky top-24">
-                <Filters
-                  filter={filter}
-                  setFilter={setFilter}
-                  tagFilter={tagFilter}
-                  setTagFilter={setTagFilter}
-                  allTags={allTags}
-                  query={query}
-                  setQuery={setQuery}
-                  visibilityView={visibilityView}
-                  setVisibilityView={setVisibilityView}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* FRIENDS TAB */}
-        {view === "friends" && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="mt-6 max-w-3xl mx-auto space-y-5"
-          >
-            {/* Add Friend */}
-            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h3 className="text-white font-semibold mb-3">Add Friend</h3>
-              <div className="flex gap-2">
-                <input
-                  placeholder="Enter username"
-                  value={newFriendUsername}
-                  onChange={(e) => setNewFriendUsername(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendFriendRequest()}
-                  className="flex-1 bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30"
-                />
-                <button
-                  onClick={sendFriendRequest}
-                  className="cursor-pointer bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-400 transition"
-                >
-                  <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-                  Send
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Pending Requests */}
-            {pendingRequests.length > 0 && (
+          {/* FRIENDS TAB */}
+          {view === "friends" && (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="mt-6 max-w-3xl mx-auto space-y-5"
+            >
+              {/* Add Friend */}
               <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
-                <h3 className="text-white font-semibold mb-3">Pending Requests</h3>
-                {pendingRequests.map((req) => (
-                  <div
-                    key={req.friendship_id}
-                    className="flex justify-between items-center p-3 bg-white/10 rounded-lg"
+                <h3 className="text-white font-semibold mb-3">Add Friend</h3>
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Enter username"
+                    value={newFriendUsername}
+                    onChange={(e) => setNewFriendUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendFriendRequest()}
+                    className="flex-1 bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30"
+                  />
+                  <button
+                    onClick={sendFriendRequest}
+                    className="cursor-pointer bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-400 transition"
                   >
-                    <span className="text-white">{req.friendInfo?.social_username}</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => respondToRequest(req.friendship_id, "accept")}
-                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => respondToRequest(req.friendship_id, "reject")}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                    Send
+                  </button>
+                </div>
               </motion.div>
-            )}
 
-            {/* Friends */}
-            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <div className="flex justify-between items-center">
-                <h3 className="text-white font-semibold mb-3">Friends ({friends.length})</h3>
-                <div className="relative">
-                  {/* <FontAwesomeIcon
+              {/* Pending Requests */}
+              {pendingRequests.length > 0 && (
+                <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
+                  <h3 className="text-white font-semibold mb-3">Pending Requests</h3>
+                  {pendingRequests.map((req) => (
+                    <div
+                      key={req.friendship_id}
+                      className="flex justify-between items-center p-3 bg-white/10 rounded-lg"
+                    >
+                      <span className="text-white">{req.friendInfo?.social_username}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => respondToRequest(req.friendship_id, "accept")}
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => respondToRequest(req.friendship_id, "reject")}
+                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+
+              {/* Friends */}
+              <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-semibold mb-3">Friends ({friends.length})</h3>
+                  <div className="relative">
+                    {/* <FontAwesomeIcon
                     icon={faMagnifyingGlass}
                     className="absolute left-2 top-1/2 -translate-y-1/2 text-white/70"
                   /> */}
-                  {/* <input
+                    {/* <input
                     placeholder="Search friends…"
                     value={friendSearch}
                     onChange={(e) => setFriendSearch(e.target.value)}
                     className="bg-white/10 text-white pl-7 pr-2 py-1.5 rounded-lg ring-1 ring-white/30 focus:outline-none"
                   /> */}
-                </div>
-              </div>
-
-              {filteredFriends.length ? (
-                filteredFriends.map((f) => (
-                  <div
-                    key={f.friendship_id}
-                    className="flex items-center gap-3 p-3 bg-white/10 rounded-lg"
-                  >
-                    <div
-                      className="h-10 w-10 rounded-full ring-2 ring-white/60"
-                      style={{
-                        background: avatarGradient(f.friendInfo?.social_username || ""),
-                      }}
-                    />
-                    <div className="flex-1">
-                      <p className="text-white font-medium">
-                        {f.friendInfo?.social_username}
-                      </p>
-                      <p className="text-xs text-white/60">
-                        Friends since {new Date(f.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-white/60 py-8">No friends yet.</div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
+                </div>
 
-        {/* TEMPLATE ACTIVITIES TAB */}
-        {view === "templates" && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="mt-6 max-w-3xl mx-auto space-y-5"
-          >
-            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-8 text-center">
-              <h3 className="text-white text-2xl font-semibold mb-2">Template Activities</h3>
-              <p className="text-white/70">Coming soon... Maybe.</p>
+                {filteredFriends.length ? (
+                  filteredFriends.map((f) => (
+                    <div
+                      key={f.friendship_id}
+                      className="flex items-center gap-3 p-3 bg-white/10 rounded-lg"
+                    >
+                      <div
+                        className="h-10 w-10 rounded-full ring-2 ring-white/60"
+                        style={{
+                          background: avatarGradient(f.friendInfo?.social_username || ""),
+                        }}
+                      />
+                      <div className="flex-1">
+                        <p className="text-white font-medium">
+                          {f.friendInfo?.social_username}
+                        </p>
+                        <p className="text-xs text-white/60">
+                          Friends since {new Date(f.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-white/60 py-8">No friends yet.</div>
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </div>
+          )}
+
+          {/* TEMPLATE ACTIVITIES TAB */}
+          {view === "templates" && (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="mt-6 max-w-3xl mx-auto space-y-5"
+            >
+              <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-8 text-center">
+                <h3 className="text-white text-2xl font-semibold mb-2">Template Activities</h3>
+                <p className="text-white/70">Coming soon... Maybe.</p>
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
       </PageBackground>
     </div>
   );
@@ -906,7 +901,7 @@ function Filters({
           <label className="text-white/70 text-sm">Visibility:</label>
           <select
             value={visibilityView}
-            onChange={(e) => setVisibilityView(e.target.value as any)}
+            onChange={(e) => setVisibilityView(e.target.value as "all" | "public" | "friends")}
             className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30"
           >
             <option value="all">Everyone</option>
@@ -970,12 +965,14 @@ function Filters({
 
 function PostCard({
   post,
+  currentUserId,
   onToggleLike,
   onDelete,
   canDelete,
   onComment,
 }: {
   post: Post;
+  currentUserId?: string | null;
   onToggleLike: () => void;
   onDelete: () => void;
   canDelete?: boolean;
@@ -1040,7 +1037,7 @@ function PostCard({
               onClick={onToggleLike}
               className={[
                 "cursor-pointer inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 transition",
-                post.liked
+                post.liked_by.includes(currentUserId ?? "")
                   ? "bg-rose-500 text-white ring-white/20"
                   : "bg-white/10 text-white hover:bg-white/20 ring-white/30",
               ].join(" ")}
