@@ -28,7 +28,6 @@ type Post = {
   tags: string[];
   createdAt: number;
   likes: number;
-  liked?: boolean;
   liked_by: string[];
   comments: {
     id: string;
@@ -208,7 +207,6 @@ export default function CommunityPage() {
           createdAt,
           likes: (row.likes as number) ?? liked_by.length,
           liked_by,
-          liked: false,
           comments: [],
         };
       });
@@ -229,9 +227,10 @@ export default function CommunityPage() {
         if (cErr) {
           console.error("loadComments error:", cErr);
         } else {
-          const byPost: Record<string, any[]> = {};
+          type CommentRow = Record<string, unknown>;
+          const byPost: Record<string, CommentRow[]> = {};
 
-          cRows.forEach((c: any) => {
+          (cRows as CommentRow[]).forEach((c) => {
             const pid = String(c.post_id);
             if (!byPost[pid]) byPost[pid] = [];
             byPost[pid].push(c);
@@ -241,12 +240,12 @@ export default function CommunityPage() {
             const arr = byPost[p.id] || [];
             p.comments = arr.map((c) => ({
               id: String(c.id),
-              user: c.Users?.social_username ?? "Unknown",
-              text: c.text ?? "",
+              user: ((c as Record<string, unknown>).Users as { social_username?: string } | undefined)?.social_username ?? "Unknown",
+              text: (c.text as string) ?? "",
               createdAt:
                 typeof c.created_at === "string"
-                  ? new Date(c.created_at).getTime()
-                  : c.created_at ?? Date.now(),
+                  ? new Date(c.created_at as string).getTime()
+                  : (c.created_at as number) ?? Date.now(),
             }));
           });
         }
@@ -259,9 +258,6 @@ export default function CommunityPage() {
 
       if (user) {
         setCurrentUserId(user.id);
-        mapped.forEach((p) => {
-          p.liked = p.liked_by.includes(user.id);
-        });
       }
 
       setPosts(mapped);
@@ -317,7 +313,6 @@ export default function CommunityPage() {
         createdAt: new Date(inserted.created_at).getTime(),
         likes: 0,
         liked_by: [],
-        liked: false,
         comments: [],
       };
 
@@ -374,7 +369,6 @@ export default function CommunityPage() {
               ...p,
               liked_by: nextLikedBy,
               likes: nextLikedBy.length,
-              liked: nextLikedBy.includes(user.id),
             }
             : p
         )
@@ -522,12 +516,9 @@ export default function CommunityPage() {
   const filteredPosts = useMemo(() => {
     let arr = [...posts].sort((a, b) => b.createdAt - a.createdAt);
 
-    if (filter === "liked") arr = arr.filter((p) => p.liked);
+    if (filter === "liked") arr = arr.filter((p) => p.liked_by.includes(currentUserId ?? ""));
     if (filter === "mine") {
-      // replaced with username match
-      // user fetch per post is already a string social_username
-      const myName = posts.find((p) => p.liked)?.user || ""; // or fetch logged-in user once
-      arr = arr.filter((p) => p.user === myName);
+      arr = arr.filter((p) => p.user_id === currentUserId);
     }
 
     if (tagFilter) arr = arr.filter((p) => p.tags.includes(tagFilter));
@@ -715,6 +706,7 @@ export default function CommunityPage() {
                       <PostCard
                         key={p.id}
                         post={p}
+                        currentUserId={currentUserId}
                         onToggleLike={() => toggleLike(p.id)}
                         onDelete={() => deletePost(p.id)}
                         canDelete={currentUserId !== null && currentUserId === p.user_id}
@@ -910,7 +902,7 @@ function Filters({
           <label className="text-white/70 text-sm">Visibility:</label>
           <select
             value={visibilityView}
-            onChange={(e) => setVisibilityView(e.target.value as any)}
+            onChange={(e) => setVisibilityView(e.target.value as "all" | "public" | "friends")}
             className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30"
           >
             <option value="all">Everyone</option>
@@ -974,12 +966,14 @@ function Filters({
 
 function PostCard({
   post,
+  currentUserId,
   onToggleLike,
   onDelete,
   canDelete,
   onComment,
 }: {
   post: Post;
+  currentUserId?: string | null;
   onToggleLike: () => void;
   onDelete: () => void;
   canDelete?: boolean;
@@ -1044,7 +1038,7 @@ function PostCard({
               onClick={onToggleLike}
               className={[
                 "cursor-pointer inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 transition",
-                post.liked
+                post.liked_by.includes(currentUserId ?? "")
                   ? "bg-rose-500 text-white ring-white/20"
                   : "bg-white/10 text-white hover:bg-white/20 ring-white/30",
               ].join(" ")}
