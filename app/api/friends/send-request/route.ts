@@ -1,0 +1,75 @@
+// app/api/friends/send-request/route.ts
+import { NextResponse } from 'next/server'
+import { getSupabaseServerClient } from '@/app/lib/hooks/supabaseServerClient'
+
+export async function POST(req: Request) {
+  try {
+    const supabase = await getSupabaseServerClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const { friend_username } = await req.json()
+
+    if (!friend_username?.trim()) {
+      return NextResponse.json({ error: 'Username required' }, { status: 400 })
+    }
+
+    // 🔎 Find user by social username
+    const { data: friendUser, error: friendError } = await supabase
+      .from('Users')
+      .select('user_id')
+      .eq('social_username', friend_username.trim())
+      .single()
+
+    if (friendError || !friendUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // 🛑 Prevent sending request to yourself
+    if (friendUser.user_id === user.id) {
+      return NextResponse.json({ error: 'Cannot send a friend request to yourself' }, { status: 400 })
+    }
+
+    // 🛑 Check if friendship already exists (both directions)
+    const { data: existing } = await supabase
+      .from('Friendships')
+      .select('*')
+      .or(
+        `and(user_id.eq.${user.id},friend_id.eq.${friendUser.user_id}),` +
+        `and(user_id.eq.${friendUser.user_id},friend_id.eq.${user.id})`
+      )
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.json({ error: 'Friendship already exists' }, { status: 400 })
+    }
+
+    // ➕ Insert new friendship in pending state
+    const { data, error } = await supabase
+      .from('Friendships')
+      .insert([
+        {
+          user_id: user.id,
+          friend_id: friendUser.user_id,
+          status: 'pending'
+        }
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      message: 'Friend request sent',
+      friendship: data
+    })
+  } catch (error) {
+    console.error('Friend request error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}

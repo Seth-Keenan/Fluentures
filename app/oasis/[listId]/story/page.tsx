@@ -7,6 +7,8 @@ import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction";
 import type { HistoryItem } from "@/app/types/gemini";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 /** typed helpers so role is "user" | "model" */
 const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
@@ -33,6 +35,7 @@ export default function StoryPage() {
   const [isSending, setIsSending] = useState(false);
   const [apiHistory, setApiHistory] = useState<HistoryItem[]>([]);
   const prefersReducedMotion = useReducedMotion();
+  const desert = deserts.find(d => d.name === "Monument Valley")!;
 
   // auto-scroll chat to bottom
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -45,14 +48,11 @@ export default function StoryPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden">
-        <motion.img
-          src="/desert.png"
-          alt="Desert dunes"
-          className="absolute inset-0 h-full w-full object-cover"
-          initial={{ scale: 1 }}
-          animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        />
+        <PageBackground
+          src={desert.src}
+          alt={desert.name}
+          wikiUrl={desert.wikiUrl}
+        >
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
 
         {!prefersReducedMotion && (
@@ -119,6 +119,7 @@ export default function StoryPage() {
             }
           }
         `}</style>
+      </PageBackground>
       </div>
     );
   }
@@ -200,14 +201,11 @@ export default function StoryPage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Backdrop image (oasis vibe) */}
-      <motion.img
-        src="/desert.png"
-        alt="Desert dunes"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
 
       {/* Aurora blobs */}
       <motion.div
@@ -392,6 +390,7 @@ export default function StoryPage() {
           Tip: Generate a fresh story, then quiz the “Camel” assistant with questions about it.
         </p>
       </div>
+      </PageBackground>
     </div>
   );
 }

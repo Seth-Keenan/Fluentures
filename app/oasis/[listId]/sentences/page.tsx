@@ -10,6 +10,8 @@ import {
   requestSentence,
   sendSentenceChat,
 } from "@/app/lib/actions/geminiSentenceAction";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 /** Minimal history type (matches your API) */
 type HistoryItem = { role: "user" | "model"; parts: { text: string }[] };
@@ -46,6 +48,7 @@ export default function SentencesPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chatLog]);
+  const desert = deserts.find(d => d.name === "Gobi Desert")!;
 
   // Generate a sentence for a given word (server reads settings + list)
   const generateSentence = async (word: string) => {
@@ -122,14 +125,11 @@ export default function SentencesPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden">
-        <motion.img
-          src="/desert.png"
-          alt="Desert dunes"
-          className="absolute inset-0 h-full w-full object-cover"
-          initial={{ scale: 1 }}
-          animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+        >
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
 
         {!prefersReducedMotion && (
@@ -196,6 +196,7 @@ export default function SentencesPage() {
             }
           }
         `}</style>
+        </PageBackground>
       </div>
     );
   }
@@ -208,14 +209,11 @@ export default function SentencesPage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background image + subtle motion */}
-      <motion.img
-        src="/desert.png"
-        alt="Desert dunes"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
 
       {/* Aurora blobs */}
       <motion.div
@@ -439,6 +437,7 @@ export default function SentencesPage() {
           sentences.
         </p>
       </div>
+      </PageBackground>
     </div>
   );
 }

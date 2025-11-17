@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 // Font Awesome (Free)
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -29,6 +31,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);     // submit spinner
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  const desert = deserts.find(d => d.name === "Kalahari Desert")!;
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 600);
@@ -62,20 +66,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background with gentle zoom */}
-      <motion.img
-        src="/desert.png"
-        alt="Background"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Soft gradient/dim for contrast */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
-
+    <PageBackground
+      src={desert.src}
+      alt={desert.name}
+      wikiUrl={desert.wikiUrl}
+    >
       {/* Glow blobs for depth */}
       <motion.div
         aria-hidden
@@ -224,6 +219,6 @@ export default function LoginPage() {
           </p>
         </motion.div>
       </div>
-    </div>
+    </PageBackground>
   );
 }

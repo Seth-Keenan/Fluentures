@@ -162,6 +162,14 @@ export async function saveWordlist(listId: string, items: WordItem[]): Promise<b
   } = await supabase.auth.getUser();
   if (userError || !user) return false;
 
+  //get existing words to see which are new
+  const { data: existingWords } = await supabase
+    .from("Word")
+    .select("word_id")
+    .eq("word_list_id", listId);
+
+    const existingIds = new Set(existingWords?.map(w => w.word_id) || []);
+
   // Map interface fields to database columns
   const payload = items.map((i) => ({
     word_id: i.id,
@@ -178,6 +186,20 @@ export async function saveWordlist(listId: string, items: WordItem[]): Promise<b
   if (error) {
     console.error("saveWordlist (upsert) error:", error);
     return false;
+  }
+
+  const newWords = items.filter(item => !existingIds.has(item.id));
+  if (newWords.length > 0) {
+    //log activity for each new word
+    for (const word of newWords) {
+      await supabase
+      .from('UserActivity')
+      .insert([{
+        user_id: user.id,
+        activity_type: 'word_added',
+        activity_data: { word: word.target, translation: word.english, listId }
+      }])
+    }
   }
   return true;
 }
@@ -226,5 +248,13 @@ export async function createWordList(name: string, language?: string) {
   }
 
   console.log("Successfully created word list:", data);
+
+  await supabase
+    .from("UserActivity")
+    .insert([{
+      user_id: user.id,
+      activity_type: 'wordlist_created',
+      activity_data: { name, language }
+    }]);
   return data.word_list_id as string;
 }

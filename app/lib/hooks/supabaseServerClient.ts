@@ -8,5 +8,5 @@ import { cookies } from "next/headers";
 
 export async function getSupabaseServerClient() {
   const cookieStore = cookies();  
-  return createRouteHandlerClient({ cookies: () => cookieStore }); // this is actually correct, not an error
+  return createRouteHandlerClient({ cookies: () => cookieStore });
 }

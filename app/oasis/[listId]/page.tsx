@@ -16,6 +16,8 @@ import {
   faArrowLeft,
   faTree,
 } from "@fortawesome/free-solid-svg-icons";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
 
 type WordRow = {
   id: string;
@@ -52,6 +54,7 @@ export default function OasisHubPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const desert = deserts.find(d => d.name === "Arabian Desert")!;
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 350);
@@ -202,17 +205,11 @@ export default function OasisHubPage() {
   ];
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background (parallax zoom) */}
-      <motion.img
-        src="/desert.png"
-        alt="Desert background"
-        className="absolute inset-0 h-full w-full object-cover will-change-transform"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
-
+    <PageBackground
+      src={desert.src}
+      alt={desert.name}
+      wikiUrl={desert.wikiUrl}
+    >
       {/* Subtle noise + contrast veil */}
       <div
         aria-hidden
@@ -223,7 +220,6 @@ export default function OasisHubPage() {
           backgroundSize: "160px 160px",
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
       {/* Aurora blobs */}
       <motion.div
@@ -365,7 +361,11 @@ export default function OasisHubPage() {
           className="mt-6 w-full rounded-2xl border border-white/20 bg-white/10 p-0 shadow-2xl backdrop-blur-xl text-white"
         >
           <div className="border-b border-white/15 px-4 py-3 text-sm opacity-90">
-            {loading ? "Loading words…" : error ? `Error: ${error}` : `${words.length} words`}
+            {(() => {
+              if (loading) return "Loading words…";
+              if (error) return `Error: ${error}`;
+              return `${words.length} words`;
+            })()}
           </div>
 
           {!loading && !error && words.length === 0 && (
@@ -427,6 +427,6 @@ export default function OasisHubPage() {
           )}
         </motion.div>
       </div>
-    </div>
+    </PageBackground>
   );
 }

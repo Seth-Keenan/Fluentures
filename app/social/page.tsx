@@ -1,4 +1,3 @@
-// app/community/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -10,34 +9,49 @@ import {
   faTrashCan,
   faPaperPlane,
   faPlus,
-  faPenToSquare,
-  faFloppyDisk,
-  faXmark,
   faMagnifyingGlass,
   faFilter,
+  faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { LinkAsButton } from "@/app/components/LinkAsButton";
+import { deserts } from "@/app/data/deserts";
+import PageBackground from "@/app/components/PageBackground";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+
+// ==== TYPES ==========================================================
 
 type Post = {
   id: string;
-  user: string;
+  user_id?: string;
+  user: string; // social_username
   text: string;
   tags: string[];
-  createdAt: number; // ms
+  createdAt: number;
   likes: number;
   liked?: boolean;
-  comments: { id: string; user: string; text: string; createdAt: number }[];
+  liked_by: string[];
+  comments: {
+    id: string;
+    user: string; // social_username
+    text: string;
+    createdAt: number;
+  }[];
 };
 
 type Friend = {
-  id: string;
-  name: string;
-  status: "Online" | "Away" | "Offline";
-  note?: string;
+  friendship_id: string;
+  user_id: string;
+  friend_id: string;
+  status: string;
+  friendInfo?: {
+    user_id: string;
+    social_username: string;
+    avatar_url?: string;
+  };
+  created_at: string;
 };
 
-const POSTS_KEY = "fluentures.community.posts.v1";
-const FRIENDS_KEY = "fluentures.community.friends.v1";
+// ==== UI ANIMATIONS ==================================================
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -53,35 +67,8 @@ const item: Variants = {
   },
 };
 
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-function savePosts(posts: Post[]) {
-  localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-}
-function loadPosts(): Post[] {
-  try {
-    const raw = localStorage.getItem(POSTS_KEY);
-    return raw ? (JSON.parse(raw) as Post[]) : [];
-  } catch {
-    return [];
-  }
-}
-function saveFriends(friends: Friend[]) {
-  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends));
-}
-function loadFriends(): Friend[] {
-  try {
-    const raw = localStorage.getItem(FRIENDS_KEY);
-    return raw ? (JSON.parse(raw) as Friend[]) : [];
-  } catch {
-    return [];
-  }
-}
-function formatTime(ts: number) {
-  const d = new Date(ts);
-  return d.toLocaleString();
-}
+// ==== HELPERS =========================================================
+
 function avatarGradient(seed: string) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i);
@@ -89,386 +76,803 @@ function avatarGradient(seed: string) {
   return `linear-gradient(135deg, hsl(${h} 70% 60%), hsl(${(h + 40) % 360} 70% 52%))`;
 }
 
+function formatTime(ts: number | string) {
+  const d = typeof ts === "number" ? new Date(ts) : new Date(ts);
+  return d.toLocaleString();
+}
+
+// =====================================================================
+//                            COMMUNITY PAGE
+// =====================================================================
+
 export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
+  const supabase = createClientComponentClient();
 
-  const [me] = useState("You");
+  // === STATE ==========================================================
 
+  const [view, setView] = useState<"posts" | "friends" | "templates">("posts");
+
+  // POSTS
   const [posts, setPosts] = useState<Post[]>([]);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "liked" | "mine">("all");
-  const [tagFilter, setTagFilter] = useState<string>("");
-
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "liked" | "mine">("all");
+  const [tagFilter, setTagFilter] = useState("");
+  const [visibilityView, setVisibilityView] = useState<"all" | "public" | "friends">("all");
 
+  // FRIENDS
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
   const [friendSearch, setFriendSearch] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newStatus, setNewStatus] = useState<Friend["status"]>("Online");
-  const [newNote, setNewNote] = useState("");
+  const [newFriendUsername, setNewFriendUsername] = useState("");
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const showMessage = (type: "success" | "error", text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 2500);
+  };
+
+  // === LOAD INITIAL DATA ==============================================
+
+  const desert = deserts.find(d => d.name === "Atacama Desert")!;
 
   useEffect(() => {
-    setPosts(loadPosts());
-    setFriends(loadFriends());
+    loadPosts();
+    loadFriends();
+    loadPendingRequests();
   }, []);
+
+  // ===================================================================
+  //                             DELETE POST
+  // ===================================================================
+
+  async function deletePost(id: string) {
+    try {
+      // ensure we have the current user and ownership
+      const postToDelete = posts.find((p) => p.id === id);
+      if (!postToDelete) {
+        showMessage("error", "Post not found");
+        return;
+      }
+      if (!currentUserId || postToDelete.user_id !== currentUserId) {
+        showMessage("error", "You don't have permission to delete this post");
+        return;
+      }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // optional: require logged in user
+      if (!user) {
+        showMessage("error", "You must be logged in to delete posts");
+        return;
+      }
+
+      const { error } = await supabase.from("Post").delete().eq("id", id);
+
+      if (error) {
+        console.error("deletePost error:", error);
+        showMessage("error", "Failed to delete post");
+        return;
+      }
+
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      showMessage("success", "Post deleted");
+    } catch (e) {
+      console.error("deletePost crashed:", e);
+      showMessage("error", "Error deleting post");
+    }
+  }
+
+  // ===================================================================
+  //                             LOAD POSTS
+  // ===================================================================
+
+  async function loadPosts() {
+    try {
+      const { data: postsRows, error: postErr } = await supabase
+        .from("Post")
+        .select(`
+          *,
+          Users:user_id (social_username)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (postErr) {
+        console.error("loadPosts error:", postErr);
+        return;
+      }
+
+      // Map posts
+      const mapped: Post[] = postsRows.map((r: any) => {
+        const createdAt =
+          typeof r.created_at === "string"
+            ? new Date(r.created_at).getTime()
+            : r.created_at ?? Date.now();
+
+        const liked_by = Array.isArray(r.liked_by) ? r.liked_by : [];
+
+        return {
+          id: String(r.id),
+          user_id: r.user_id ? String(r.user_id) : undefined,
+          user: r.Users?.social_username ?? "Unknown",
+          text: r.text ?? "",
+          tags: Array.isArray(r.tags) ? r.tags : [],
+          createdAt,
+          likes: r.likes ?? liked_by.length,
+          liked_by,
+          liked: false, // will update later when user is known
+          comments: [],
+        };
+      });
+
+      // Load comments
+      const postIds = mapped.map((p) => p.id);
+      if (postIds.length) {
+        const { data: cRows, error: cErr } = await supabase
+          .from("Comment")
+          .select(`
+            *,
+            Users:user_id (social_username)
+          `)
+          .in("post_id", postIds);
+
+        if (cErr) {
+          console.error("loadComments error:", cErr);
+        } else {
+          const byPost: Record<string, any[]> = {};
+
+          cRows.forEach((c: any) => {
+            const pid = String(c.post_id);
+            if (!byPost[pid]) byPost[pid] = [];
+            byPost[pid].push(c);
+          });
+
+          mapped.forEach((p) => {
+            const arr = byPost[p.id] || [];
+            p.comments = arr.map((c) => ({
+              id: String(c.id),
+              user: c.Users?.social_username ?? "Unknown",
+              text: c.text ?? "",
+              createdAt:
+                typeof c.created_at === "string"
+                  ? new Date(c.created_at).getTime()
+                  : c.created_at ?? Date.now(),
+            }));
+          });
+        }
+      }
+
+      // Fetch logged-in user id
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        setCurrentUserId(user.id);
+        mapped.forEach((p) => {
+          p.liked = p.liked_by.includes(user.id);
+        });
+      }
+
+      setPosts(mapped);
+    } catch (e) {
+      console.error("loadPosts crashed:", e);
+    }
+  }
+
+  // ===================================================================
+  //                             CREATE POST
+  // ===================================================================
+
+  async function createPost() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    if (!text.trim()) return;
+
+    const tlist = tags.split(",").map((t) => t.trim()).filter(Boolean);
+
+    try {
+      const payload = {
+        user_id: user.id,
+        text: text.trim(),
+        tags: tlist,
+        likes: 0,
+        liked_by: [],
+      };
+
+      const { data: inserted, error } = await supabase
+        .from("Post")
+        .insert([payload])
+        .select(`
+          *,
+          Users:user_id (social_username)
+        `)
+        .single();
+
+      if (error) {
+        console.error("createPost error:", error);
+        return;
+      }
+
+      const newPost: Post = {
+        id: String(inserted.id),
+        user_id: inserted.user_id ? String(inserted.user_id) : user.id,
+        user: inserted.Users.social_username,
+        text: inserted.text,
+        tags: inserted.tags ?? [],
+        createdAt: new Date(inserted.created_at).getTime(),
+        likes: 0,
+        liked_by: [],
+        liked: false,
+        comments: [],
+      };
+
+      setPosts((prev) => [newPost, ...prev]);
+      setText("");
+      setTags("");
+    } catch (e) {
+      console.error("createPost crashed:", e);
+    }
+  }
+
+  // ===================================================================
+  //                             LIKE TOGGLE
+  // ===================================================================
+
+  async function toggleLike(id: string) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    try {
+      const { data: row } = await supabase
+        .from("Post")
+        .select("liked_by")
+        .eq("id", id)
+        .single();
+
+      const liked_by = Array.isArray(row?.liked_by) ? row.liked_by : [];
+      const has = liked_by.includes(user.id);
+
+      const nextLikedBy = has
+        ? liked_by.filter((u) => u !== user.id)
+        : [...liked_by, user.id];
+
+      const { error: updateErr } = await supabase
+        .from("Post")
+        .update({
+          liked_by: nextLikedBy,
+          likes: nextLikedBy.length,
+        })
+        .eq("id", id);
+
+      if (updateErr) {
+        console.error("toggleLike update error:", updateErr);
+        return;
+      }
+
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                liked_by: nextLikedBy,
+                likes: nextLikedBy.length,
+                liked: nextLikedBy.includes(user.id),
+              }
+            : p
+        )
+      );
+    } catch (e) {
+      console.error("toggleLike crashed:", e);
+    }
+  }
+
+  // ===================================================================
+  //                             COMMENT
+  // ===================================================================
+
+  async function addComment(postId: string, commentText: string) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+    if (!commentText.trim()) return;
+
+    try {
+      const payload = {
+        post_id: postId,
+        user_id: user.id,
+        text: commentText.trim(),
+      };
+
+      const { data: row, error } = await supabase
+        .from("Comment")
+        .insert([payload])
+        .select(`
+          *,
+          Users:user_id (social_username)
+        `)
+        .single();
+
+      if (error) {
+        console.error("addComment error:", error);
+        return;
+      }
+
+      const newComment = {
+        id: String(row.id),
+        user: row.Users.social_username,
+        text: row.text,
+        createdAt: new Date(row.created_at).getTime(),
+      };
+
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p
+        )
+      );
+    } catch (e) {
+      console.error("addComment crashed:", e);
+    }
+  }
+
+  // ===================================================================
+  //                        FRIEND SYSTEM
+  // ===================================================================
+
+  async function loadFriends() {
+    try {
+      const res = await fetch("/api/friends/list?type=accepted");
+      const data = await res.json();
+      if (data.friends) setFriends(data.friends);
+    } catch (e) {
+      console.error("loadFriends error:", e);
+    }
+  }
+
+  async function loadPendingRequests() {
+    try {
+      const res = await fetch("/api/friends/list?type=pending");
+      const data = await res.json();
+      if (data.friends) setPendingRequests(data.friends);
+    } catch (e) {
+      console.error("loadPendingRequests error:", e);
+    }
+  }
+
+  async function sendFriendRequest() {
+    if (!newFriendUsername.trim()) {
+      showMessage("error", "Enter a username");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/friends/send-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friend_username: newFriendUsername.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMessage("error", data.error || "Failed to send request");
+        return;
+      }
+
+      showMessage("success", "Friend request sent!");
+      setNewFriendUsername("");
+      loadFriends();
+    } catch {
+      showMessage("error", "Error sending request");
+    }
+  }
+
+  async function respondToRequest(friendshipId: string, action: "accept" | "reject") {
+    try {
+      const res = await fetch("/api/friends/respond", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendship_id: friendshipId, action }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMessage("error", data.error || "Failed to respond");
+        return;
+      }
+
+      showMessage("success", `Request ${action}ed`);
+      loadPendingRequests();
+      loadFriends();
+    } catch {
+      showMessage("error", "Action failed");
+    }
+  }
+
+  // ===================================================================
+  //                FILTER POSTS & FILTER FRIENDS
+  // ===================================================================
 
   const allTags = useMemo(() => {
     const s = new Set<string>();
     posts.forEach((p) => p.tags.forEach((t) => s.add(t)));
-    return Array.from(s).sort();
+    return [...s].sort();
   }, [posts]);
 
-  const filtered = useMemo(() => {
-    let arr = posts.slice().sort((a, b) => b.createdAt - a.createdAt);
+  const filteredPosts = useMemo(() => {
+    let arr = [...posts].sort((a, b) => b.createdAt - a.createdAt);
+
     if (filter === "liked") arr = arr.filter((p) => p.liked);
-    if (filter === "mine") arr = arr.filter((p) => p.user === me);
+    if (filter === "mine") {
+      // replaced with username match
+      // user fetch per post is already a string social_username
+      const myName = posts.find((p) => p.liked)?.user || ""; // or fetch logged-in user once
+      arr = arr.filter((p) => p.user === myName);
+    }
+
     if (tagFilter) arr = arr.filter((p) => p.tags.includes(tagFilter));
+
     if (query.trim()) {
       const q = query.trim().toLowerCase();
-      arr = arr.filter((p) => p.text.toLowerCase().includes(q) || p.user.toLowerCase().includes(q));
+      arr = arr.filter(
+        (p) =>
+          p.text.toLowerCase().includes(q) ||
+          p.user.toLowerCase().includes(q)
+      );
     }
+
+    // visibility filters: "friends" = posts from friends (and you), "public" = posts from non-friends
+    const friendIds = friends.map((f) => f.friendInfo?.user_id).filter(Boolean) as string[];
+    if (visibilityView === "friends") {
+      arr = arr.filter((p) => (p.user_id && friendIds.includes(p.user_id)) || p.user_id === currentUserId);
+    } else if (visibilityView === "public") {
+      arr = arr.filter((p) => !(p.user_id && friendIds.includes(p.user_id)) && p.user_id !== currentUserId);
+    }
+
     return arr;
-  }, [posts, filter, tagFilter, query, me]);
+  }, [posts, filter, tagFilter, query, visibilityView, friends, currentUserId]);
 
   const filteredFriends = useMemo(() => {
-    let arr = friends.slice().sort((a, b) => a.name.localeCompare(b.name));
+    let arr = [...friends].sort((a, b) =>
+      (a.friendInfo?.social_username || "").localeCompare(
+        b.friendInfo?.social_username || ""
+      )
+    );
+
     if (friendSearch.trim()) {
       const q = friendSearch.trim().toLowerCase();
       arr = arr.filter(
         (f) =>
-          f.name.toLowerCase().includes(q) ||
-          (f.note || "").toLowerCase().includes(q) ||
-          f.status.toLowerCase().includes(q)
+          f.friendInfo?.social_username.toLowerCase().includes(q)
       );
     }
+
     return arr;
   }, [friends, friendSearch]);
 
-  function createPost() {
-    if (!text.trim()) return;
-    const tlist = tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const newPost: Post = {
-      id: uid(),
-      user: me,
-      text: text.trim(),
-      tags: tlist,
-      createdAt: Date.now(),
-      likes: 0,
-      comments: [],
-    };
-    const next = [newPost, ...posts];
-    setPosts(next);
-    savePosts(next);
-    setText("");
-    setTags("");
-  }
-  function toggleLike(id: string) {
-    const next = posts.map((p) =>
-      p.id === id
-        ? {
-            ...p,
-            liked: !p.liked,
-            likes: p.liked ? Math.max(0, p.likes - 1) : p.likes + 1,
-          }
-        : p
-    );
-    setPosts(next);
-    savePosts(next);
-  }
-  function addComment(id: string, comment: string) {
-    if (!comment.trim()) return;
-    const next = posts.map((p) =>
-      p.id === id
-        ? {
-            ...p,
-            comments: [...p.comments, { id: uid(), user: me, text: comment.trim(), createdAt: Date.now() }],
-          }
-        : p
-    );
-    setPosts(next);
-    savePosts(next);
-  }
-  function deletePost(id: string) {
-    const next = posts.filter((p) => p.id !== id);
-    setPosts(next);
-    savePosts(next);
-  }
-
-  function addFriend() {
-    if (!newName.trim()) return;
-    const f: Friend = {
-      id: uid(),
-      name: newName.trim(),
-      status: newStatus,
-      note: newNote.trim() || undefined,
-    };
-    const next = [...friends, f];
-    setFriends(next);
-    saveFriends(next);
-    setNewName("");
-    setNewStatus("Online");
-    setNewNote("");
-    setAdding(false);
-  }
-  function updateFriend(updated: Friend) {
-    const next = friends.map((f) => (f.id === updated.id ? updated : f));
-    setFriends(next);
-    saveFriends(next);
-  }
-  function deleteFriend(id: string) {
-    const next = friends.filter((f) => f.id !== id);
-    setFriends(next);
-    saveFriends(next);
-  }
+  // ===================================================================
+  //                           RENDER
+  // ===================================================================
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden pt-16">
+    <div className="relative min-h-screen w-full overflow-hidden">
+
+      {/* Toast */}
+      {message && (
+        <div
+          className={`fixed top-4 right-4 px-6 py-3 z-50 rounded-lg shadow-lg text-white 
+          ${message.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+        >
+          {message.text}
+        </div>
+      )}
+
       {/* Background */}
-      <motion.img
-        src="/desert.png"
-        alt="Background"
-        className="absolute inset-0 h-full w-full object-cover"
-        initial={{ scale: 1 }}
-        animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.05, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <PageBackground
+        src={desert.src}
+        alt={desert.name}
+        wikiUrl={desert.wikiUrl}
+      >
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50" />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+          className="flex justify-between flex-col sm:flex-row gap-4 sm:items-end"
         >
           <div>
-            <h1 className="text-white text-3xl sm:text-4xl font-semibold">Community</h1>
+            <h1 className="text-4xl text-white font-semibold">Community</h1>
             <p className="text-white/85 mt-1">
-              Share progress, cheer friends, and keep your learning circle close
+              Share progress, connect with friends, and learn together
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <LinkAsButton
-              href="/home"
-              className="!cursor-pointer inline-flex items-center justify-center w-auto whitespace-nowrap rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition px-6 py-3"
-            >
-              Back to Home
-            </LinkAsButton>
-          </div>
+          <LinkAsButton
+            href="/home"
+            className="!cursor-pointer px-6 py-3 rounded-lg bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/30 transition"
+          >
+            Back to Home
+          </LinkAsButton>
         </motion.div>
 
-        {/* Main grid */}
+        {/* Tabs */}
         <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+          className="mt-6 flex gap-2"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          {/* Left: Composer + Feed */}
-          <motion.div variants={item} className="lg:col-span-2">
-            {/* Composer */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
-              <div className="flex items-start gap-3">
-                {/* avatar */}
-                <div
-                  className="h-10 w-10 shrink-0 rounded-full ring-2 ring-white/60"
-                  style={{ background: avatarGradient(me) }}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+          <button
+            onClick={() => setView("posts")}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
+              view === "posts"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+            }`}
+          >
+            Posts
+          </button>
+
+          <button
+            onClick={() => setView("friends")}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition relative ${
+              view === "friends"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+            }`}
+          >
+            Friends
+            {pendingRequests.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                {pendingRequests.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setView("templates")}
+            className={`cursor-pointer px-4 py-2 rounded-lg transition ${
+              view === "templates"
+                ? "bg-white text-gray-900"
+                : "bg-white/20 text-white hover:bg-white/30"
+            }`}
+          >
+            Activity
+          </button>
+        </motion.div>
+
+        {/* POSTS TAB  */}
+        {view === "posts" && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
+          >
+            {/* Left column */}
+            <motion.div variants={item} className="lg:col-span-2">
+
+              {/* Composer */}
+              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
+                <div className="flex items-start gap-3">
+
+                  <div
+                    className="h-10 w-10 rounded-full ring-2 ring-white/60 shrink-0"
+                    style={{ background: avatarGradient("me") }}
+                  />
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="w-full bg-white/80 text-gray-900 px-3 py-2 rounded-lg ring-1 ring-white/30"
+                        placeholder="Share what you learned today…"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                      />
+                      <button
+                        onClick={createPost}
+                        className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-2 rounded-lg ring-1 ring-white/20 transition"
+                      >
+                        <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+                        Post
+                      </button>
+                    </div>
+
                     <input
-                      className="w-full bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Share what you learned today…"
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={createPost}
-                      className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-400 ring-1 ring-white/20 transition px-3 py-2"
-                    >
-                      <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-                      Post
-                    </button>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      className="flex-1 bg-white/75 text-gray-900 rounded-lg px-3 py-1.5 ring-1 ring-white/30 placeholder:text-gray-500 focus:outline-none text-sm"
-                      placeholder="Tags (comma-separated, e.g., vocab, travel)"
+                      className="mt-2 w-full bg-white/75 text-gray-900 px-3 py-1.5 rounded-lg ring-1 ring-white/30"
+                      placeholder="Tags (comma-separated)"
                       value={tags}
                       onChange={(e) => setTags(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Filters (mobile) */}
-            <div className="mt-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-4 lg:hidden">
-              <Filters
-                filter={filter}
-                setFilter={setFilter}
-                tagFilter={tagFilter}
-                setTagFilter={setTagFilter}
-                allTags={allTags}
-                query={query}
-                setQuery={setQuery}
-              />
-            </div>
-
-            {/* Feed */}
-            <motion.div variants={container} initial="hidden" animate="show" className="mt-4 space-y-3">
-              {filtered.length ? (
-                filtered.map((p) => (
-                  <PostCard
-                    key={p.id}
-                    post={p}
-                    me={me}
-                    onToggleLike={() => toggleLike(p.id)}
-                    onDelete={() => deletePost(p.id)}
-                    onComment={(t) => addComment(p.id, t)}
-                  />
-                ))
-              ) : (
-                <motion.div
-                  variants={item}
-                  className="rounded-xl bg-white/10 text-white p-6 text-center ring-1 ring-white/20"
-                >
-                  No posts yet. Share your first update!
-                </motion.div>
-              )}
-            </motion.div>
-          </motion.div>
-
-          {/* Right: Filters + Friends Manager */}
-          <motion.div variants={item} className="space-y-5">
-            {/* Filters */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5 sticky top-24">
-              <Filters
-                filter={filter}
-                setFilter={setFilter}
-                tagFilter={tagFilter}
-                setTagFilter={setTagFilter}
-                allTags={allTags}
-                query={query}
-                setQuery={setQuery}
-              />
-            </div>
-
-            {/* Friends Manager */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20 text-white/95">
-                  👥 <span className="text-sm font-medium">Friends</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAdding((v) => !v)}
-                  className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 ring-1 ring-white/20 transition px-3 py-1.5 text-sm"
-                >
-                  <FontAwesomeIcon icon={adding ? faXmark : faPlus} className="h-4 w-4" />
-                  {adding ? "Cancel" : "Add"}
-                </button>
-              </div>
-
-              {/* Add Friend Form */}
-              {adding && (
-                <div className="mt-3 rounded-xl bg-white/90 p-3 ring-1 ring-white/30 shadow-sm">
-                  <div className="grid grid-cols-1 gap-2">
-                    <input
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                    />
-                    <select
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 focus:outline-none"
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value as Friend["status"])}
-                    >
-                      <option>Online</option>
-                      <option>Away</option>
-                      <option>Offline</option>
-                    </select>
-                    <input
-                      className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-                      placeholder="Note (optional)"
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                    />
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAdding(false);
-                          setNewName("");
-                          setNewStatus("Online");
-                          setNewNote("");
-                        }}
-                        className="cursor-pointer rounded-md bg-white/60 hover:bg-white px-3 py-1 text-sm ring-1 ring-black/10 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={addFriend}
-                        className="cursor-pointer inline-flex items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 text-sm ring-1 ring-white/20 transition"
-                      >
-                        <FontAwesomeIcon icon={faFloppyDisk} className="h-4 w-4" />
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Search */}
-              <div className="mt-3 relative">
-                <FontAwesomeIcon
-                  icon={faMagnifyingGlass}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70"
-                />
-                <input
-                  className="w-full rounded-lg bg-white/10 pl-7 pr-2 py-1.5 text-sm text-white ring-1 ring-white/30 placeholder:text-white/60 focus:outline-none"
-                  placeholder="Search friends…"
-                  value={friendSearch}
-                  onChange={(e) => setFriendSearch(e.target.value)}
-                />
-              </div>
-
-              {/* Friends List */}
-              <div className="mt-3 space-y-2">
-                {filteredFriends.length ? (
-                  filteredFriends.map((f) => (
-                    <FriendRow
-                      key={f.id}
-                      friend={f}
-                      onSave={updateFriend}
-                      onDelete={() => deleteFriend(f.id)}
+              {/* Posts feed */}
+              <motion.div className="mt-4 space-y-3" variants={container} initial="hidden" animate="show">
+                {filteredPosts.length ? (
+                  filteredPosts.map((p) => (
+                    <PostCard
+                      key={p.id}
+                      post={p}
+                      onToggleLike={() => toggleLike(p.id)}
+                      onDelete={() => deletePost(p.id)}
+                      canDelete={currentUserId !== null && currentUserId === p.user_id}
+                      onComment={(txt) => addComment(p.id, txt)}
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl bg-white/10 text-white p-4 text-center ring-1 ring-white/20">
-                    No friends yet. Add one!
-                  </div>
+                  <motion.div variants={item} className="text-center p-6 bg-white/10 text-white rounded-xl">
+                    No posts yet. Share something!
+                  </motion.div>
                 )}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+              </motion.div>
+            </motion.div>
 
-        <div className="h-10" />
+            {/* Right column – Filters */}
+            <motion.div variants={item} className="space-y-5">
+              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 sticky top-24">
+                <Filters
+                  filter={filter}
+                  setFilter={setFilter}
+                  tagFilter={tagFilter}
+                  setTagFilter={setTagFilter}
+                  allTags={allTags}
+                  query={query}
+                  setQuery={setQuery}
+                  visibilityView={visibilityView}
+                  setVisibilityView={setVisibilityView}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* FRIENDS TAB */}
+        {view === "friends" && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 max-w-3xl mx-auto space-y-5"
+          >
+            {/* Add Friend */}
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
+              <h3 className="text-white font-semibold mb-3">Add Friend</h3>
+              <div className="flex gap-2">
+                <input
+                  placeholder="Enter username"
+                  value={newFriendUsername}
+                  onChange={(e) => setNewFriendUsername(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendFriendRequest()}
+                  className="flex-1 bg-white/80 text-gray-900 rounded-lg px-3 py-2 ring-1 ring-white/30"
+                />
+                <button
+                  onClick={sendFriendRequest}
+                  className="cursor-pointer bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-400 transition"
+                >
+                  <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                  Send
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Pending Requests */}
+            {pendingRequests.length > 0 && (
+              <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
+                <h3 className="text-white font-semibold mb-3">Pending Requests</h3>
+                {pendingRequests.map((req) => (
+                  <div
+                    key={req.friendship_id}
+                    className="flex justify-between items-center p-3 bg-white/10 rounded-lg"
+                  >
+                    <span className="text-white">{req.friendInfo?.social_username}</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => respondToRequest(req.friendship_id, "accept")}
+                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => respondToRequest(req.friendship_id, "reject")}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Friends */}
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-5">
+              <div className="flex justify-between items-center">
+                <h3 className="text-white font-semibold mb-3">Friends ({friends.length})</h3>
+                <div className="relative">
+                  {/* <FontAwesomeIcon
+                    icon={faMagnifyingGlass}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-white/70"
+                  /> */}
+                  {/* <input
+                    placeholder="Search friends…"
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="bg-white/10 text-white pl-7 pr-2 py-1.5 rounded-lg ring-1 ring-white/30 focus:outline-none"
+                  /> */}
+                </div>
+              </div>
+
+              {filteredFriends.length ? (
+                filteredFriends.map((f) => (
+                  <div
+                    key={f.friendship_id}
+                    className="flex items-center gap-3 p-3 bg-white/10 rounded-lg"
+                  >
+                    <div
+                      className="h-10 w-10 rounded-full ring-2 ring-white/60"
+                      style={{
+                        background: avatarGradient(f.friendInfo?.social_username || ""),
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-white font-medium">
+                        {f.friendInfo?.social_username}
+                      </p>
+                      <p className="text-xs text-white/60">
+                        Friends since {new Date(f.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-white/60 py-8">No friends yet.</div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* TEMPLATE ACTIVITIES TAB */}
+        {view === "templates" && (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-6 max-w-3xl mx-auto space-y-5"
+          >
+            <motion.div variants={item} className="rounded-2xl border border-white/20 bg-white/10 p-8 text-center">
+              <h3 className="text-white text-2xl font-semibold mb-2">Template Activities</h3>
+              <p className="text-white/70">Coming soon... Maybe.</p>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
+      </PageBackground>
     </div>
   );
 }
+
+// =====================================================================
+//                              FILTERS
+// =====================================================================
 
 function Filters({
   filter,
@@ -478,27 +882,45 @@ function Filters({
   allTags,
   query,
   setQuery,
+  visibilityView,
+  setVisibilityView,
 }: {
   filter: "all" | "liked" | "mine";
-  setFilter: (f: "all" | "liked" | "mine") => void;
+  setFilter: (v: "all" | "liked" | "mine") => void;
   tagFilter: string;
-  setTagFilter: (t: string) => void;
+  setTagFilter: (v: string) => void;
   allTags: string[];
   query: string;
-  setQuery: (q: string) => void;
+  setQuery: (v: string) => void;
+  visibilityView: "all" | "public" | "friends";
+  setVisibilityView: (v: "all" | "public" | "friends") => void;
 }) {
   return (
     <div className="text-white">
-      <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/20">
-        <FontAwesomeIcon icon={faFilter} className="h-4 w-4" />
-        <span className="text-sm">Filters</span>
+      <div className="flex items-center gap-3">
+        <div className="inline-flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full ring-1 ring-white/20">
+          <FontAwesomeIcon icon={faFilter} className="h-4 w-4" />
+          <span className="text-sm">Filters</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <label className="text-white/70 text-sm">Visibility:</label>
+          <select
+            value={visibilityView}
+            onChange={(e) => setVisibilityView(e.target.value as any)}
+            className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30"
+          >
+            <option value="all">Everyone</option>
+            <option value="friends">Friends only</option>
+            <option value="public">Public only</option>
+          </select>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {(["all", "liked", "mine"] as const).map((f) => (
           <button
             key={f}
-            type="button"
             onClick={() => setFilter(f)}
             className={[
               "cursor-pointer rounded-lg px-3 py-1.5 text-sm ring-1 transition",
@@ -514,7 +936,7 @@ function Filters({
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <select
-          className="col-span-2 rounded-lg bg-white/10 text-white px-3 py-1.5 text-sm ring-1 ring-white/30 focus:outline-none"
+          className="col-span-2 bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30 focus:outline-none"
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
         >
@@ -532,8 +954,8 @@ function Filters({
             className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70"
           />
           <input
-            className="w-full rounded-lg bg-white/10 pl-7 pr-2 py-1.5 text-sm text-white ring-1 ring-white/30 placeholder:text-white/60 focus:outline-none"
             placeholder="Search…"
+            className="w-full bg-white/10 pl-7 pr-2 py-1.5 rounded-lg text-sm text-white ring-1 ring-white/30 focus:outline-none"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -543,17 +965,21 @@ function Filters({
   );
 }
 
+// =====================================================================
+//                              POST CARD
+// =====================================================================
+
 function PostCard({
   post,
-  me,
   onToggleLike,
   onDelete,
+  canDelete,
   onComment,
 }: {
   post: Post;
-  me: string;
   onToggleLike: () => void;
   onDelete: () => void;
+  canDelete?: boolean;
   onComment: (text: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -566,47 +992,52 @@ function PostCard({
       className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-4"
     >
       <div className="flex items-start gap-3">
+
         <div
-          className="h-10 w-10 shrink-0 rounded-full ring-2 ring-white/60"
+          className="h-10 w-10 rounded-full ring-2 ring-white/60"
           style={{ background: avatarGradient(post.user) }}
         />
+
         <div className="flex-1">
-          <div className="flex items-center justify-between">
+          {/* Header */}
+          <div className="flex justify-between items-center">
             <div>
-              <div className="text-white/95 font-semibold">{post.user}</div>
-              <div className="text-[11px] text-white/70">{formatTime(post.createdAt)}</div>
+              <div className="text-white font-semibold">{post.user}</div>
+              <div className="text-white/70 text-xs">{formatTime(post.createdAt)}</div>
             </div>
-            {post.user === me ? (
+
+            {/* Delete button shown only when owner */}
+            {canDelete && (
               <button
-                type="button"
                 onClick={onDelete}
-                className="cursor-pointer rounded-md bg-white/10 text-white hover:bg-white/20 px-2 py-1 text-xs ring-1 ring-white/30"
-                title="Delete post"
+                className="cursor-pointer bg-white/10 hover:bg-white/20 px-2 py-1 text-xs rounded ring-1 ring-white/30 text-white"
+                title="Delete"
               >
                 <FontAwesomeIcon icon={faTrashCan} className="h-3 w-3" />
               </button>
-            ) : null}
+            )}
           </div>
 
+          {/* Body */}
           <div className="mt-2 text-white">{post.text}</div>
 
-          {post.tags.length ? (
+          {/* Tags */}
+          {post.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {post.tags.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] text-white/90 ring-1 ring-white/20"
+                  className="bg-white/15 ring-1 ring-white/20 px-2 py-0.5 rounded-full text-[11px] text-white"
                 >
                   #{t}
                 </span>
               ))}
             </div>
-          ) : null}
+          )}
 
           {/* Actions */}
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex gap-3 items-center">
             <button
-              type="button"
               onClick={onToggleLike}
               className={[
                 "cursor-pointer inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ring-1 transition",
@@ -620,9 +1051,8 @@ function PostCard({
             </button>
 
             <button
-              type="button"
               onClick={() => setOpen((v) => !v)}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs ring-1 ring-white/30 transition"
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/10 text-white hover:bg-white/20 px-2 py-1 text-xs ring-1 ring-white/30 transition"
             >
               <FontAwesomeIcon icon={faCommentDots} className="h-3 w-3" />
               <span>{post.comments.length}</span>
@@ -631,21 +1061,24 @@ function PostCard({
 
           {/* Comments */}
           {open && (
-            <div className="mt-3 rounded-xl bg-white/90 p-3 ring-1 ring-white/30 shadow-sm">
+            <div className="mt-3 bg-white/90 p-3 rounded-xl ring-1 ring-white/30 shadow-sm">
+              {/* Existing comments */}
               <div className="space-y-2">
                 {post.comments.length ? (
                   post.comments.map((c) => (
-                    <div key={c.id} className="flex items-start gap-2">
+                    <div key={c.id} className="flex gap-2">
                       <div
-                        className="h-7 w-7 shrink-0 rounded-full ring-2 ring-white/60"
+                        className="h-7 w-7 rounded-full ring-2 ring-white/60 shrink-0"
                         style={{ background: avatarGradient(c.user) }}
                       />
                       <div>
                         <div className="text-sm">
-                          <span className="font-semibold">{c.user}</span>{" "}
+                          <span className="font-semibold">{c.user} </span>
                           <span className="text-gray-600">{c.text}</span>
                         </div>
-                        <div className="text-[10px] text-gray-500">{formatTime(c.createdAt)}</div>
+                        <div className="text-[10px] text-gray-500">
+                          {formatTime(c.createdAt)}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -653,10 +1086,10 @@ function PostCard({
                   <div className="text-center text-sm text-gray-600">No comments yet.</div>
                 )}
 
-                {/* Add comment */}
-                <div className="flex items-center gap-2 pt-1">
+                {/* Write comment */}
+                <div className="flex gap-2 items-center pt-1">
                   <input
-                    className="flex-1 rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
+                    className="flex-1 bg-white px-2 py-1 rounded-md border border-black/10 text-gray-800 text-sm focus:outline-none"
                     placeholder="Write a comment…"
                     value={cmt}
                     onChange={(e) => setCmt(e.target.value)}
@@ -668,12 +1101,11 @@ function PostCard({
                     }}
                   />
                   <button
-                    type="button"
                     onClick={() => {
                       onComment(cmt);
                       setCmt("");
                     }}
-                    className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
+                    className="cursor-pointer bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 rounded-md text-xs ring-1 ring-white/20"
                   >
                     <FontAwesomeIcon icon={faPaperPlane} className="h-3 w-3" />
                     Send
@@ -685,122 +1117,5 @@ function PostCard({
         </div>
       </div>
     </motion.div>
-  );
-}
-
-function FriendRow({
-  friend,
-  onSave,
-  onDelete,
-}: {
-  friend: Friend;
-  onSave: (f: Friend) => void;
-  onDelete: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(friend.name);
-  const [status, setStatus] = useState<Friend["status"]>(friend.status);
-  const [note, setNote] = useState(friend.note || "");
-
-  const statusDot =
-    status === "Online" ? "bg-emerald-500" : status === "Away" ? "bg-amber-400" : "bg-gray-400";
-
-  return (
-    <div className="flex items-start justify-between rounded-xl bg-white/90 p-3 text-gray-900 ring-1 ring-white/30 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="relative">
-          <div
-            className="h-9 w-9 rounded-full ring-2 ring-white/80"
-            style={{ background: avatarGradient(friend.name) }}
-          />
-          <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${statusDot}`} />
-        </div>
-
-        {!editing ? (
-          <div>
-            <div className="font-semibold">{friend.name}</div>
-            <div className="text-[11px] text-gray-600">{friend.status}</div>
-            {friend.note ? <div className="text-sm text-gray-700 mt-1">{friend.note}</div> : null}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-2">
-            <input
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <select
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 focus:outline-none"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Friend["status"])}
-            >
-              <option>Online</option>
-              <option>Away</option>
-              <option>Offline</option>
-            </select>
-            <input
-              className="rounded-md border border-black/10 bg-white px-2 py-1 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none"
-              placeholder="Note (optional)"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {!editing ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
-              title="Edit"
-            >
-              <FontAwesomeIcon icon={faPenToSquare} className="h-3 w-3" />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-rose-500 hover:bg-rose-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
-              title="Delete"
-            >
-              <FontAwesomeIcon icon={faTrashCan} className="h-3 w-3" />
-              Delete
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                onSave({ id: friend.id, name: name.trim() || friend.name, status, note: note.trim() || undefined });
-                setEditing(false);
-              }}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white px-2 py-1 text-xs ring-1 ring-white/20 transition"
-              title="Save"
-            >
-              <FontAwesomeIcon icon={faFloppyDisk} className="h-3 w-3" />
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setName(friend.name);
-                setStatus(friend.status);
-                setNote(friend.note || "");
-              }}
-              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-white/60 hover:bg-white px-2 py-1 text-xs ring-1 ring-black/10 transition"
-              title="Cancel"
-            >
-              <FontAwesomeIcon icon={faXmark} className="h-3 w-3" />
-              Cancel
-            </button>
-          </>
-        )}
-      </div>
-    </div>
   );
 }

@@ -676,43 +676,43 @@ export default function MapEditView({
             </button>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
+              {createAction && (
+                <button
+                  onClick={handleCreate}
+                  className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+                  title="Create a new WordList and Oasis"
+                >
+                  ➕ Create New Oasis (DB)
+                </button>
+              )}
+              <button
+                onClick={handleDeleteSelected}
+                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50"
+                disabled={!selectedId}
+                title="Delete this WordList in DB"
+              >
+                Delete Selected (DB)
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex w-full items-center justify-between">
+            <div className="text-sm text-gray-300">
+              Tip: Select an oasis, then click the sand to reposition. Use the controls to move/rotate/scale.
+            </div>
             {createAction && (
               <button
                 onClick={handleCreate}
-                className="px-3 py-1.5 rounded-lg bg-green-50/80 text-green-800 hover:bg-green-100 border border-green-300"
+                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
                 title="Create a new WordList and Oasis"
               >
                 ➕ Create New Oasis (DB)
               </button>
             )}
-            <button
-              onClick={handleDeleteSelected}
-              className="px-3 py-1.5 rounded-lg bg-red-50/80 text-red-700 hover:bg-red-100 border border-red-300 disabled:opacity-50"
-              disabled={!selectedId}
-              title="Delete this WordList in DB"
-            >
-              Delete Selected (DB)
-            </button>
           </div>
-        </>
-      ) : (
-        <div className="flex w-full items-center justify-between">
-          <div className="text-sm text-white/80">
-            Tip: Select an oasis, then click the sand to reposition. Use the controls to move/rotate/scale.
-          </div>
-          {createAction && (
-            <button
-              onClick={handleCreate}
-              className="px-3 py-1.5 rounded-lg bg-green-50/80 text-green-800 hover:bg-green-100 border border-green-300"
-              title="Create a new WordList and Oasis"
-            >
-              ➕ Create New Oasis (DB)
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
 
     {/* ===== MAP CANVAS ===== */}
     <div className="h-[70vh] relative rounded-xl border border-white/10 bg-black/20 shadow-xl overflow-hidden">
