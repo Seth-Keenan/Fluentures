@@ -20,10 +20,6 @@ import {
   Environment,
   ContactShadows,
 } from "@react-three/drei";
-// UNUSED: framer-motion isn't used in this file
-// import { motion, type Variants } from "framer-motion";
-// UNUSED: LinkAsButton not used here
-// import { LinkAsButton } from "../../components/LinkAsButton";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 //import CreateTestOasisButton from "./CreateOasisAndEditButton";
@@ -44,13 +40,6 @@ type Oasis3D = {
   title: string;
 };
 
-/*
-type Packet = {
-  id: string;
-  title: string;
-  createdAt: number;
-};
-*/
 
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 //const STORAGE_KEY_PACKETS = "fluentures.packets";
@@ -129,14 +118,6 @@ function DesertBackground({
   return <primitive object={clone} />;
 }
 
-/* ---------------- Helpers ---------------- */
-/*
-function makeId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-*/
-
 /*----------------- compute defaults (kept) --------------------*/
 function computeDefaultTransforms(lists: WordListLite[]): Oasis3D[] {
   // Place oases on a ring by default
@@ -166,6 +147,7 @@ function loadSaved(): Record<string, Oasis3D> {
   }
 }
 
+
 function saveDebounced(instances: Oasis3D[]) {
   // simple rAF debounce to avoid hammering localStorage
   if (saveDebounceHandle !== null) {
@@ -176,7 +158,8 @@ function saveDebounced(instances: Oasis3D[]) {
   });
 }
 
-/* ---------------- Models & Instances ---------------- */
+
+  /* ---------------- Models & Instances ---------------- */
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(OASIS_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -241,7 +224,7 @@ function OasisInstance({
 
       <OasisModel scale={data.scale} />
 
-      {/* Floating oasis naming label */}
+      {/* Floating oasis wordlist name */}
       <Html
         position={[0, .8 * data.scale, 0]}
         center
@@ -322,7 +305,7 @@ function ControlsWithLimits({
 }
 
 /* ---------------- ADDED: GlideControlsUI (arrow pad for screen-aligned gliding) ---------------- */
-// This is the same motion control from your map page, lifted verbatim and scoped here.
+// This is the same motion control from your map page --> might put into component later
 function GlideControlsUI({
   controlsRef,
   bounds,
@@ -437,7 +420,7 @@ export default function MapEditView({
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   // ✅ StrictMode init guard
-  const didInit = useRef(false);
+  //const didInit = useRef(false);
 
   // Same bounds used on your Map page
   const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
@@ -445,8 +428,8 @@ export default function MapEditView({
 
   // ✅ NEW: Build instances (saved -> defaults), guarded against double-mount
   useEffect(() => {
-    if (didInit.current) return; // prevent double init in React StrictMode
-    didInit.current = true;
+    //if (didInit.current) return; // prevent double init in React StrictMode
+    //didInit.current = true;
 
     const savedById = loadSaved();
     const defaults = computeDefaultTransforms(wordlists);
@@ -461,18 +444,22 @@ export default function MapEditView({
     setInstances(merged);
   }, [wordlists]);
 
-  // ✅ NEW: Debounced persistence after edits
+  // persist to localStorage whenever tranformation changes
+  // come back to here to check over 
   useEffect(() => {
-    if (!didInit.current) return;
+    if (!instances.length) return;
     saveDebounced(instances);
   }, [instances]);
 
   // NEW: reconcile/prune whenever the server IDs set changes (after creates/deletes)
+  /*
   const idsKey = useMemo(
     () => JSON.stringify(wordlists.map((w) => w.id).sort()),
     [wordlists]
   ); // NEW
 
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!didInit.current) return; // only run after initial build
     const savedById = loadSaved();
@@ -484,6 +471,7 @@ export default function MapEditView({
     setInstances(merged);
     saveDebounced(merged);
   }, [idsKey]); // NEW
+  */
 
   // Mutators for selected
   const updateSelected = (fn: (o: Oasis3D) => Oasis3D) => {
@@ -491,16 +479,17 @@ export default function MapEditView({
     setInstances((prev) => prev.map((o) => (o.id === selectedId ? fn(o) : o)));
   };
 
-
+/*
   const nudge = (dx = 0, dz = 0) =>
-    updateSelected((o) => ({ ...o, position: [o.position[0] + dx, 0, o.position[2] + dz] as Vec3 }));
+    updateSelected((o) => ({ ...o, position: [o.position[0] + dx, 0, o.position[2] + dz] as Vec3 }));*/
   const rotateY = (d = 0) =>
     updateSelected((o) => ({ ...o, rotation: [o.rotation[0], o.rotation[1] + d, o.rotation[2]] as Vec3 }));
+
   const scaleBy = (factor = 1) =>
     updateSelected((o) => ({ ...o, scale: Math.max(0.2, Math.min(5, o.scale * factor)) }));
+
   const placeSelectedAt = (p: Vec3) =>
     updateSelected((o) => ({ ...o, position: [p[0], 0, p[2]] as Vec3 }));
-
 
   const nudgeScreen = (sx = 0, sz = 0) => {
   const c = controlsRef.current;
