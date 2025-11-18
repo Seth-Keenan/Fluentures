@@ -108,6 +108,7 @@ export default async function OasisIndex() {
             No word lists for <strong>{selectedLanguage}</strong> yet.
           </div>
         )}
+      
     </PageBackground>
   );
 }

@@ -16,7 +16,6 @@ import {
   Html,
   ContactShadows,
   Environment,
-  Sky,
 } from "@react-three/drei";
 import { useRouter } from "next/navigation";
 import { LinkAsButton } from "../components/LinkAsButton";
@@ -429,7 +428,7 @@ export default function MapView({
         </div>
       </header>
 
-      {/* 3D Canvas card */}
+{/* ===== MAP CANVAS ===== */}
       <section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
         <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
           <div className="h-[70vh] relative">
@@ -438,20 +437,10 @@ export default function MapView({
               camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }} // slightly zoomed-in start
             >
               {/* Scene mood */}
-              <color attach="background" args={["#000000"]} />
-              <fog attach="fog" args={["#000000", 35, 120]} />
+              <color attach="background" args={["#AEE6FF"]} />     
+              <fog attach="fog" args={["#87CEFA", 30, 150]} />  
 
-              {/* Sun & environment */}
-              <Sky
-                distance={450000}
-                sunPosition={[25, 12, -20]}
-                mieCoefficient={0.01}
-                mieDirectionalG={0.9}
-                rayleigh={3}
-                turbidity={6}
-                inclination={0.49}
-                azimuth={0.25}
-              />
+
               <Environment preset="sunset" />
 
               {/* Lights */}
@@ -491,6 +480,9 @@ export default function MapView({
               {/* Controls + pan limits */}
               <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
             </Canvas>
+            {/* Gradient overlay for contrast */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-black/10 to-black/40 z-5" />
+
 
             {/* Arrow pad overlay outside map canvas */}
             <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />

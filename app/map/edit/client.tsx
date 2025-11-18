@@ -17,14 +17,9 @@ import {
   OrbitControls,
   Html,
   useGLTF,
-  Sky,
   Environment,
   ContactShadows,
 } from "@react-three/drei";
-// UNUSED: framer-motion isn't used in this file
-// import { motion, type Variants } from "framer-motion";
-// UNUSED: LinkAsButton not used here
-// import { LinkAsButton } from "../../components/LinkAsButton";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 //import CreateTestOasisButton from "./CreateOasisAndEditButton";
@@ -45,13 +40,6 @@ type Oasis3D = {
   title: string;
 };
 
-/*
-type Packet = {
-  id: string;
-  title: string;
-  createdAt: number;
-};
-*/
 
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 //const STORAGE_KEY_PACKETS = "fluentures.packets";
@@ -130,14 +118,6 @@ function DesertBackground({
   return <primitive object={clone} />;
 }
 
-/* ---------------- Helpers ---------------- */
-/*
-function makeId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `oasis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-*/
-
 /*----------------- compute defaults (kept) --------------------*/
 function computeDefaultTransforms(lists: WordListLite[]): Oasis3D[] {
   // Place oases on a ring by default
@@ -155,35 +135,6 @@ function computeDefaultTransforms(lists: WordListLite[]): Oasis3D[] {
   });
 }
 
-/* OLD MERGE helper — no longer needed with loadSaved() 
-function mergeWithSaved(wordlists: WordListLite[]): Oasis3D[] {
-  let savedById: Record<string, Oasis3D> = {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_3D);
-    if (raw) {
-      const arr = JSON.parse(raw) as Oasis3D[];
-      savedById = Object.fromEntries(arr.map((o) => [o.id, o]));
-    }
-  } catch {}
-  const defaults = computeDefaultTransforms(wordlists);
-  const merged = wordlists.map((wl) => {
-    const s = savedById[wl.id];
-    return s
-      ? {
-          id: wl.id,
-          title: wl.title,
-          position: s.position,
-          rotation: s.rotation,
-          scale: s.scale ?? 1,
-        }
-      : (defaults.find((d) => d.id === wl.id) as Oasis3D);
-  });
-  try {
-    localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(merged));
-  } catch {}
-  return merged;
-}
-*/
 
 /* safe load + debounced save */
 function loadSaved(): Record<string, Oasis3D> {
@@ -196,6 +147,7 @@ function loadSaved(): Record<string, Oasis3D> {
   }
 }
 
+
 function saveDebounced(instances: Oasis3D[]) {
   // simple rAF debounce to avoid hammering localStorage
   if (saveDebounceHandle !== null) {
@@ -206,7 +158,8 @@ function saveDebounced(instances: Oasis3D[]) {
   });
 }
 
-/* ---------------- Models & Instances ---------------- */
+
+  /* ---------------- Models & Instances ---------------- */
 function OasisModel({ scale = 1 }: { scale?: number }) {
   const gltf = useGLTF(OASIS_URL, true);
   const scene = useMemo(() => gltf.scene.clone(), [gltf.scene]);
@@ -271,9 +224,9 @@ function OasisInstance({
 
       <OasisModel scale={data.scale} />
 
-      {/* Floating label */}
+      {/* Floating oasis wordlist name */}
       <Html
-        position={[0, 1.7 * data.scale, 0]}
+        position={[0, .8 * data.scale, 0]}
         center
         style={{
           pointerEvents: "none",
@@ -290,8 +243,8 @@ function OasisInstance({
       </Html>
 
       {/* Selection ring */}
-      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <ringGeometry args={[0.95 * data.scale, 1.25 * data.scale, 48]} />
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.15, 0]}>
+        <ringGeometry args={[0.6 * data.scale, .85 * data.scale, 64]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.0} />
       </mesh>
     </group>
@@ -352,7 +305,7 @@ function ControlsWithLimits({
 }
 
 /* ---------------- ADDED: GlideControlsUI (arrow pad for screen-aligned gliding) ---------------- */
-// This is the same motion control from your map page, lifted verbatim and scoped here.
+// This is the same motion control from your map page --> might put into component later
 function GlideControlsUI({
   controlsRef,
   bounds,
@@ -450,26 +403,15 @@ function GlideControlsUI({
   );
 }
 
-/* ---------------- UI animation ---------------- */
-// ❌ UNUSED: panelIn is not used
-// const panelIn: Variants = {
-//   hidden: { opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" },
-//   show: {
-//     opacity: 1,
-//     y: 0,
-//     scale: 1,
-//     filter: "blur(0)",
-//     transition: { duration: 0.45, ease: "easeOut" },
-//   },
-// };
-
 /* ---------------- Page ---------------- */
 export default function MapEditView({
   wordlists,
+  selectedLanguage,
   deleteAction,
   createAction,
 }: {
   wordlists: WordListLite[];
+  selectedLanguage?: string | null;
   deleteAction: (formData: FormData) => Promise<void>;
   createAction?: (formData: FormData) => Promise<void>;
 }) {
@@ -478,20 +420,16 @@ export default function MapEditView({
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   // ✅ StrictMode init guard
-  const didInit = useRef(false);
+  //const didInit = useRef(false);
 
   // Same bounds used on your Map page
   const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
 
-  // ❌ OLD: Build instances from server wordlists + saved transforms
-  // useEffect(() => {
-  //   setInstances(mergeWithSaved(wordlists));
-  // }, [wordlists]);
 
   // ✅ NEW: Build instances (saved -> defaults), guarded against double-mount
   useEffect(() => {
-    if (didInit.current) return; // prevent double init in React StrictMode
-    didInit.current = true;
+    //if (didInit.current) return; // prevent double init in React StrictMode
+    //didInit.current = true;
 
     const savedById = loadSaved();
     const defaults = computeDefaultTransforms(wordlists);
@@ -506,25 +444,22 @@ export default function MapEditView({
     setInstances(merged);
   }, [wordlists]);
 
-  // ❌ OLD: Persist transforms directly every change
-  // useEffect(() => {
-  //   try {
-  //     localStorage.setItem(STORAGE_KEY_3D, JSON.stringify(instances));
-  //   } catch {}
-  // }, [instances]);
-
-  // ✅ NEW: Debounced persistence after edits
+  // persist to localStorage whenever tranformation changes
+  // come back to here to check over 
   useEffect(() => {
-    if (!didInit.current) return;
+    if (!instances.length) return;
     saveDebounced(instances);
   }, [instances]);
 
   // NEW: reconcile/prune whenever the server IDs set changes (after creates/deletes)
+  /*
   const idsKey = useMemo(
     () => JSON.stringify(wordlists.map((w) => w.id).sort()),
     [wordlists]
   ); // NEW
 
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!didInit.current) return; // only run after initial build
     const savedById = loadSaved();
@@ -536,20 +471,57 @@ export default function MapEditView({
     setInstances(merged);
     saveDebounced(merged);
   }, [idsKey]); // NEW
+  */
 
   // Mutators for selected
   const updateSelected = (fn: (o: Oasis3D) => Oasis3D) => {
     if (!selectedId) return;
     setInstances((prev) => prev.map((o) => (o.id === selectedId ? fn(o) : o)));
   };
+
+/*
   const nudge = (dx = 0, dz = 0) =>
-    updateSelected((o) => ({ ...o, position: [o.position[0] + dx, 0, o.position[2] + dz] as Vec3 }));
+    updateSelected((o) => ({ ...o, position: [o.position[0] + dx, 0, o.position[2] + dz] as Vec3 }));*/
   const rotateY = (d = 0) =>
     updateSelected((o) => ({ ...o, rotation: [o.rotation[0], o.rotation[1] + d, o.rotation[2]] as Vec3 }));
+
   const scaleBy = (factor = 1) =>
     updateSelected((o) => ({ ...o, scale: Math.max(0.2, Math.min(5, o.scale * factor)) }));
+
   const placeSelectedAt = (p: Vec3) =>
     updateSelected((o) => ({ ...o, position: [p[0], 0, p[2]] as Vec3 }));
+
+  const nudgeScreen = (sx = 0, sz = 0) => {
+  const c = controlsRef.current;
+  if (!c || !selectedId) return;
+
+  const cam = c.object as THREE.PerspectiveCamera;
+
+  // Build camera-aligned basis
+  const forward = new THREE.Vector3();
+  cam.getWorldDirection(forward);
+  forward.y = 0;
+  forward.normalize();
+
+  const right = new THREE.Vector3()
+    .copy(forward)
+    .cross(new THREE.Vector3(0, 1, 0))
+    .normalize();
+
+  // Convert screen directions to world delta
+  const delta = new THREE.Vector3()
+    .addScaledVector(right, sx * 0.5)
+    .addScaledVector(forward, -sz * 0.5);
+
+  updateSelected((o) => ({
+    ...o,
+    position: [
+      o.position[0] + delta.x,
+      0,
+      o.position[2] + delta.z,
+    ] as Vec3,
+  }));
+};
 
   // Delete in DB
   const handleDeleteSelected = async () => {
@@ -581,128 +553,110 @@ export default function MapEditView({
     await createAction(fd); // server redirects to /oasis/[id]/edit
   };
 
+
   return (
-    <div className="w-full h-full">
-      {/* ===== TOOLBAR (removed card/container wrapper) ===== */}
-      {/* (was wrapped in centered card; now it's just a simple bar) */}
-      <div className="p-3 flex flex-wrap items-center gap-2">
-        {selectedId ? (
-          <>
-            <span className="text-sm">
-              Selected: <code>{instances.find((i) => i.id === selectedId)?.title}</code>
-            </span>
+  <div className="flex flex-col gap-4 w-full">
+    
+    {/* ===== TOOLBAR ===== */}
+    <div className="p-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-lg shadow-black/20">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-3">
+          <h1 className="text-white text-xl font-semibold">Edit Map</h1>
+          <span className="inline-flex items-center rounded-md border px-3 py-1.5 text-xs text-white/85 bg-white/10 ring-1 ring-white/20">
+            <span className="mr-1 opacity-70">Language:</span>
+            <strong>{selectedLanguage ?? "All"}</strong>
+          </span>
+        </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-sm text-gray-600 mr-1">Move</span>
-              <button className="px-2 py-1 rounded border" onClick={() => nudge(-0.5, 0)} title="Left">
-                ←
-              </button>
-              <button className="px-2 py-1 rounded border" onClick={() => nudge(0.5, 0)} title="Right">
-                →
-              </button>
-              <button className="px-2 py-1 rounded border" onClick={() => nudge(0, 0.5)} title="Forward (−Z)">
-                ↑
-              </button>
-              <button className="px-2 py-1 rounded border" onClick={() => nudge(0, -0.5)} title="Backward (+Z)">
-                ↓
-              </button>
-            </div>
+        <a
+          href="/map"
+          className="rounded-lg px-4 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 transition"
+        >
+          Back
+        </a>
+      </div>
 
-            <div className="flex items-center gap-1 ml-3">
-              <span className="text-sm text-gray-600 mr-1">Rotate</span>
-              <button
-                className="px-2 py-1 rounded border"
-                onClick={() => rotateY((15 * Math.PI) / 180)}
-                title="+15°"
-              >
-                ⟳
-              </button>
-              <button
-                className="px-2 py-1 rounded border"
-                onClick={() => rotateY((-15 * Math.PI) / 180)}
-                title="-15°"
-              >
-                ⟲
-              </button>
-            </div>
+      {selectedId ? (
+        <>
+          <span className="text-sm text-gray-100">
+            Selected: <code>{instances.find((i) => i.id === selectedId)?.title}</code>
+          </span>
 
-            <div className="flex items-center gap-1 ml-3">
-              <span className="text-sm text-gray-600 mr-1">Scale</span>
-              <button className="px-2 py-1 rounded border" onClick={() => scaleBy(1.1)} title="Bigger">
-                +
-              </button>
-              <button className="px-2 py-1 rounded border" onClick={() => scaleBy(1 / 1.1)} title="Smaller">
-                −
-              </button>
-            </div>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-gray-300 mr-1">Move</span>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => nudgeScreen(-0.5, 0)}>←</button>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => nudgeScreen(0.5, 0)}>→</button>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => nudgeScreen(0, 0.5)}>↓</button>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => nudgeScreen(0, -0.5)}>↑</button>
+          </div>
 
-            <div className="ml-auto flex items-center gap-2">
-              {createAction && (
-                <button
-                  onClick={handleCreate}
-                  className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                  title="Create a new WordList and Oasis"
-                >
-                  ➕ Create New Oasis (DB)
-                </button>
-              )}
-              <button
-                onClick={handleDeleteSelected}
-                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50"
-                disabled={!selectedId}
-                title="Delete this WordList in DB"
-              >
-                Delete Selected (DB)
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="flex w-full items-center justify-between">
-            <div className="text-sm text-gray-300">
-              Tip: Select an oasis, then click the sand to reposition. Use the controls to move/rotate/scale.
-            </div>
+          <div className="flex items-center gap-1 ml-3">
+            <span className="text-sm text-gray-300 mr-1">Rotate</span>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => rotateY((15 * Math.PI) / 180)}>⟳</button>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => rotateY((-15 * Math.PI) / 180)}>⟲</button>
+          </div>
+
+          <div className="flex items-center gap-1 ml-3">
+            <span className="text-sm text-gray-300 mr-1">Scale</span>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => scaleBy(1.1)}>+</button>
+            <button className="px-2 py-1 rounded border border-white/20 bg-white/20 text-white" onClick={() => scaleBy(1/1.1)}>−</button>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
             {createAction && (
               <button
                 onClick={handleCreate}
-                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                title="Create a new WordList and Oasis"
+                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200"
               >
                 ➕ Create New Oasis (DB)
               </button>
             )}
+            <button
+              onClick={handleDeleteSelected}
+              className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200"
+              disabled={!selectedId}
+            >
+              Delete Selected (DB)
+            </button>
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <div className="flex w-full items-center justify-between">
+          <div className="text-sm text-gray-300">
+            Tip: Select an oasis, then click the sand to reposition. Use the controls to move/rotate/scale.
+          </div>
+          {createAction && (
+            <button
+              onClick={handleCreate}
+              className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200"
+            >
+              ➕ Create New Oasis (DB)
+            </button>
+          )}
+        </div>
+      )}
+    </div>
 
-      {/* ===== MAP CANVAS (removed outer card/wrapper divs) ===== */}
-      {/* ADDED: 'relative' so the arrow pad can absolutely position over the canvas */}
-      <div className="h-[70vh] relative">
-        <Canvas shadows camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }}>
-          {/* Scene mood */}
-          <color attach="background" args={["#000000"]} />
-          <fog attach="fog" args={["#000000", 35, 120]} />
+{/* ===== MAP CANVAS ===== */}
 
-          {/* Sun & environment */}
-          <Sky
-            distance={450000}
-            sunPosition={[25, 12, -20]}
-            mieCoefficient={0.01}
-            mieDirectionalG={0.9}
-            rayleigh={3}
-            turbidity={6}
-            inclination={0.49}
-            azimuth={0.25}
-          />
-          <Environment preset="sunset" />
+<section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
+  <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
+    <div className="h-[70vh] relative">
+      <Canvas shadows camera={{ position: [9, 7, 9], fov: 46 }}>
 
-          {/* Lights */}
-          <ambientLight intensity={0.35} />
-          <directionalLight position={[10, 12, 6]} intensity={1.2} castShadow />
-          <directionalLight position={[-10, 6, -6]} intensity={0.25} />
+      <color attach="background" args={["#87CEEB"]} />
+      <fog attach="fog" args={["#87CEFA", 30, 150]} />  
 
-          {/* Desert (anchored edge) */}
-          <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
-            <DesertBackground
+
+        <Environment preset="sunset" />
+
+
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[10, 12, 6]} intensity={1.2} castShadow />
+        <directionalLight position={[-10, 6, -6]} intensity={0.25} />
+
+        <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
+              <DesertBackground
               rotation={[0, Math.PI / 4, 0]}
               scale={1}
               targetWidth={60}
@@ -711,30 +665,37 @@ export default function MapEditView({
               targetX={-30}
               targetZ={-30}
             />
-          </Suspense>
+        </Suspense>
 
-          {/* Click ground to move the currently selected oasis */}
-          <Ground onPlace={placeSelectedAt} />
+        <Ground onPlace={placeSelectedAt} />
 
-          {/* Oases */}
-          <Suspense fallback={<Html center style={{ color: "white" }}>Loading oases…</Html>}>
-            {instances.map((o) => (
-              <OasisInstance key={o.id} data={o} isSelected={o.id === selectedId} onSelect={setSelectedId} />
-            ))}
-          </Suspense>
+        <Suspense fallback={<Html center style={{ color: "white" }}>Loading oases…</Html>}>
+          {instances.map((o) => (
+            <OasisInstance
+              key={o.id}
+              data={o}
+              isSelected={o.id === selectedId}
+              onSelect={setSelectedId}
+            />
+          ))}
+        </Suspense>
 
-          {/* Soft contact shadows */}
-          <ContactShadows position={[0, 0, 0]} scale={50} blur={2.4} opacity={0.5} far={15} />
+        <ContactShadows scale={50} blur={2.4} opacity={0.5} far={15} />
 
-          {/* Controls + pan limits */}
-          <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
-        </Canvas>
+        <ControlsWithLimits controlsRef={controlsRef} bounds={bounds} />
+      </Canvas>
+      
+      {/* Gradient overlay for contrast */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-black/6 to-black/40 z-5" />
 
-        {/* ADDED: Arrow pad overlay (same as Map page) */}
-        <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
-      </div>
+      <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
     </div>
-  );
+  </div>
+</section>
+
+</div>
+);
+
 }
 
 useGLTF.preload(DESERT_URL);

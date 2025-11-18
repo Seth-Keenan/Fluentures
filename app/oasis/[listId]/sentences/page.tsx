@@ -130,7 +130,6 @@ export default function SentencesPage() {
         alt={desert.name}
         wikiUrl={desert.wikiUrl}
         >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55" />
 
         {!prefersReducedMotion && (
           <>
@@ -247,10 +246,9 @@ export default function SentencesPage() {
           backgroundSize: "160px 160px",
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/55" />
-
+      
       {/* Content shell */}
-      <div className="relative z-10 mx-auto w-[min(92vw,68rem)] p-4 pb-8">
+      <div className="relative z-10 pt-24 mx-auto w-[min(92vw,68rem)] p-4 pb-8">
         {/* Top bar */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="text-white/80 text-sm">

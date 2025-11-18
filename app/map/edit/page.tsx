@@ -100,27 +100,12 @@ export default async function MapEditPage() {
             backgroundSize: "160px 160px",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/55" />
         
         {/* Content */}
         <div className="relative z-10 w-full max-w-6xl flex flex-col gap-5">
-        <header className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-white drop-shadow">Edit Map</h1>
-          <span className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-xs text-white bg-white/10 backdrop-blur-sm">
-            <span className="mr-1 opacity-70">Language:</span>
-            <strong>{selectedLanguage ?? "All"}</strong>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <LinkAsButton href="/map" className="ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30">
-            Back
-          </LinkAsButton>
-        </div>
-      </header>
+
 
         {/* 3D editor */}
-        <section className="rounded-2xl border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
           <div className="h-[70vh]">
             <MapEditView
               wordlists={wordlists}
@@ -128,7 +113,6 @@ export default async function MapEditPage() {
               createAction={createListAction}
             />
           </div>
-        </section>
         </div>
       </div>
     </PageBackground>

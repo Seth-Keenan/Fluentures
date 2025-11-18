@@ -124,9 +124,17 @@ export default function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="fixed top-0 left-0 w-full z-50">
       {/* Green gradient bar */}
-      <div className="w-full h-20 bg-gradient-to-b from-emerald-900 via-emerald-800 to-emerald-900 shadow-lg shadow-black/20">
+      <div className="
+    w-full h-20
+    backdrop-blur-xl
+    bg-gradient-to-b from-white/20 via-white/10 to-white/5
+    border-b border-white/20
+    shadow-[0_0_40px_rgba(255,255,255,0.05)]
+    text-white
+    transition-all duration-300
+  ">
         <nav className="relative mx-auto flex h-full max-w-7xl items-center px-4">
           {/* Left: Logo */}
           {Logo}

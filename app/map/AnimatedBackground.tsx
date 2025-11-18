@@ -16,8 +16,6 @@ export default function AnimatedBackground({ children, name = "Namib Desert" }: 
   return (
     <PageBackground src={desert.src} alt={desert.name} wikiUrl={desert.wikiUrl}>
       {/* extra gradient layer */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/50 pointer-events-none" />
-
       {/* glow blobs */}
       <motion.div
         aria-hidden
