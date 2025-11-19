@@ -16,6 +16,8 @@ import {
 } from "@/app/lib/actions/wordlistAction";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
+import { getAiWordlistHelp } from "@/app/lib/actions/aiWordlistRecommendations";
+import type { AiSuggestion } from "@/app/types/aiWordlistRecommendations";
 
 /** Hard caps */
 const MAX_ITEMS = 20;
@@ -46,6 +48,12 @@ export default function EditOasisPage() {
   // delete confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<string | null>(null);
+
+  // AI suggestion states
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+
 
   // dirty flag (compare to last saved snapshot)
   const isDirty = useMemo(
@@ -174,6 +182,53 @@ export default function EditOasisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving, items]);
 
+  const handleAiHelp = async () => {
+    if (!meta?.language) {
+      setAiError("Set a target language first so AI knows what to use.");
+      return;
+    }
+
+    setAiError(null);
+    setAiLoading(true);
+
+    const res = await getAiWordlistHelp({
+      language: meta.language,
+      items,
+    });
+
+    setAiLoading(false);
+
+    if (!res.ok) {
+      setAiError(res.error || "Failed to get AI suggestions");
+      return;
+    }
+
+    const { suggestions, corrections } = res.data;
+
+    // Fix current words/definitons
+    if (corrections.length > 0) {
+      setItems((prev) =>
+        prev.map((item) => {
+          const match = corrections.find(
+            (c) =>
+              c.originalTarget.trim().toLowerCase() ===
+              (item.target ?? "").trim().toLowerCase()
+          );
+          if (!match) return item;
+
+          return {
+            ...item,
+            target: match.correctedTarget || item.target,
+            english: match.english || item.english,
+          };
+        })
+      );
+      setLastMessage("AI fixed some entries that looked incorrect, and suggested more words based on your current oasis!");
+    }
+
+    setAiSuggestions(suggestions);
+  };
+
   if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
 
   return (
@@ -268,6 +323,13 @@ export default function EditOasisPage() {
                   + Add Entry
                 </Button>
                 <Button
+                  onClick={handleAiHelp}
+                  disabled={aiLoading}
+                  className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
+                >
+                  {aiLoading ? "Asking AI..." : "AI: Suggest & Fix"}
+                </Button>
+                <Button
                   onClick={save}
                   disabled={saving}
                   className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30 disabled:opacity-60"
@@ -278,6 +340,8 @@ export default function EditOasisPage() {
             </div>
             {lastMessage ? (
               <div className="mt-3 text-sm text-white/90">{lastMessage}</div>
+            ) : aiError ? (
+              <div className="mt-3 text-sm text-rose-200">{aiError}</div>
             ) : null}
           </motion.div>
 
@@ -469,6 +533,79 @@ export default function EditOasisPage() {
                 })}
             </div>
           </motion.div>
+
+          {/* AI Suggestions table */}
+          {aiSuggestions.length > 0 && (
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
+            >
+              <h2 className="mb-2 text-lg font-semibold text-white/95">
+                AI suggested words
+              </h2>
+              <p className="mb-3 text-xs text-white/75">
+                Click “Add” to insert a word into your list (up to {MAX_ITEMS} total).
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {aiSuggestions.map((s, idx) => {
+              const handleAdd = () => {
+                if (items.length >= MAX_ITEMS) {
+                  alert(`You already have ${MAX_ITEMS} items in this list.`);
+                  return;
+                }
+
+                const id =
+                  typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+                setItems((prev) => [
+                  ...prev,
+                  {
+                    id,
+                    target: s.target,
+                    english: s.english,
+                    notes: s.notes ?? "",
+                  },
+                ]);
+
+                setAiSuggestions((prev) => prev.filter((_, i) => i !== idx));
+              };
+
+              return (
+                <div
+                  key={`${s.target}-${idx}`}
+                  className="rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white/90"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">{s.target}</div>
+                      <div className="text-xs text-white/80">{s.english}</div>
+                    </div>
+                    <Button
+                      onClick={handleAdd}
+                      className="px-3 py-1 text-xs ring-1 ring-white/30 bg-white/20 hover:bg-white/30"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {s.notes && (
+                    <p className="mt-1 text-[11px] text-white/70">{s.notes}</p>
+                  )}
+                  {s.reason && (
+                    <p className="mt-1 text-[10px] text-white/60">
+                      Why: {s.reason}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+
+              </div>
+            </motion.section>
+          )}
 
           {/* Footer tip */}
           <p className="mt-4 text-center text-xs text-white/80">
