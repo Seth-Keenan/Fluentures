@@ -659,13 +659,34 @@ export default function CommunityPage() {
               animate="show"
               className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5"
             >
-              {/* Left column */}
-              <motion.div variants={item} className="lg:col-span-2">
+              {/* Right column – Filters (TOP on mobile) */}
+              <motion.div
+                variants={item}
+                className="space-y-5 order-1 lg:order-2"
+              >
+                <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 lg:sticky lg:top-24">
+                  <Filters
+                    filter={filter}
+                    setFilter={setFilter}
+                    tagFilter={tagFilter}
+                    setTagFilter={setTagFilter}
+                    allTags={allTags}
+                    query={query}
+                    setQuery={setQuery}
+                    visibilityView={visibilityView}
+                    setVisibilityView={setVisibilityView}
+                  />
+                </div>
+              </motion.div>
 
+              {/* Left column – Composer + Posts (BELOW on mobile) */}
+              <motion.div
+                variants={item}
+                className="lg:col-span-2 order-2 lg:order-1"
+              >
                 {/* Composer */}
                 <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl p-5">
                   <div className="flex items-start gap-3">
-
                     <div
                       className="h-10 w-10 rounded-full ring-2 ring-white/60 shrink-0"
                       style={{ background: avatarGradient("me") }}
@@ -699,7 +720,12 @@ export default function CommunityPage() {
                 </div>
 
                 {/* Posts feed */}
-                <motion.div className="mt-4 space-y-3" variants={container} initial="hidden" animate="show">
+                <motion.div
+                  className="mt-4 space-y-3"
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                >
                   {filteredPosts.length ? (
                     filteredPosts.map((p) => (
                       <PostCard
@@ -713,31 +739,18 @@ export default function CommunityPage() {
                       />
                     ))
                   ) : (
-                    <motion.div variants={item} className="text-center p-6 bg-white/10 text-white rounded-xl">
+                    <motion.div
+                      variants={item}
+                      className="text-center p-6 bg-white/10 text-white rounded-xl"
+                    >
                       No posts yet. Share something!
                     </motion.div>
                   )}
                 </motion.div>
               </motion.div>
-
-              {/* Right column – Filters */}
-              <motion.div variants={item} className="space-y-5">
-                <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 sticky top-24">
-                  <Filters
-                    filter={filter}
-                    setFilter={setFilter}
-                    tagFilter={tagFilter}
-                    setTagFilter={setTagFilter}
-                    allTags={allTags}
-                    query={query}
-                    setQuery={setQuery}
-                    visibilityView={visibilityView}
-                    setVisibilityView={setVisibilityView}
-                  />
-                </div>
-              </motion.div>
             </motion.div>
           )}
+
 
           {/* FRIENDS TAB */}
           {view === "friends" && (
