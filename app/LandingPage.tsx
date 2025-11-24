@@ -242,22 +242,26 @@ export default function LandingEngaging() {
           transition={{ duration: 0.45 }}
         >
           <motion.div style={{ y: heroY, opacity: heroOpacity }} className="text-center">
-            <motion.h1
-              className="text-white text-3xl sm:text-5xl font-semibold leading-tight"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.45 }}
-            >
-              Fluentures makes language learning
-              <span className="relative whitespace-nowrap">
-                <span className="mx-2 px-2 rounded-lg bg-indigo-500/80">consistent</span>
-              </span>
-              and
-              <span className="relative whitespace-nowrap">
-                <span className="mx-2 px-2 rounded-lg bg-amber-400/80">fun</span>
-              </span>
-              !
-            </motion.h1>
+          <motion.h1
+          className="text-white text-3xl xs:text-4xl sm:text-5xl font-semibold leading-tight"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.45 }}
+        >
+          Fluentures makes language learning
+          <br className="block sm:hidden" /> {/* force wrap on phones */}
+          <span className="relative inline-block sm:inline">
+            <span className="mx-1 sm:mx-2 px-1 sm:px-2 rounded-lg bg-indigo-500/80">
+              consistent
+            </span>
+          </span>{" "}
+          and{" "}
+          <span className="relative inline-block sm:inline">
+            <span className="mx-1 sm:mx-2 px-1 sm:px-2 rounded-lg bg-amber-400/80">
+              fun
+            </span>
+          </span>
+        </motion.h1>
             <motion.p
               className="mt-4 text-white/85 text-base sm:text-lg"
               initial={{ opacity: 0, y: 10 }}
