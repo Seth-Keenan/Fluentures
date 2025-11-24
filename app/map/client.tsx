@@ -1,4 +1,3 @@
-// app/map/page.tsx
 "use client";
 
 import React, {
@@ -48,6 +47,92 @@ const STORAGE_KEY_3D = "fluentures.oases.3d";
 // GLB model URLs
 const OASIS_URL = "/blenderModels/oasis2.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
+
+/* ---------------- Mobile List View Component ---------------- */
+function MobileListView({
+  wordlists,
+  router,
+}: {
+  wordlists: WordListLite[];
+  router: ReturnType<typeof useRouter>;
+}) {
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Header */}
+      <header className="relative z-10 w-full">
+        <div className="mx-auto mt-6 flex w-[min(95vw,72rem)] flex-col gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <h1 className="text-white text-2xl sm:text-3xl font-semibold">
+              Your Oases
+            </h1>
+            <p className="text-white/85 text-sm">
+              Tap an oasis to explore it
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <LinkAsButton
+              href="/map/edit"
+              className="rounded-lg px-4 py-2 bg-white/90 !text-gray-900 hover:bg-white shadow-lg shadow-black/20 ring-1 ring-white/30 transition"
+            >
+              Edit Map
+            </LinkAsButton>
+            <LinkAsButton
+              href="/home"
+              className="rounded-lg px-4 py-2 bg-white/10 text-white hover:bg-white/20 ring-1 ring-white/30 transition"
+            >
+              Back
+            </LinkAsButton>
+          </div>
+        </div>
+      </header>
+
+      {/* List of Oases */}
+      <section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
+        <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl p-4">
+          {wordlists.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-white/70 text-lg">No oases yet</p>
+              <p className="text-white/50 text-sm mt-2">
+                Create your first oasis to get started
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {wordlists.map((wl) => (
+                <button
+                  key={wl.id}
+                  onClick={() => router.push(`/oasis/${wl.id}`)}
+                  className="flex flex-col items-start rounded-xl border border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 hover:border-white/30 active:scale-[0.98]"
+                >
+                  <h3 className="text-white font-semibold text-lg">
+                    {wl.title}
+                  </h3>
+                  {wl.language && (
+                    <p className="text-white/60 text-sm mt-1">
+                      Language: {wl.language}
+                    </p>
+                  )}
+                  <div className="mt-3 text-white/80 text-sm flex items-center gap-1">
+                    <span>Open</span>
+                    <span>→</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Hint */}
+      <div className="relative z-10 mx-auto mb-8 w-[min(95vw,72rem)]">
+        <p className="text-center text-xs text-white/70">
+          💡 The 3D map view is available on desktop devices
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 /* ---------------- Edge-anchorable Desert background (StrictMode-safe) ---------------- */
 function DesertBackground({
@@ -221,7 +306,7 @@ function ControlsWithLimits({
   bounds,
 }: {
   controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
-  bounds: { minX: number; maxX: number; maxZ: number; minZ: number };
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 }) {
   return (
     <>
@@ -230,7 +315,7 @@ function ControlsWithLimits({
         makeDefault
         enableDamping
         dampingFactor={0.08}
-        enableRotate={false} // “glide” feel — no free orbit
+        enableRotate={false} // "glide" feel — no free orbit
         enablePan
         enableZoom
         minDistance={6}
@@ -344,64 +429,20 @@ function GlideControlsUI({
   );
 }
 
-/* ---------------- Page ---------------- */
-// current -> camera position is set in <Canvas camera={position:[9,7,9], fov:46}>.
-export default function MapView({
-  wordlists,
-  // selectedLanguage,
+/* ---------------- Desktop 3D Map View ---------------- */
+function DesktopMapView({
+  instances,
+  router,
+  controlsRef,
+  bounds,
 }: {
-  wordlists: WordListLite[];
-  selectedLanguage: string | null;
+  instances: Oasis3D[];
+  router: ReturnType<typeof useRouter>;
+  controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 }) {
-// -----------------------------------------
-  const router = useRouter();
-  const [instances, setInstances] = useState<Oasis3D[]>([]);
-  const controlsRef = useRef<OrbitControlsImpl | null>(null);
-
-  // Travel limits (match your anchored desert area; NEED to adjust because this isn't working how I thought it would
-  //Idea: bound using click limits left right up down. have zoom restrictions to keep user from exploring outside sand area
-  const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
-
-  // -----------------------------------------
-  // CHANGED: merge Supabase wordlists with any saved localStorage layout.
-  //          If nothing saved, place them on a simple grid by default.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_3D);
-      const saved: Oasis3D[] = raw ? JSON.parse(raw) : [];
-      const savedById = new Map(saved.map((s) => [s.id, s]));
-
-      const merged: Oasis3D[] = wordlists.map((wl, i) => {
-        const found = savedById.get(wl.id);
-        return (
-          found ?? {
-            id: wl.id,
-            title: wl.title,
-            position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3, // grid default
-            rotation: [0, 0, 0],
-            scale: 1,
-          }
-        );
-      });
-
-      setInstances(merged);
-    } catch (e) {
-      console.warn("Failed to merge oases from storage", e);
-      setInstances(
-        wordlists.map((wl, i) => ({
-          id: wl.id,
-          title: wl.title,
-          position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3,
-          rotation: [0, 0, 0],
-          scale: 1,
-        }))
-      );
-    }
-  }, [wordlists]);
-
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-
       {/* Header / actions */}
       <header className="relative z-10 w-full">
         <div className="mx-auto mt-6 flex w-[min(95vw,72rem)] items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl sm:px-6">
@@ -428,18 +469,17 @@ export default function MapView({
         </div>
       </header>
 
-{/* ===== MAP CANVAS ===== */}
+      {/* ===== MAP CANVAS ===== */}
       <section className="relative z-10 mx-auto my-6 w-[min(95vw,72rem)]">
         <div className="rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
           <div className="h-[70vh] relative">
             <Canvas
               shadows
-              camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }} // slightly zoomed-in start
+              camera={{ position: [9, 7, 9], fov: 46, near: 0.1, far: 200 }}
             >
               {/* Scene mood */}
               <color attach="background" args={["#AEE6FF"]} />     
               <fog attach="fog" args={["#87CEFA", 30, 150]} />  
-
 
               <Environment preset="sunset" />
 
@@ -457,7 +497,7 @@ export default function MapView({
               {/* GLB background with an edge facing out */}
               <Suspense fallback={<Html center style={{ color: "white" }}>Loading sand…</Html>}>
                 <DesertBackground
-                  rotation={[0, Math.PI / 4, 0]} // rotate so edge (not corner) faces the viewer
+                  rotation={[0, Math.PI / 4, 0]}
                   scale={1}
                   targetWidth={60}
                   anchorX="min"
@@ -482,7 +522,6 @@ export default function MapView({
             </Canvas>
             {/* Gradient overlay for contrast */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-black/10 to-black/40 z-5" />
-
 
             {/* Arrow pad overlay outside map canvas */}
             <GlideControlsUI controlsRef={controlsRef} bounds={bounds} />
@@ -523,6 +562,87 @@ export default function MapView({
         }
       `}</style>
     </div>
+  );
+}
+
+/* ---------------- Main Page Component with Mobile Detection ---------------- */
+export default function MapView({
+  wordlists,
+}: {
+  wordlists: WordListLite[];
+  selectedLanguage: string | null;
+}) {
+  const router = useRouter();
+  const [instances, setInstances] = useState<Oasis3D[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+
+  // Travel limits
+  const bounds = { minX: -30, maxX: 30, minZ: -50, maxZ: 25 };
+
+  // Track when component mounts
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Merge Supabase wordlists with any saved localStorage layout
+  useEffect(() => {
+    // Only load 3D data on desktop
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return;
+    
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_3D);
+      const saved: Oasis3D[] = raw ? JSON.parse(raw) : [];
+      const savedById = new Map(saved.map((s) => [s.id, s]));
+
+      const merged: Oasis3D[] = wordlists.map((wl, i) => {
+        const found = savedById.get(wl.id);
+        return (
+          found ?? {
+            id: wl.id,
+            title: wl.title,
+            position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3,
+            rotation: [0, 0, 0],
+            scale: 1,
+          }
+        );
+      });
+
+      setInstances(merged);
+    } catch (e) {
+      console.warn("Failed to merge oases from storage", e);
+      setInstances(
+        wordlists.map((wl, i) => ({
+          id: wl.id,
+          title: wl.title,
+          position: [ (i % 5) * 6 - 12, 0, Math.floor(i / 5) * -6 ] as Vec3,
+          rotation: [0, 0, 0],
+          scale: 1,
+        }))
+      );
+    }
+  }, [wordlists]);
+
+  // Don't render until mounted (prevents hydration mismatch)
+  if (!isMounted) {
+    return null;
+  }
+
+  // Check if mobile - must be done after mount
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Render mobile list view or desktop 3D map
+  if (isMobile) {
+    return <MobileListView wordlists={wordlists} router={router} />;
+  }
+
+  return (
+    <DesktopMapView
+      instances={instances}
+      router={router}
+      controlsRef={controlsRef}
+      bounds={bounds}
+    />
   );
 }
 
