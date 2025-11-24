@@ -529,7 +529,6 @@ function GlideControlsUI({
 
 /* ---------------- Desktop 3D Edit View ---------------- */
 function DesktopMapEditView({
-  wordlists,
   selectedLanguage,
   deleteAction,
   createAction,
