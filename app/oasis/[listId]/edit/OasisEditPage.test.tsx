@@ -83,7 +83,7 @@ vi.mock("@/app/components/Button", () => ({
       onClick={onClick}
       disabled={disabled}
       className={className}
-      data-testid={`button-${typeof children === 'string' ? children.toLowerCase().replace(/\s+/g, "-") : "unknown"}`}
+      data-testid={`button-${typeof children === 'string' ? children.toLowerCase().replaceAll(/\s+/g, "-") : "unknown"}`}
       {...props}
     >
       {children}
