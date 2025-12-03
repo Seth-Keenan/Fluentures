@@ -101,53 +101,83 @@ export default function LogbookPage() {
     if (error) return [<div key="error">{error}</div>];
 
     const homePage = (
-      <>
-        {/* LEFT PAGE */}
-        <div className="pr-8 md:pr-10">
-          <h2 className="text-amber-900/90 text-2xl font-semibold">Recently learned</h2>
-          <RecentList items={DATA.recent} />
-          <div className="mt-6 h-px w-full bg-amber-900/20" />
-          <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">My stats</h3>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              label="Experience"
-              value={`${DATA.xp.toLocaleString()} XP`}
-              icon={<FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-indigo-600" />}
-              hint={`Level ${level}`}
-              footer={<ProgressBar value={into} max={toNext} />}
-            />
-            <StatCard
-              label="Time Spent"
-              value={`${Math.floor(DATA.minutes / 60)}h ${DATA.minutes % 60}m`}
-              icon={<FontAwesomeIcon icon={faClock} className="h-5 w-5 text-indigo-600" />}
-              hint={`${DATA.minutes} minutes total`}
-            />
-            <StatCard
-              label="Words Saved"
-              value={DATA.wordsSaved}
-              icon={<FontAwesomeIcon icon={faBookmark} className="h-5 w-5 text-indigo-600" />}
-              hint="Keep collecting vocabulary!"
-            />
-            <StatCard
-              label="Lists Made"
-              value={DATA.listsMade}
-              icon={<FontAwesomeIcon icon={faListUl} className="h-5 w-5 text-indigo-600" />}
-              hint="Organize your learning"
-            />
-          </div>
-        </div>
+  <div className="grid grid-cols-2 gap-50 h-full">
 
-        {/* RIGHT PAGE */}
-        <div className="md:pl-12 lg:pl-14 border-t md:border-t-0 md:border-l border-amber-900/20">
-          <Leaderboard names={DATA.leaderboard} />
-          <div className="mt-6">
-            <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
-              Add Friends
-            </button>
-          </div>
-        </div>
-      </>
-    );
+    {/* left page*/}
+    <div className="pr-8">
+
+      <h2 className="text-amber-900/90 text-2xl font-semibold">
+        Recently learned
+      </h2>
+
+      <RecentList items={DATA.recent} />
+
+      <div className="mt-6 h-px w-full bg-amber-900/20" />
+
+      <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">
+        My stats
+      </h3>
+
+      <div className="mt-3 space-y-4">
+        <StatCard
+          label="Experience"
+          value={`${DATA.xp.toLocaleString()} XP`}
+          icon={<FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-indigo-600" />}
+          hint={`Level ${level}`}
+          footer={<ProgressBar value={into} max={toNext} />}
+        />
+
+        <StatCard
+          label="Words Saved"
+          value={DATA.wordsSaved}
+          icon={<FontAwesomeIcon icon={faBookmark} className="h-5 w-5 text-indigo-600" />}
+          hint="Keep collecting vocabulary!"
+        />
+      </div>
+    </div>
+
+    {/* right page 
+    took out border-l border-amber-900/20
+    */}
+    <div className="pl-8">
+
+      <h2 className="text-amber-900/90 text-2xl font-semibold">
+        Leaderboard
+      </h2>
+
+      <div className="mt-6">
+        <Leaderboard names={DATA.leaderboard} />
+      </div>
+
+      <div className="mt-6 h-px w-full bg-amber-900/20" />
+
+
+      <div className="mt-15 space-y-4">
+        <StatCard
+          label="Time Spent"
+          value={`${Math.floor(DATA.minutes / 60)}h ${DATA.minutes % 60}m`}
+          icon={<FontAwesomeIcon icon={faClock} className="h-5 w-5 text-indigo-600" />}
+          hint={`${DATA.minutes} minutes total`}
+        />
+
+        <StatCard
+          label="Lists Made"
+          value={DATA.listsMade}
+          icon={<FontAwesomeIcon icon={faListUl} className="h-5 w-5 text-indigo-600" />}
+          hint="Organize your learning"
+        />
+      </div>
+
+      <div className="mt-6">
+        <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
+          Socials
+        </button>
+      </div>
+    </div>
+
+  </div>
+);
+
 
     const favoritePages = favChunks.length === 0
         ? [
