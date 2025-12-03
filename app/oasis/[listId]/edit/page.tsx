@@ -366,12 +366,12 @@ export default function EditOasisPage() {
             </div>
           </motion.section>
 
-          {/* Table card */}
+          {/* Table card - Desktop view (hidden on mobile) */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.05 }}
-            className="relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-0 shadow-2xl backdrop-blur-xl"
+            className="relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-0 shadow-2xl backdrop-blur-xl hidden md:block"
           >
             {/* Shine on hover */}
             <div
@@ -405,7 +405,7 @@ export default function EditOasisPage() {
 
               {!loading && items.length === 0 && (
                 <div className="p-4 text-sm text-white/80">
-                  No entries yet. Click <span className="font-semibold">“+ Add Entry”</span>.
+                  No entries yet. Click <span className="font-semibold">+ Add Entry</span>.
                 </div>
               )}
 
@@ -533,6 +533,160 @@ export default function EditOasisPage() {
                 })}
             </div>
           </motion.div>
+
+          {/* Mobile Card view (visible only on mobile) */}
+          <div className="block md:hidden">
+            {loading && (
+              <div className="space-y-3">
+                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
+                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
+                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
+              </div>
+            )}
+
+            {!loading && items.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl text-center"
+              >
+                <p className="text-sm text-white/80">
+                  No entries yet. Click <span className="font-semibold">+ Add Entry</span>.
+                </p>
+              </motion.div>
+            )}
+
+            {!loading &&
+              items.map((item) => {
+                const targetLen = item.target?.length ?? 0;
+                const englishLen = item.english?.length ?? 0;
+                const notesLen = item.notes?.length ?? 0;
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-3 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
+                  >
+                    {/* Target Language */}
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs font-semibold text-white/90">
+                        {meta?.language ?? "Target Language"}
+                      </label>
+                      <input
+                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                        placeholder={
+                          meta?.language === "Japanese"
+                            ? "こんにちは"
+                            : meta?.language === "Spanish"
+                            ? "hola"
+                            : meta?.name ?? "Hej"
+                        }
+                        value={item.target}
+                        maxLength={TARGET_MAX}
+                        onChange={(e) => updateField(item.id, "target", e.target.value)}
+                        aria-describedby={`mobile-target-help-${item.id}`}
+                      />
+                      <div className="mt-1 flex items-center justify-between">
+                        <span
+                          id={`mobile-target-help-${item.id}`}
+                          className={`text-[11px] ${
+                            targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {targetLen >= TARGET_MAX ? "Reached 50 character limit" : "\u00A0"}
+                        </span>
+                        <span
+                          className={`text-[11px] ${
+                            targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {targetLen}/{TARGET_MAX}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* English */}
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs font-semibold text-white/90">
+                        English
+                      </label>
+                      <input
+                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                        placeholder="hello"
+                        value={item.english}
+                        maxLength={ENGLISH_MAX}
+                        onChange={(e) => updateField(item.id, "english", e.target.value)}
+                        aria-describedby={`mobile-english-help-${item.id}`}
+                      />
+                      <div className="mt-1 flex items-center justify-between">
+                        <span
+                          id={`mobile-english-help-${item.id}`}
+                          className={`text-[11px] ${
+                            englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {englishLen >= ENGLISH_MAX ? "Reached 50 character limit" : "\u00A0"}
+                        </span>
+                        <span
+                          className={`text-[11px] ${
+                            englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {englishLen}/{ENGLISH_MAX}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs font-semibold text-white/90">
+                        Notes
+                      </label>
+                      <input
+                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                        placeholder="Any notes (e.g., part of speech, hints)"
+                        value={item.notes ?? ""}
+                        maxLength={NOTES_MAX}
+                        onChange={(e) => updateField(item.id, "notes", e.target.value)}
+                        aria-describedby={`mobile-notes-help-${item.id}`}
+                      />
+                      <div className="mt-1 flex items-center justify-between">
+                        <span
+                          id={`mobile-notes-help-${item.id}`}
+                          className={`text-[11px] ${
+                            notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {notesLen >= NOTES_MAX ? "Reached 100 character limit" : "\u00A0"}
+                        </span>
+                        <span
+                          className={`text-[11px] ${
+                            notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                          }`}
+                        >
+                          {notesLen}/{NOTES_MAX}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="flex justify-end">
+                      <Button
+                        className="destructive !py-2 !px-4 ring-1 ring-white/20 hover:ring-white/40"
+                        onClick={() => handleDeleteClick(item.id)}
+                        aria-label="Delete entry"
+                      >
+                        Delete Entry
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+          </div>
 
           {/* AI Suggestions table */}
           {aiSuggestions.length > 0 && (
