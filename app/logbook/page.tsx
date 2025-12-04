@@ -6,7 +6,7 @@ import Link from "next/link";
 import BookShell from "@/app/logbook/BookShell";
 import { getAllFavoritesForUser, type FavoriteWord } from "@/app/lib/actions/favoritesAction";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBolt, faClock, faBookmark, faListUl } from "@fortawesome/free-solid-svg-icons";
+import { faBolt, faClock, faBookmark, faListUl, faChartPie, faHeart } from "@fortawesome/free-solid-svg-icons";
 
 import StatCard from "@/app/logbook/StatCard";
 import ProgressBar from "@/app/logbook/ProgressBar";
@@ -16,6 +16,19 @@ import Leaderboard from "@/app/logbook/Leaderboard";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
 
+// --- HOOKS ---
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
+
+// --- CONSTANTS ---
 const DATA = {
   xp: 12450,
   minutes: 732,
@@ -44,12 +57,18 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+// --- MAIN COMPONENT ---
 export default function LogbookPage() {
   const [favorites, setFavorites] = useState<FavoriteWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const desert = deserts.find(d => d.name === "Wadi Rum Desert")!;
   
+  // Mobile Tab State
+  const [activeMobileTab, setActiveMobileTab] = useState<"overview" | "favorites">("overview");
+  
+  const isMobile = useIsMobile();
+  const desert = deserts.find(d => d.name === "Wadi Rum Desert")!;
+
   useEffect(() => {
     (async () => {
       try {
@@ -58,7 +77,6 @@ export default function LogbookPage() {
         if (Array.isArray(data)) {
           setFavorites(data);
         } else {
-          console.log("[favorites debug output]", data);
           setFavorites([]);
         }
       } catch (err) {
@@ -70,6 +88,7 @@ export default function LogbookPage() {
     })();
   }, []);
 
+  // --- DESKTOP LOGIC ---
   const ITEMS_PER_COLUMN = 6;
   const ITEMS_PER_PAGE = ITEMS_PER_COLUMN * 2;
 
@@ -77,30 +96,9 @@ export default function LogbookPage() {
     return chunk(favorites, ITEMS_PER_PAGE);
   }, [favorites, ITEMS_PER_PAGE]);
 
-  const pages = useMemo(() => {
-    if (loading) {
-      return [
-        <div key="loading" className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">Logbook</h2>
-            <div className="mt-4 text-amber-900/70">Loading…</div>
-          </div>
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
-        </div>,
-      ];
-    }
-
-    if (error) {
-      return [
-        <div key="error" className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          <div className="pr-6">
-            <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">Logbook</h2>
-            <div className="mt-4 text-red-600">{error}</div>
-          </div>
-          <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
-        </div>,
-      ];
-    }
+  const desktopPages = useMemo(() => {
+    if (loading) return [<div key="loading">Loading...</div>];
+    if (error) return [<div key="error">{error}</div>];
 
     const homePage = (
       <>
@@ -108,11 +106,8 @@ export default function LogbookPage() {
         <div className="pr-8 md:pr-10">
           <h2 className="text-amber-900/90 text-2xl font-semibold">Recently learned</h2>
           <RecentList items={DATA.recent} />
-
           <div className="mt-6 h-px w-full bg-amber-900/20" />
-
           <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">My stats</h3>
-
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <StatCard
               label="Experience"
@@ -145,7 +140,6 @@ export default function LogbookPage() {
         {/* RIGHT PAGE */}
         <div className="md:pl-12 lg:pl-14 border-t md:border-t-0 md:border-l border-amber-900/20">
           <Leaderboard names={DATA.leaderboard} />
-
           <div className="mt-6">
             <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
               Add Friends
@@ -155,29 +149,22 @@ export default function LogbookPage() {
       </>
     );
 
-    const favoritePages =
-      favChunks.length === 0
+    const favoritePages = favChunks.length === 0
         ? [
             <>
-              {/* LEFT */}
               <div className="pr-6">
                 <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites</h2>
                 <div className="mt-4 text-amber-900/70">You haven&apos;t favorited any words yet.</div>
                 <div className="mt-4 p-4 bg-amber-900/10 rounded-lg">
-                  <p className="text-sm text-amber-900/80">
-                    Go to any word list and tap the heart icon to add favorites.
-                  </p>
+                  <p className="text-sm text-amber-900/80">Go to any word list and tap the heart icon to add favorites.</p>
                 </div>
-                <p className="mt-6 text-amber-900/60 text-sm italic">← Flip back for Home</p>
               </div>
-              {/* RIGHT */}
               <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20" />
             </>,
           ]
         : favChunks.map((slice, idx) => {
             const leftCol = slice.slice(0, ITEMS_PER_COLUMN);
             const rightCol = slice.slice(ITEMS_PER_COLUMN);
-
             const toFav = (w: FavoriteWord) => ({
               word: w.word_target ?? "(no target)",
               example: w.word_english ?? "",
@@ -185,21 +172,13 @@ export default function LogbookPage() {
 
             return (
               <div key={`fav-${idx}`} className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                {/* LEFT */}
                 <div className="pr-6">
-                  <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">
-                    My Favorites · Page {idx + 1}
-                  </h2>
+                  <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites · Page {idx + 1}</h2>
                   <FavoritesPanel items={leftCol.map(toFav)} />
                 </div>
-
-                {/* RIGHT */}
                 <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
                   <div className="md:pt-0 pt-6">
                     <FavoritesPanel items={rightCol.map(toFav)} />
-                  </div>
-                  <div className="mt-6 text-amber-900/60 text-sm italic">
-                    {idx === 0 ? "← Flip back for Home" : "← Previous page"}
                   </div>
                 </div>
               </div>
@@ -209,26 +188,148 @@ export default function LogbookPage() {
     return [homePage, ...favoritePages];
   }, [loading, error, favChunks, ITEMS_PER_COLUMN]);
 
+
+  // --- MOBILE VIEW RENDERING ---
+  const renderMobileContent = () => {
+    if (loading) return <div className="p-8 text-center text-amber-900/70">Loading Logbook...</div>;
+    if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+
+    return (
+      <div className="flex flex-col min-h-screen bg-[#fdfbf7]">
+        {/* Mobile Header */}
+        <div className="px-5 pt-6 pb-2">
+          <h1 className="text-3xl font-bold text-amber-900/90">Logbook</h1>
+          <p className="text-amber-900/60 text-sm mt-1">Level {level} · {DATA.xp.toLocaleString()} XP</p>
+        </div>
+
+        {/* Mobile Tabs - Sticky */}
+        <div className="sticky top-0 z-20 bg-[#fdfbf7]/95 backdrop-blur-sm px-5 mt-2 flex border-b border-amber-900/10">
+          <button
+            onClick={() => setActiveMobileTab("overview")}
+            className={`pb-3 pr-6 text-sm font-semibold transition-colors ${
+              activeMobileTab === "overview" ? "text-amber-800 border-b-2 border-amber-800" : "text-amber-900/40"
+            }`}
+          >
+            <FontAwesomeIcon icon={faChartPie} className="mr-2" /> Overview
+          </button>
+          <button
+            onClick={() => setActiveMobileTab("favorites")}
+            className={`pb-3 px-6 text-sm font-semibold transition-colors ${
+              activeMobileTab === "favorites" ? "text-amber-800 border-b-2 border-amber-800" : "text-amber-900/40"
+            }`}
+          >
+            <FontAwesomeIcon icon={faHeart} className="mr-2" /> Favorites ({favorites.length})
+          </button>
+        </div>
+
+        {/* Content Area - Natural Flow (No h-full or overflow-y-auto) */}
+        <div className="p-5 pb-32">
+          {activeMobileTab === "overview" ? (
+            <div className="space-y-8">
+              {/* Stats Grid */}
+              <section>
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard
+                    label="XP"
+                    value={DATA.xp.toLocaleString()}
+                    icon={<FontAwesomeIcon icon={faBolt} className="h-4 w-4 text-indigo-600" />}
+                    footer={<ProgressBar value={into} max={toNext} />}
+                  />
+                  <StatCard
+                    label="Time"
+                    value={`${Math.floor(DATA.minutes / 60)}h ${DATA.minutes % 60}m`}
+                    icon={<FontAwesomeIcon icon={faClock} className="h-4 w-4 text-indigo-600" />}
+                  />
+                  <StatCard
+                    label="Saved"
+                    value={DATA.wordsSaved}
+                    icon={<FontAwesomeIcon icon={faBookmark} className="h-4 w-4 text-indigo-600" />}
+                  />
+                  <StatCard
+                    label="Lists"
+                    value={DATA.listsMade}
+                    icon={<FontAwesomeIcon icon={faListUl} className="h-4 w-4 text-indigo-600" />}
+                  />
+                </div>
+              </section>
+
+              {/* Recent */}
+              <section>
+                <h3 className="text-amber-900/80 text-lg font-bold mb-3">Recently Learned</h3>
+                <div className="bg-white/50 rounded-xl p-4 border border-amber-900/5 shadow-sm">
+                  <RecentList items={DATA.recent} />
+                </div>
+              </section>
+
+              {/* Leaderboard */}
+              <section>
+                <h3 className="text-amber-900/80 text-lg font-bold mb-3">Leaderboard</h3>
+                <div className="bg-white/50 rounded-xl p-4 border border-amber-900/5 shadow-sm">
+                   <Leaderboard names={DATA.leaderboard} />
+                </div>
+              </section>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Favorites List */}
+              {favorites.length === 0 ? (
+                <div className="text-center py-10 text-amber-900/50">
+                  <FontAwesomeIcon icon={faBookmark} className="h-8 w-8 mb-3 opacity-50" />
+                  <p>No favorites yet.</p>
+                </div>
+              ) : (
+                <FavoritesPanel 
+                  items={favorites.map(w => ({
+                    word: w.word_target ?? "Unknown",
+                    example: w.word_english ?? ""
+                  }))} 
+                />
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Mobile FAB */}
+        <div className="fixed bottom-6 right-6 z-30">
+           <Link
+              href="/map"
+              className="flex items-center justify-center w-14 h-14 rounded-full bg-amber-700 text-white shadow-lg shadow-amber-900/30 hover:bg-amber-600 active:scale-95 transition"
+            >
+              <FontAwesomeIcon icon={faListUl} className="w-5 h-5" /> 
+              {/* Or a map icon if you prefer */}
+            </Link>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <PageBackground
       src={desert.src}
       alt={desert.name}
       wikiUrl={desert.wikiUrl}
     >
-      <BookShell
-        pages={pages}
-        showPageControls={pages.length > 1}
-        rightExtras={
-          <div className="absolute top-1 left-1/2 -translate-x-1/2">
-            <Link
-              href="/map"
-              className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
-            >
-              Back to Map
-            </Link>
-          </div>
-        }
-      />
+      {isMobile ? (
+        // FIXED: Using relative positioning + min-h-screen to ensure content flows correctly
+        <div className="relative w-full min-h-screen z-10">
+           {renderMobileContent()}
+        </div>
+      ) : (
+        <BookShell
+          pages={desktopPages}
+          showPageControls={desktopPages.length > 1}
+          rightExtras={
+            <div className="absolute top-1 left-1/2 -translate-x-1/2">
+              <Link
+                href="/map"
+                className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
+              >
+                Back to Map
+              </Link>
+            </div>
+          }
+        />
+      )}
     </PageBackground>
   );
 }

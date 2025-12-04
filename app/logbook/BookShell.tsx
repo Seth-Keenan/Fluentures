@@ -9,9 +9,10 @@ type Props = PropsWithChildren<{
   rightExtras?: ReactNode;
   pages?: ReactNode[]; // Array of page content
   showPageControls?: boolean;
+  side?: "full" | "left" | "right";
 }>;
 
-export default function BookShell({ children, rightExtras, pages = [], showPageControls = false }: Props) {
+export default function BookShell({ children, rightExtras, pages = [], showPageControls = false, side = "full" }: Props) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   
@@ -39,6 +40,11 @@ export default function BookShell({ children, rightExtras, pages = [], showPageC
   const totalPages = pages.length;
   const hasMultiplePages = totalPages > 1;
   const hasPages = pages.length > 0;
+
+  // page side class
+  const sideClass = side === "left" ? "left-[9%] w-[36%]" 
+                  : side === "right" ? "left-[55%] w-[36%]" 
+                  : "left-[14%] w-[72%]";
 
   // Debug logging
   console.log("🔍 BookShell render:", { 
@@ -80,7 +86,7 @@ export default function BookShell({ children, rightExtras, pages = [], showPageC
           className="
             absolute 
             top-[5%]
-            left-[14%]
+            left-[9%]
             w-[72%]
             h-[76%]
             overflow-hidden
