@@ -23,7 +23,7 @@ vi.mock("@supabase/auth-helpers-nextjs", () => ({
 
 // Mock fetch for friends API
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 // Mock LinkAsButton
 vi.mock("@/app/components/LinkAsButton", () => {

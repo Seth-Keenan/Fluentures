@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 
 // Mock fetch
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 import RegisterSocialUsernamePage from "./page";
 
@@ -141,12 +141,14 @@ describe("RegisterSocialUsernamePage", () => {
   });
 
   it("shows loading state while submitting", async () => {
-    mockFetch.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
+    const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+    mockFetch.mockImplementation(async () => {
+      await delay(1000);
+      return {
         ok: true,
-        json: () => Promise.resolve({ success: true }),
-      }), 1000))
-    );
+        json: async () => ({ success: true }),
+      };
+    });
 
     render(<RegisterSocialUsernamePage />);
 
