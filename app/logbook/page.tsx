@@ -14,6 +14,7 @@ import RecentList from "@/app/logbook/RecentList";
 import FavoritesPanel from "@/app/logbook/FavoritesPanel";
 // import Leaderboard from "@/app/logbook/Leaderboard";
 import { getLogbookStats } from "@/app/lib/actions/logbookAction";
+import { getRecentlyLearned } from "@/app/lib/actions/logbookAction";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
 
@@ -49,10 +50,6 @@ const DATA = {
   //leaderboard: ["You", "Mina", "Leo", "Harper"],
 };
 
-const level = Math.floor(DATA.xp / 1000) + 1;
-const into = DATA.xp % 1000;
-const toNext = 1000;
-
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -61,7 +58,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 // --- MAIN COMPONENT ---
 export default function LogbookPage() {
-  
+
   // --- UTILITIES ---
   // This grabs the actual data now
   const [stats, setStats] = useState({
@@ -71,6 +68,7 @@ export default function LogbookPage() {
     listsMade: 0,
     streakDays: 0
   });
+  const [recentWords, setRecentWords] = useState<Array<{ word_id?: string | number; word_target: any; word_english: any; note: any; created_at: any; }>>([]);
 
   useEffect(() => {
     (async () => {
@@ -78,12 +76,25 @@ export default function LogbookPage() {
       if (!("error" in result)) {
         setStats(result);
       }
+
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const recent = await getRecentlyLearned(5);
+      setRecentWords(recent);
+    })();
+  }, []);
+
 
   const [favorites, setFavorites] = useState<FavoriteWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const level = Math.floor(stats.xp / 1000) + 1;
+  const into = stats.xp % 1000;
+  const toNext = 1000;
 
   // Mobile Tab State
   const [activeMobileTab, setActiveMobileTab] = useState<"overview" | "favorites">("overview");
@@ -127,7 +138,7 @@ export default function LogbookPage() {
         {/* LEFT PAGE */}
         <div className="pr-8 md:pr-10">
           <h2 className="text-amber-900/90 text-2xl font-semibold">Recently learned</h2>
-          <RecentList items={DATA.recent} />
+          <RecentList items={recentWords.map(w => ({ word: w.word_target ?? "", note: w.note ?? "", word_id: w.word_id ?? w.word_id }))} />
           <div className="mt-6 h-px w-full bg-amber-900/20" />
           <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">My stats</h3>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">

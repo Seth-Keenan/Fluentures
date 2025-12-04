@@ -54,48 +54,33 @@ export async function getLogbookStats() {
   };
 }
 
-// "use server";
+export async function getRecentlyLearned(limit = 5) {
+  const supabase = createServerActionClient({ cookies });
 
-// import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
-// import { cookies } from "next/headers";
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
-// export async function getLogbookStats() {
-//   const supabase = createServerActionClient({ cookies });
+  if (!user) return [];
 
-//   // Get current user
-//   const {
-//     data: { user },
-//     error: userError
-//   } = await supabase.auth.getUser();
+  const userId = user.id;
 
-//   if (userError || !user) return { error: "Not authenticated" };
+  // 1. Get all WordList IDs for this user
+  const { data: lists } = await supabase
+    .from("WordList")
+    .select("word_list_id")
+    .eq("user_id", userId);
 
-//   const userId = user.id;
+  const listIds = lists?.map(l => l.word_list_id) ?? [];
+  if (listIds.length === 0) return [];
 
-//   // ---- Words Saved ----
-//   const { count: wordsSaved, error: wordsError } = await supabase
-//     .from("Word")
-//     .select("*", { count: "exact", head: true })
-//     .eq("user_id", userId);
+  // 2. Get recent word entries
+  const { data: words } = await supabase
+    .from("Word")
+    .select("word_id, word_target, word_english, note, created_at")
+    .in("word_list_id", listIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
-//   // ---- Lists Made ----
-//   const { count: listsMade, error: listsError } = await supabase
-//     .from("WordList")
-//     .select("*", { count: "exact", head: true })
-//     .eq("user_id", userId);
-
-//   // ---- XP & time_studied (from Users table) ----
-//   const { data: userRow, error: userRowError } = await supabase
-//     .from("Users")
-//     .select("xp, time_spent, streak")
-//     .eq("user_id", userId)
-//     .single();
-
-//   return {
-//     wordsSaved: wordsSaved ?? 0,
-//     listsMade: listsMade ?? 0,
-//     xp: userRow?.xp ?? 0,
-//     minutes: userRow?.time_spent ?? 0,
-//     streakDays: userRow?.streak ?? 0
-//   };
-// }
+  return words ?? [];
+}
