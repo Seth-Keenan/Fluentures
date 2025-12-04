@@ -891,7 +891,7 @@ function Filters({
   setQuery,
   visibilityView,
   setVisibilityView,
-}: {
+}: Readonly<{
   filter: "all" | "liked" | "mine";
   setFilter: (v: "all" | "liked" | "mine") => void;
   tagFilter: string;
@@ -901,7 +901,7 @@ function Filters({
   setQuery: (v: string) => void;
   visibilityView: "all" | "public" | "friends";
   setVisibilityView: (v: "all" | "public" | "friends") => void;
-}) {
+}>) {
   return (
     <div className="text-white">
       <div className="flex items-center gap-3">
@@ -983,14 +983,14 @@ function PostCard({
   onDelete,
   canDelete,
   onComment,
-}: {
+}: Readonly<{
   post: Post;
   currentUserId?: string | null;
   onToggleLike: () => void;
   onDelete: () => void;
   canDelete?: boolean;
   onComment: (text: string) => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const [cmt, setCmt] = useState("");
 
