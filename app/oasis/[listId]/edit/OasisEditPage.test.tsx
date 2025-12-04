@@ -217,17 +217,18 @@ describe("EditOasisPage", () => {
   it("loads and displays wordlist data on mount", async () => {
     render(<EditOasisPage />);
 
+    // Page renders both desktop and mobile views, so use getAllBy for inputs
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("hello")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("adiós")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("goodbye")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+      expect(screen.getAllByDisplayValue("hello").length).toBeGreaterThan(0);
+      expect(screen.getAllByDisplayValue("adiós").length).toBeGreaterThan(0);
+      expect(screen.getAllByDisplayValue("goodbye").length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText("Edit Oasis — Spanish Basics")).toBeInTheDocument();
+    expect(screen.getByText(/Edit Oasis.*Spanish Basics/)).toBeInTheDocument();
     expect(screen.getByText("2/20 entries")).toBeInTheDocument();
     expect(screen.getByText("Target language:")).toBeInTheDocument();
-    expect(screen.getAllByText("Spanish")).toHaveLength(2); // Header column and language tag
+    expect(screen.getAllByText("Spanish").length).toBeGreaterThanOrEqual(2); // Header column and language tag
   });
 
   it("shows loading state initially", () => {
@@ -241,9 +242,9 @@ describe("EditOasisPage", () => {
     const user = userEvent.setup();
     render(<EditOasisPage />);
 
-    // Wait for initial load
+    // Wait for initial load (desktop + mobile = 2 inputs per field)
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const addButton = screen.getByTestId("button-+-add-entry");
@@ -292,10 +293,11 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
-    const targetInput = screen.getByDisplayValue("hola");
+    // Get first input (desktop view)
+    const targetInput = screen.getAllByDisplayValue("hola")[0];
     
     // Try to enter text longer than 50 characters
     const longText = "a".repeat(60);
@@ -311,7 +313,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Click delete on first entry
@@ -328,8 +330,8 @@ describe("EditOasisPage", () => {
 
     // Entry should be removed
     await waitFor(() => {
-      expect(screen.queryByDisplayValue("hola")).not.toBeInTheDocument();
-      expect(screen.getByText("1/20 entry")).toBeInTheDocument();
+      expect(screen.queryAllByDisplayValue("hola")).toHaveLength(0);
+      expect(screen.getByText(/1\/20 entr/)).toBeInTheDocument();
     });
   });
 
@@ -338,7 +340,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Click delete on first entry
@@ -353,7 +355,7 @@ describe("EditOasisPage", () => {
     await user.click(cancelButton);
 
     // Entry should still be there
-    expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     expect(screen.getByText("2/20 entries")).toBeInTheDocument();
   });
 
@@ -362,7 +364,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const saveButton = screen.getByTestId("button-save-changes");
@@ -381,7 +383,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const saveButton = screen.getByTestId("button-save-changes");
@@ -397,7 +399,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Enter new name
@@ -422,7 +424,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Click rename without entering name
@@ -438,7 +440,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Test Ctrl+S for save
@@ -484,7 +486,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const aiButton = screen.getByTestId("button-ai:-suggest-&-fix");
@@ -511,7 +513,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const aiButton = screen.getByTestId("button-ai:-suggest-&-fix");
@@ -532,7 +534,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const aiButton = screen.getByTestId("button-ai:-suggest-&-fix");
@@ -565,7 +567,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     // Get AI suggestions
@@ -582,7 +584,7 @@ describe("EditOasisPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("3/20 entries")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("gracias")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("gracias").length).toBeGreaterThan(0);
     });
   });
 
@@ -591,12 +593,12 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
       expect(screen.getByText("All changes saved")).toBeInTheDocument();
     });
 
-    // Make a change
-    const targetInput = screen.getByDisplayValue("hola");
+    // Make a change (use first input - desktop view)
+    const targetInput = screen.getAllByDisplayValue("hola")[0];
     await user.clear(targetInput);
     await user.type(targetInput, "hola!");
 
@@ -620,7 +622,7 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("hola")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
     });
 
     const saveButton = screen.getByTestId("button-save-changes");
@@ -651,10 +653,12 @@ describe("EditOasisPage", () => {
     render(<EditOasisPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/No entries yet\. Click/)).toBeInTheDocument();
+      // Page renders both desktop and mobile empty state
+      const emptyMessages = screen.getAllByText(/No entries yet\. Click/);
+      expect(emptyMessages.length).toBeGreaterThan(0);
       expect(screen.getByText("0/20 entries")).toBeInTheDocument();
-      // Check for the span with the button text inside the empty message
-      expect(screen.getByRole("button", { name: "+ Add Entry" })).toBeInTheDocument();
+      // Check for the add entry button
+      expect(screen.getByTestId("button-+-add-entry")).toBeInTheDocument();
     });
   });
 });
