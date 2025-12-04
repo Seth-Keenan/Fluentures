@@ -41,7 +41,7 @@ export default function BookShell({ children, rightExtras, pages = [], showPageC
   const hasMultiplePages = totalPages > 1;
   const hasPages = pages.length > 0;
 
-  // page side class
+  // page side class (used to position the inner content area)
   const sideClass = side === "left" ? "left-[9%] w-[36%]" 
                   : side === "right" ? "left-[55%] w-[36%]" 
                   : "left-[14%] w-[72%]";
@@ -83,15 +83,14 @@ export default function BookShell({ children, rightExtras, pages = [], showPageC
 
         {/* ---- CONTENT INSIDE THE JOURNAL ---- */}
         <div
-          className="
+          className={`
             absolute 
             top-[5%]
-            left-[9%]
-            w-[72%]
+            ${sideClass}
             h-[76%]
             overflow-hidden
             p-6 sm:p-8 md:px-10 md:py-8
-          "
+          `}
         >
           {hasPages ? (
             <AnimatePresence mode="wait">

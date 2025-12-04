@@ -1,17 +1,17 @@
 "use server";
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
 
 export async function getLogbookStats() {
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await getSupabaseServerActionClient();
 
   // 1) Get user
   const {
-    data: { user }
+    data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Not authenticated" };
+  if (userError || !user) return { error: "Not authenticated" };
 
   const userId = user.id;
 
@@ -55,13 +55,14 @@ export async function getLogbookStats() {
 }
 
 export async function getRecentlyLearned(limit = 5) {
-  const supabase = createServerActionClient({ cookies });
+  const supabase = await getSupabaseServerActionClient();
 
   const {
-    data: { user }
+    data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) return [];
+  if (userError || !user) return [];
 
   const userId = user.id;
 

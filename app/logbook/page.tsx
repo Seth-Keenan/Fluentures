@@ -68,7 +68,7 @@ export default function LogbookPage() {
     listsMade: 0,
     streakDays: 0
   });
-  const [recentWords, setRecentWords] = useState<Array<{ word_id?: string | number; word_target: any; word_english: any; note: any; created_at: any; }>>([]);
+  const [recentWords, setRecentWords] = useState<Array<{ word_id?: string | number; word_target?: string; word_english?: string; note?: string; created_at?: string }>>([]);
 
   useEffect(() => {
     (async () => {
@@ -219,7 +219,7 @@ export default function LogbookPage() {
       });
 
     return [homePage, ...favoritePages];
-  }, [loading, error, favChunks, ITEMS_PER_COLUMN]);
+  }, [loading, error, favChunks, ITEMS_PER_COLUMN, into, level, recentWords, stats.xp, stats.minutes, stats.wordsSaved, stats.listsMade]);
 
 
   // --- MOBILE VIEW RENDERING ---

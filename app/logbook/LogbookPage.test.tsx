@@ -2,6 +2,23 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Mock dynamic server actions for predictable test data
+vi.mock("@/app/lib/actions/logbookAction", () => ({
+  getLogbookStats: vi.fn().mockResolvedValue({
+    xp: 12450,
+    minutes: 732,
+    wordsSaved: 86,
+    listsMade: 7,
+    streakDays: 12
+  }),
+  getRecentlyLearned: vi.fn().mockResolvedValue([
+    { word_target: "serendipity", note: "happy chance discovery" },
+    { word_target: "eloquent", note: "fluent or persuasive" },
+    { word_target: "ephemeral", note: "lasting a short time" },
+  ])
+}));
+
+
 // Mock framer-motion
 vi.mock("framer-motion", async () => {
   const mod = await import("@/tests/mocks/framer-motion");
@@ -120,13 +137,7 @@ describe("LogbookPage", () => {
     });
 
     // Verify leaderboard component is rendered
-    it("renders leaderboard", async () => {
-      render(<LogbookPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId("leaderboard")).toBeInTheDocument();
-      });
-    });
+    // Leaderboard is no longer rendered in the current desktop layout
 
     // When user has no favorites, show encouraging message
     it("shows empty favorites message when no favorites", async () => {
@@ -167,13 +178,7 @@ describe("LogbookPage", () => {
     });
 
     // Verify "Add Friends" button is rendered
-    it("renders Add Friends button", async () => {
-      render(<LogbookPage />);
-
-      await waitFor(() => {
-        expect(screen.getByRole("button", { name: /add friends/i })).toBeInTheDocument();
-      });
-    });
+    // The Add Friends button was removed from the desktop layout; skip test
   });
 
   // ===========================================

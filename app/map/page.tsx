@@ -6,6 +6,7 @@ import MapView from "./client"; // Client component for displaying the 3D map
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
 import AnimatedBackground from "./AnimatedBackground";
+import StreakUpdater from "./StreakUpdater";
 
 type WordListRow = {
   word_list_id: string;
@@ -98,17 +99,19 @@ export default async function OasisIndex() {
       alt={desert.name}
       wikiUrl={desert.wikiUrl}
     >
+      {/* Runs streak update on client-side load */}
+      <StreakUpdater />
 
-        {/* This renders the interactive client scene (with styled header + edit button). */}
-        <MapView wordlists={wordlists} selectedLanguage={selectedLanguage} />
+      <MapView
+        wordlists={wordlists}
+        selectedLanguage={selectedLanguage}
+      />
 
-        {/* Optional empty-state messaging */}
-        {hasFilter && rows.length === 0 && (
-          <div className="relative z-10 mx-auto my-4 w-[min(95vw,72rem)] text-sm text-white/85">
-            No word lists for <strong>{selectedLanguage}</strong> yet.
-          </div>
-        )}
-      
+      {hasFilter && rows.length === 0 && (
+        <div className="relative z-10 mx-auto my-4 w-[min(95vw,72rem)] text-sm text-white/85">
+          No word lists for <strong>{selectedLanguage}</strong> yet.
+        </div>
+      )}
     </PageBackground>
   );
 }
