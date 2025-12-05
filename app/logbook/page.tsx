@@ -206,7 +206,7 @@ export default function LogbookPage() {
                   <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites · Page {idx + 1}</h2>
                   <FavoritesPanel items={leftCol.map(toFav)} />
                 </div>
-                <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
+                <div className="md:pl-10 border-t md:border-t-0">
                   <div className="md:pt-0 pt-6">
                     <FavoritesPanel items={rightCol.map(toFav)} />
                   </div>
@@ -351,10 +351,10 @@ export default function LogbookPage() {
           rightExtras={
             <div className="absolute top-1 left-1/2 -translate-x-1/2">
               <Link
-                href="/map"
+                href="/home"
                 className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
               >
-                Back to Map
+                Home
               </Link>
             </div>
           }
