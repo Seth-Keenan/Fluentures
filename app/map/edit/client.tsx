@@ -37,7 +37,7 @@ type Oasis3D = {
 
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 
-const OASIS_URL = "/blenderModels/oasis2.glb";
+const OASIS_URL = "/blenderModels/oasisModel.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
 
 let saveDebounceHandle: number | null = null;

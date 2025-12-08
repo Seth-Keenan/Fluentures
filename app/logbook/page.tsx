@@ -6,13 +6,13 @@ import Link from "next/link";
 import BookShell from "@/app/logbook/BookShell";
 import { getAllFavoritesForUser, type FavoriteWord } from "@/app/lib/actions/favoritesAction";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBolt, faClock, faBookmark, faListUl, faChartPie, faHeart, faFire } from "@fortawesome/free-solid-svg-icons";
+import { faBolt, faClock, faBookmark, faListUl, faChartPie, faHeart} from "@fortawesome/free-solid-svg-icons";
 
 import StatCard from "@/app/logbook/StatCard";
 import ProgressBar from "@/app/logbook/ProgressBar";
 import RecentList from "@/app/logbook/RecentList";
 import FavoritesPanel from "@/app/logbook/FavoritesPanel";
-// import Leaderboard from "@/app/logbook/Leaderboard";
+//import Leaderboard from "@/app/logbook/Leaderboard";
 import { getLogbookStats } from "@/app/lib/actions/logbookAction";
 import { getRecentlyLearned } from "@/app/lib/actions/logbookAction";
 import { deserts } from "@/app/data/deserts";
@@ -134,53 +134,83 @@ export default function LogbookPage() {
     if (error) return [<div key="error">{error}</div>];
 
     const homePage = (
-      <>
-        {/* LEFT PAGE */}
-        <div className="pr-8 md:pr-10">
-          <h2 className="text-amber-900/90 text-2xl font-semibold">Recently learned</h2>
-          <RecentList items={recentWords.map(w => ({ word: w.word_target ?? "", note: w.note ?? "", word_id: w.word_id ?? w.word_id }))} />
-          <div className="mt-6 h-px w-full bg-amber-900/20" />
-          <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">My stats</h3>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              label="Experience"
-              value={`${stats.xp.toLocaleString()} XP`}
-              icon={<FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-indigo-600" />}
-              hint={`Level ${level}`}
-              footer={<ProgressBar value={into} max={toNext} />}
-            />
-            <StatCard
-              label="Time Spent"
-              value={`${Math.floor(stats.minutes / 60)}h ${stats.minutes % 60}m`}
-              icon={<FontAwesomeIcon icon={faClock} className="h-5 w-5 text-indigo-600" />}
-              hint={`${stats.minutes} minutes total`}
-            />
-            <StatCard
-              label="Words Saved"
-              value={stats.wordsSaved}
-              icon={<FontAwesomeIcon icon={faBookmark} className="h-5 w-5 text-indigo-600" />}
-              hint="Keep collecting vocabulary!"
-            />
-            <StatCard
-              label="Lists Made"
-              value={stats.listsMade}
-              icon={<FontAwesomeIcon icon={faListUl} className="h-5 w-5 text-indigo-600" />}
-              hint="Organize your learning"
-            />
-          </div>
-        </div>
+  <div className="grid grid-cols-2 gap-50 h-full">
 
-        {/* RIGHT PAGE */}
-        <div className="md:pl-12 lg:pl-14 border-t md:border-t-0 md:border-l border-amber-900/20">
-          {/* <Leaderboard names={DATA.leaderboard} /> */}
-          <div className="mt-6">
-            {/* <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
-              Add Friends
-            </button> */}
-          </div>
-        </div>
-      </>
-    );
+    {/* left page*/}
+    <div className="pr-8">
+
+      <h2 className="text-amber-900/90 text-2xl font-semibold">
+        Recently learned
+      </h2>
+
+      <RecentList items={DATA.recent} />
+
+      <div className="mt-6 h-px w-full bg-amber-900/20" />
+
+      <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">
+        My stats
+      </h3>
+
+      <div className="mt-3 space-y-4">
+        <StatCard
+          label="Experience"
+          value={`${DATA.xp.toLocaleString()} XP`}
+          icon={<FontAwesomeIcon icon={faBolt} className="h-5 w-5 text-indigo-600" />}
+          hint={`Level ${level}`}
+          footer={<ProgressBar value={into} max={toNext} />}
+        />
+
+        <StatCard
+          label="Words Saved"
+          value={DATA.wordsSaved}
+          icon={<FontAwesomeIcon icon={faBookmark} className="h-5 w-5 text-indigo-600" />}
+          hint="Keep collecting vocabulary!"
+        />
+      </div>
+    </div>
+
+    {/* right page 
+    took out border-l border-amber-900/20
+    */}
+    <div className="pl-8">
+
+      {/*<h2 className="text-amber-900/90 text-2xl font-semibold">
+        Leaderboard
+      </h2>
+
+      <div className="mt-6">
+        <Leaderboard names={DATA.leaderboard} />
+      </div>*/}
+
+      <div className="mt-50 h-px w-full bg-amber-900/20" />
+
+
+      <div className="mt-15 space-y-4">
+        <StatCard
+          label="Time Spent"
+          value={`${Math.floor(DATA.minutes / 60)}h ${DATA.minutes % 60}m`}
+          icon={<FontAwesomeIcon icon={faClock} className="h-5 w-5 text-indigo-600" />}
+          hint={`${DATA.minutes} minutes total`}
+        />
+
+        <StatCard
+          label="Lists Made"
+          value={DATA.listsMade}
+          icon={<FontAwesomeIcon icon={faListUl} className="h-5 w-5 text-indigo-600" />}
+          hint="Organize your learning"
+        />
+      </div>
+
+      <div className="mt-6">
+        {/*<button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
+          Socials
+        </button>*/}
+      </div>
+    </div>
+
+  </div>
+);
+
 
     const favoritePages = favChunks.length === 0
       ? [
@@ -203,20 +233,20 @@ export default function LogbookPage() {
           example: w.word_english ?? "",
         });
 
-        return (
-          <div key={`fav-${idx}`} className="grid grid-cols-1 md:grid-cols-2 gap-0">
-            <div className="pr-6">
-              <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites · Page {idx + 1}</h2>
-              <FavoritesPanel items={leftCol.map(toFav)} />
-            </div>
-            <div className="md:pl-10 border-t md:border-t-0 md:border-l border-amber-900/20">
-              <div className="md:pt-0 pt-6">
-                <FavoritesPanel items={rightCol.map(toFav)} />
+            return (
+              <div key={`fav-${idx}`} className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                <div className="pr-6">
+                  <h2 className="text-amber-900/90 text-2xl font-semibold mb-4">My Favorites · Page {idx + 1}</h2>
+                  <FavoritesPanel items={leftCol.map(toFav)} />
+                </div>
+                <div className="md:pl-10 border-t md:border-t-0">
+                  <div className="md:pt-0 pt-6">
+                    <FavoritesPanel items={rightCol.map(toFav)} />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        );
-      });
+            );
+          });
 
     return [homePage, ...favoritePages];
   }, [loading, error, favChunks, ITEMS_PER_COLUMN, into, level, recentWords, stats.xp, stats.minutes, stats.wordsSaved, stats.listsMade]);
@@ -350,27 +380,14 @@ export default function LogbookPage() {
           pages={desktopPages}
           showPageControls={desktopPages.length > 1}
           rightExtras={
-            <>
-              <div className="absolute top-1 left-1/2 -translate-x-1/2">
-                <Link
-                  href="/map"
-                  className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
-                >
-                  Back to Map
-                </Link>
-              </div>
-
-              <div className="absolute top-16 right-24 flex items-center gap-2 z-30">
-                <div className="flex flex-col">
-                  <span className="text-amber-900/80 text-sm font-medium">Streak</span>
-                  <span className="text-amber-900/95 text-lg font-semibold flex items-center gap-1">
-                    <FontAwesomeIcon icon={faFire} className="h-4 w-4 text-orange-500" />
-                    {stats.streakDays ?? 0}d
-                  </span>
-                </div>
-              </div>
-
-            </>
+            <div className="absolute top-1 left-1/2 -translate-x-1/2">
+              <Link
+                href="/home"
+                className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
+              >
+                Home
+              </Link>
+            </div>
           }
         />
       )}

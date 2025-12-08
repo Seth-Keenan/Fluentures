@@ -290,65 +290,57 @@ export default function EditOasisPage() {
           alt={desert.name}
           wikiUrl={desert.wikiUrl}
         >
-          {/* Aurora blobs */}
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl"
-            style={{
-              background:
-                "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.35), rgba(0,0,0,0))",
-            }}
-            animate={
-              prefersReducedMotion
-                ? { x: 0, y: 0 }
-                : { y: [0, 18, 0], x: [0, 12, 0] }
-            }
-            transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl"
-            style={{
-              background:
-                "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
-            }}
-            animate={
-              prefersReducedMotion
-                ? { x: 0, y: 0 }
-                : { y: [0, -16, 0], x: [0, -10, 0] }
-            }
-            transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-          />
-          {/* Grain + veil */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-soft-light"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.35'/></svg>\")",
-              backgroundSize: "160px 160px",
-            }}
-          />
-          {/* Shell */}
-          <div className="relative z-10 pt-24 mx-auto w-[min(92vw,72rem)] p-4 pb-8">
-            {/* Top bar: status + back */}
-            <div className="mb-4 flex items-center justify-end gap-3">
-              <span
-                className={`rounded-full px-3 py-1 text-xs ring-1 ${
-                  isDirty
-                    ? "bg-amber-500/20 text-amber-100 ring-amber-300/40"
-                    : "bg-emerald-500/20 text-emerald-100 ring-emerald-300/40"
-                }`}
-              >
-                {isDirty ? "Unsaved changes" : "All changes saved"}
-              </span>
-              <LinkAsButton
-                href={`/oasis/${listId}`}
-                className="ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
-              >
-                Back
-              </LinkAsButton>
-            </div>
+        {/* Aurora blobs */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(60% 60% at 50% 50%, rgba(99,102,241,0.35), rgba(0,0,0,0))",
+          }}
+          animate={prefersReducedMotion ? { x: 0, y: 0 } : { y: [0, 18, 0], x: [0, 12, 0] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(60% 60% at 50% 50%, rgba(236,72,153,0.28), rgba(0,0,0,0))",
+          }}
+          animate={prefersReducedMotion ? { x: 0, y: 0 } : { y: [0, -16, 0], x: [0, -10, 0] }}
+          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Grain + veil 
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-soft-light"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.35'/></svg>\")",
+            backgroundSize: "160px 160px",
+          }}
+        /> */}
+        {/* Shell */}
+        <div className="relative z-10 pt-24 mx-auto w-[min(92vw,72rem)] p-4 pb-8">
+          {/* Top bar: status + back */}
+          <div className="mb-4 flex items-center justify-end gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs ring-1 ${
+                isDirty
+                  ? "bg-amber-500/20 text-amber-100 ring-amber-300/40"
+                  : "bg-emerald-500/20 text-emerald-100 ring-emerald-300/40"
+              }`}
+            >
+              {isDirty ? "Unsaved changes" : "All changes saved"}
+            </span>
+            <LinkAsButton
+              href={`/oasis/${listId}`}
+              className="ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
+            >
+              Back
+            </LinkAsButton>
+          </div>
 
             {/* Header card: title + quick actions */}
             <motion.div

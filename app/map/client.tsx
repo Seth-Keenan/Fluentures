@@ -45,7 +45,7 @@ type Oasis3D = {
 const STORAGE_KEY_3D = "fluentures.oases.3d";
 
 // GLB model URLs
-const OASIS_URL = "/blenderModels/oasis2.glb";
+const OASIS_URL = "/blenderModels/oasisModel.glb";
 const DESERT_URL = "/blenderModels/desertBackground22.glb";
 
 /* ---------------- Mobile List View Component ---------------- */
@@ -232,7 +232,7 @@ function OasisInstance({
   return (
     <group
       ref={groupRef}
-      position={[data.position[0], data.position[1] ?? 0, data.position[2]]}
+      position={[data.position[0], (data.position[1] ?? 0) + 0.3, data.position[2]]}
       rotation={data.rotation}
       onClick={(e) => {
         e.stopPropagation();
@@ -249,7 +249,7 @@ function OasisInstance({
 
       {/* Floating label */}
       <Html
-        position={[0, 1.7 * data.scale, 0]}
+        position={[0, 0.8 * data.scale, 0]}
         center
         style={{
           pointerEvents: "none",
