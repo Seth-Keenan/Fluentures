@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SupabaseProvider from '@/app/lib/providers/SupabaseProvider';
 import Navbar from "@/app/components/Navbar";
+import TimeTracker from "@/app/TimeTracker";
 
 export const metadata: Metadata = {
   title: "Fluentures",
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SupabaseProvider>
+          <TimeTracker intervalMinutes={1} />
           <Navbar/>
           {children}
         </SupabaseProvider>

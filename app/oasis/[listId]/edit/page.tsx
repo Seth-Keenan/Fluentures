@@ -16,7 +16,10 @@ import {
 } from "@/app/lib/actions/wordlistAction";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
-import { getAiWordlistHelp } from "@/app/lib/actions/aiWordlistRecommendations";
+import {
+  getAiWordlistHelp,
+  getAiThemeSuggestions,
+} from "@/app/lib/actions/aiWordlistRecommendations";
 import type { AiSuggestion } from "@/app/types/aiWordlistRecommendations";
 
 /** Hard caps */
@@ -54,6 +57,8 @@ export default function EditOasisPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
 
+  // Theme-based AI suggestion state ✅
+  const [theme, setTheme] = useState("");
 
   // dirty flag (compare to last saved snapshot)
   const isDirty = useMemo(
@@ -62,7 +67,7 @@ export default function EditOasisPage() {
   );
 
   // ui extras
-  const desert = deserts.find(d => d.name === "Death Valley")!;
+  const desert = deserts.find((d) => d.name === "Death Valley")!;
 
   // initial load
   useEffect(() => {
@@ -109,7 +114,9 @@ export default function EditOasisPage() {
     if (field === "english") capped = capped.slice(0, ENGLISH_MAX);
     if (field === "notes") capped = capped.slice(0, NOTES_MAX);
 
-    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, [field]: capped } : x)));
+    setItems((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, [field]: capped } : x))
+    );
   };
 
   /** Delete local row (opens confirm first) */
@@ -134,11 +141,15 @@ export default function EditOasisPage() {
     setSaving(true);
     const cleaned = items
       .slice(0, MAX_ITEMS)
-      .filter((i) => i.target?.trim() || i.english?.trim() || i.notes?.trim());
+      .filter(
+        (i) => i.target?.trim() || i.english?.trim() || i.notes?.trim()
+      );
 
     if (cleaned.length > MAX_ITEMS) {
       setSaving(false);
-      alert(`Please keep the list at ${MAX_ITEMS} items or fewer before saving.`);
+      alert(
+        `Please keep the list at ${MAX_ITEMS} items or fewer before saving.`
+      );
       return;
     }
 
@@ -182,6 +193,7 @@ export default function EditOasisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving, items]);
 
+  /** Existing AI: Suggest & Fix based on current items */
   const handleAiHelp = async () => {
     if (!meta?.language) {
       setAiError("Set a target language first so AI knows what to use.");
@@ -205,7 +217,7 @@ export default function EditOasisPage() {
 
     const { suggestions, corrections } = res.data;
 
-    // Fix current words/definitons
+    // Fix current words/definitions
     if (corrections.length > 0) {
       setItems((prev) =>
         prev.map((item) => {
@@ -223,10 +235,48 @@ export default function EditOasisPage() {
           };
         })
       );
-      setLastMessage("AI fixed some entries that looked incorrect, and suggested more words based on your current oasis!");
+      setLastMessage(
+        "AI fixed some entries that looked incorrect, and suggested more words based on your current oasis!"
+      );
     }
 
     setAiSuggestions(suggestions);
+  };
+
+  /** NEW: AI suggestions based on a theme (e.g. "travel") */
+  const handleAiThemeSuggestions = async () => {
+    if (!meta?.language) {
+      setAiError("Set a target language first so AI knows what to use.");
+      return;
+    }
+
+    const trimmed = theme.trim();
+    if (!trimmed) {
+      setAiError(
+        'Enter a theme like "travel", "food", or "job interview" first.'
+      );
+      return;
+    }
+
+    setAiError(null);
+    setAiLoading(true);
+
+    const res = await getAiThemeSuggestions({
+      language: meta.language,
+      theme: trimmed,
+    });
+
+    setAiLoading(false);
+
+    if (!res.ok) {
+      setAiError(res.error || "Failed to get AI suggestions for this theme");
+      return;
+    }
+
+    setAiSuggestions(res.data.suggestions);
+    setLastMessage(
+      `AI suggested ${res.data.suggestions.length} ${meta.language} words for “${trimmed}”.`
+    );
   };
 
   if (!listId) return <div className="p-6">Missing list id in the URL.</div>;
@@ -292,121 +342,340 @@ export default function EditOasisPage() {
             </LinkAsButton>
           </div>
 
-          {/* Header card: title + quick actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.45 }}
-            className="mb-5 w-full rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold text-white drop-shadow">
-                  Edit Oasis — {meta?.name ?? "Word List"}
-                </h1>
-                <p className="text-sm text-white/80">
-                  {items.length}/{MAX_ITEMS} {items.length === 1 ? "entry" : "entries"}
-                </p>
-                {meta?.language && (
-                  <p className="mt-1 text-xs text-white/75">
-                    Target language: <span className="font-medium">{meta.language}</span>
+            {/* Header card: title + quick actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.45 }}
+              className="mb-5 w-full rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-semibold text-white drop-shadow">
+                    Edit Oasis — {meta?.name ?? "Word List"}
+                  </h1>
+                  <p className="text-sm text-white/80">
+                    {items.length}/{MAX_ITEMS}{" "}
+                    {items.length === 1 ? "entry" : "entries"}
                   </p>
-                )}
+                  {meta?.language && (
+                    <p className="mt-1 text-xs text-white/75">
+                      Target language:{" "}
+                      <span className="font-medium">{meta.language}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={addRow}
+                    className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
+                    disabled={items.length >= MAX_ITEMS}
+                    title={
+                      items.length >= MAX_ITEMS
+                        ? `Max ${MAX_ITEMS} entries`
+                        : ""
+                    }
+                  >
+                    + Add Entry
+                  </Button>
+                  <Button
+                    onClick={handleAiHelp}
+                    disabled={aiLoading}
+                    className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
+                  >
+                    {aiLoading ? "Asking AI..." : "AI: Suggest & Fix"}
+                  </Button>
+                  <Button
+                    onClick={save}
+                    disabled={saving}
+                    className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30 disabled:opacity-60"
+                  >
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={addRow}
-                  className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
-                  disabled={items.length >= MAX_ITEMS}
-                  title={items.length >= MAX_ITEMS ? `Max ${MAX_ITEMS} entries` : ""}
-                >
-                  + Add Entry
-                </Button>
-                <Button
-                  onClick={handleAiHelp}
-                  disabled={aiLoading}
-                  className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30"
-                >
-                  {aiLoading ? "Asking AI..." : "AI: Suggest & Fix"}
-                </Button>
-                <Button
-                  onClick={save}
-                  disabled={saving}
-                  className="!py-2 !px-4 ring-1 ring-white/30 bg-white/20 text-white hover:bg-white/30 disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </div>
-            {lastMessage ? (
-              <div className="mt-3 text-sm text-white/90">{lastMessage}</div>
-            ) : aiError ? (
-              <div className="mt-3 text-sm text-rose-200">{aiError}</div>
-            ) : null}
-          </motion.div>
 
-          {/* Settings (Rename) */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="mb-5 rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl"
-          >
-            <h2 className="mb-3 text-lg font-semibold text-white/95">List Settings</h2>
-            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-              <input
-                className="min-w-[260px] flex-1 rounded-xl border border-white/20 bg-white/90 px-4 py-2 text-sm outline-none placeholder:text-neutral-400 shadow-inner focus:ring-2 focus:ring-amber-400/60 text-gray-900"
-                placeholder={meta?.name ?? "Oasis name"}
-                value={listName}
-                onChange={(e) => setListName(e.target.value)}
+              {/* NEW: Theme input + button */}
+              {meta?.language && (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    type="text"
+                    className="min-w-[220px] flex-1 rounded-xl border border-white/20 bg-white/90 px-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+                    placeholder='Theme for suggestions (e.g. "travel", "at the restaurant")'
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (!aiLoading) {
+                          void handleAiThemeSuggestions();
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleAiThemeSuggestions}
+                    disabled={aiLoading}
+                    className="!py-1.5 !px-3 ring-1 ring-white/30 bg-white/20 text-xs text-white hover:bg-white/30"
+                  >
+                    {aiLoading ? "Asking AI..." : "AI: Suggest by Theme"}
+                  </Button>
+                </div>
+              )}
+
+              {lastMessage ? (
+                <div className="mt-3 text-sm text-white/90">
+                  {lastMessage}
+                </div>
+              ) : aiError ? (
+                <div className="mt-3 text-sm text-rose-200">{aiError}</div>
+              ) : null}
+            </motion.div>
+
+            {/* Settings (Rename) */}
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="mb-5 rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl"
+            >
+              <h2 className="mb-3 text-lg font-semibold text-white/95">
+                List Settings
+              </h2>
+              <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <input
+                  className="min-w-[260px] flex-1 rounded-xl border border-white/20 bg-white/90 px-4 py-2 text-sm outline-none placeholder:text-neutral-400 shadow-inner focus:ring-2 focus:ring-amber-400/60 text-gray-900"
+                  placeholder={meta?.name ?? "Oasis name"}
+                  value={listName}
+                  onChange={(e) => setListName(e.target.value)}
+                />
+                <Button
+                  onClick={handleRename}
+                  disabled={renaming}
+                  className="px-4 py-2"
+                >
+                  {renaming ? "Renaming..." : "Rename"}
+                </Button>
+              </div>
+            </motion.section>
+
+            {/* Table card - Desktop view (hidden on mobile) */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.05 }}
+              className="relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-0 shadow-2xl backdrop-blur-xl hidden md:block"
+            >
+              {/* Shine on hover */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 hover:opacity-100"
+                style={{
+                  background:
+                    "radial-gradient(1200px 300px at 0% -20%, rgba(255,255,255,0.12), transparent 60%)",
+                }}
               />
-              <Button onClick={handleRename} disabled={renaming} className="px-4 py-2">
-                {renaming ? "Renaming..." : "Rename"}
-              </Button>
-            </div>
-          </motion.section>
 
-          {/* Table card - Desktop view (hidden on mobile) */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.05 }}
-            className="relative overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-0 shadow-2xl backdrop-blur-xl hidden md:block"
-          >
-            {/* Shine on hover */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 hover:opacity-100"
-              style={{
-                background:
-                  "radial-gradient(1200px 300px at 0% -20%, rgba(255,255,255,0.12), transparent 60%)",
-              }}
-            />
-
-            {/* Header row */}
-            <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-white/15 bg-white/10 p-3 text-white/95 backdrop-blur-xl">
-              <div className="col-span-3 font-semibold">
-                {meta?.language ?? "Target Language"}
+              {/* Header row */}
+              <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-white/15 bg-white/10 p-3 text-white/95 backdrop-blur-xl">
+                <div className="col-span-3 font-semibold">
+                  {meta?.language ?? "Target Language"}
+                </div>
+                <div className="col-span-3 font-semibold">English</div>
+                <div className="col-span-5 font-semibold">Notes</div>
+                <div className="col-span-1 text-right font-semibold">
+                  Actions
+                </div>
               </div>
-              <div className="col-span-3 font-semibold">English</div>
-              <div className="col-span-5 font-semibold">Notes</div>
-              <div className="col-span-1 text-right font-semibold">Actions</div>
-            </div>
 
-            {/* Body */}
-            <div className="max-h-[65vh] overflow-y-auto p-2">
+              {/* Body */}
+              <div className="max-h-[65vh] overflow-y-auto p-2">
+                {loading && (
+                  <div className="p-4">
+                    <div className="mb-2 h-12 w-1/2 animate-pulse rounded-lg bg-white/15" />
+                    <div className="mb-2 h-12 w-3/4 animate-pulse rounded-lg bg-white/15" />
+                    <div className="mb-2 h-12 w-2/3 animate-pulse rounded-lg bg-white/15" />
+                  </div>
+                )}
+
+                {!loading && items.length === 0 && (
+                  <div className="p-4 text-sm text-white/80">
+                    No entries yet. Click{" "}
+                    <span className="font-semibold">+ Add Entry</span>.
+                  </div>
+                )}
+
+                {!loading &&
+                  items.map((item) => {
+                    const targetLen = item.target?.length ?? 0;
+                    const englishLen = item.english?.length ?? 0;
+                    const notesLen = item.notes?.length ?? 0;
+
+                    return (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        whileHover={{ y: -2 }}
+                        className="grid grid-cols-12 items-start gap-2 border-b border-white/10 p-2"
+                      >
+                        {/* Target */}
+                        <div className="col-span-3 flex flex-col gap-1">
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder={
+                              meta?.language === "Japanese"
+                                ? "こんにちは"
+                                : meta?.language === "Spanish"
+                                ? "hola"
+                                : meta?.name ?? "Hej"
+                            }
+                            value={item.target}
+                            maxLength={TARGET_MAX}
+                            onChange={(e) =>
+                              updateField(item.id, "target", e.target.value)
+                            }
+                            aria-describedby={`target-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`target-help-${item.id}`}
+                              className={`text-[11px] ${
+                                targetLen >= TARGET_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {targetLen >= TARGET_MAX
+                                ? "Reached 50 character limit"
+                                : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                targetLen >= TARGET_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {targetLen}/{TARGET_MAX}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* English */}
+                        <div className="col-span-3 flex flex-col gap-1">
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder="hello"
+                            value={item.english}
+                            maxLength={ENGLISH_MAX}
+                            onChange={(e) =>
+                              updateField(item.id, "english", e.target.value)
+                            }
+                            aria-describedby={`english-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`english-help-${item.id}`}
+                              className={`text-[11px] ${
+                                englishLen >= ENGLISH_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {englishLen >= ENGLISH_MAX
+                                ? "Reached 50 character limit"
+                                : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                englishLen >= ENGLISH_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {englishLen}/{ENGLISH_MAX}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Notes */}
+                        <div className="col-span-5 flex flex-col gap-1">
+                          <input
+                            className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                            placeholder="Any notes (e.g., part of speech, hints)"
+                            value={item.notes ?? ""}
+                            maxLength={NOTES_MAX}
+                            onChange={(e) =>
+                              updateField(item.id, "notes", e.target.value)
+                            }
+                            aria-describedby={`notes-help-${item.id}`}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span
+                              id={`notes-help-${item.id}`}
+                              className={`text-[11px] ${
+                                notesLen >= NOTES_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {notesLen >= NOTES_MAX
+                                ? "Reached 100 character limit"
+                                : "\u00A0"}
+                            </span>
+                            <span
+                              className={`text-[11px] ${
+                                notesLen >= NOTES_MAX
+                                  ? "text-rose-300"
+                                  : "text-white/60"
+                              }`}
+                            >
+                              {notesLen}/{NOTES_MAX}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="col-span-1 flex items-center justify-end">
+                          <Button
+                            className="destructive !py-1.5 !px-3 ring-1 ring-white/20 hover:ring-white/40"
+                            onClick={() => handleDeleteClick(item.id)}
+                            aria-label="Delete entry"
+                            title="Delete entry"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+              </div>
+            </motion.div>
+
+            {/* Mobile Card view (visible only on mobile) */}
+            <div className="block md:hidden">
               {loading && (
-                <div className="p-4">
-                  <div className="mb-2 h-12 w-1/2 animate-pulse rounded-lg bg-white/15" />
-                  <div className="mb-2 h-12 w-3/4 animate-pulse rounded-lg bg-white/15" />
-                  <div className="mb-2 h-12 w-2/3 animate-pulse rounded-lg bg-white/15" />
+                <div className="space-y-3">
+                  <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
+                  <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
+                  <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
                 </div>
               )}
 
               {!loading && items.length === 0 && (
-                <div className="p-4 text-sm text-white/80">
-                  No entries yet. Click <span className="font-semibold">+ Add Entry</span>.
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl text-center"
+                >
+                  <p className="text-sm text-white/80">
+                    No entries yet. Click{" "}
+                    <span className="font-semibold">+ Add Entry</span>.
+                  </p>
+                </motion.div>
               )}
 
               {!loading &&
@@ -418,16 +687,18 @@ export default function EditOasisPage() {
                   return (
                     <motion.div
                       key={item.id}
-                      initial={{ opacity: 0, y: 4 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25 }}
-                      whileHover={{ y: -2 }}
-                      className="grid grid-cols-12 items-start gap-2 border-b border-white/10 p-2"
+                      transition={{ duration: 0.3 }}
+                      className="mb-3 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
                     >
-                      {/* Target */}
-                      <div className="col-span-3 flex flex-col gap-1">
+                      {/* Target Language */}
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs font-semibold text-white/90">
+                          {meta?.language ?? "Target Language"}
+                        </label>
                         <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                          className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
                           placeholder={
                             meta?.language === "Japanese"
                               ? "こんにちは"
@@ -437,21 +708,29 @@ export default function EditOasisPage() {
                           }
                           value={item.target}
                           maxLength={TARGET_MAX}
-                          onChange={(e) => updateField(item.id, "target", e.target.value)}
-                          aria-describedby={`target-help-${item.id}`}
+                          onChange={(e) =>
+                            updateField(item.id, "target", e.target.value)
+                          }
+                          aria-describedby={`mobile-target-help-${item.id}`}
                         />
-                        <div className="flex items-center justify-between">
+                        <div className="mt-1 flex items-center justify-between">
                           <span
-                            id={`target-help-${item.id}`}
+                            id={`mobile-target-help-${item.id}`}
                             className={`text-[11px] ${
-                              targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                              targetLen >= TARGET_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
-                            {targetLen >= TARGET_MAX ? "Reached 50 character limit" : "\u00A0"}
+                            {targetLen >= TARGET_MAX
+                              ? "Reached 50 character limit"
+                              : "\u00A0"}
                           </span>
                           <span
                             className={`text-[11px] ${
-                              targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
+                              targetLen >= TARGET_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
                             {targetLen}/{TARGET_MAX}
@@ -460,27 +739,38 @@ export default function EditOasisPage() {
                       </div>
 
                       {/* English */}
-                      <div className="col-span-3 flex flex-col gap-1">
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs font-semibold text-white/90">
+                          English
+                        </label>
                         <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                          className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
                           placeholder="hello"
                           value={item.english}
                           maxLength={ENGLISH_MAX}
-                          onChange={(e) => updateField(item.id, "english", e.target.value)}
-                          aria-describedby={`english-help-${item.id}`}
+                          onChange={(e) =>
+                            updateField(item.id, "english", e.target.value)
+                          }
+                          aria-describedby={`mobile-english-help-${item.id}`}
                         />
-                        <div className="flex items-center justify-between">
+                        <div className="mt-1 flex items-center justify-between">
                           <span
-                            id={`english-help-${item.id}`}
+                            id={`mobile-english-help-${item.id}`}
                             className={`text-[11px] ${
-                              englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                              englishLen >= ENGLISH_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
-                            {englishLen >= ENGLISH_MAX ? "Reached 50 character limit" : "\u00A0"}
+                            {englishLen >= ENGLISH_MAX
+                              ? "Reached 50 character limit"
+                              : "\u00A0"}
                           </span>
                           <span
                             className={`text-[11px] ${
-                              englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
+                              englishLen >= ENGLISH_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
                             {englishLen}/{ENGLISH_MAX}
@@ -489,27 +779,38 @@ export default function EditOasisPage() {
                       </div>
 
                       {/* Notes */}
-                      <div className="col-span-5 flex flex-col gap-1">
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs font-semibold text-white/90">
+                          Notes
+                        </label>
                         <input
-                          className="rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
+                          className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
                           placeholder="Any notes (e.g., part of speech, hints)"
                           value={item.notes ?? ""}
                           maxLength={NOTES_MAX}
-                          onChange={(e) => updateField(item.id, "notes", e.target.value)}
-                          aria-describedby={`notes-help-${item.id}`}
+                          onChange={(e) =>
+                            updateField(item.id, "notes", e.target.value)
+                          }
+                          aria-describedby={`mobile-notes-help-${item.id}`}
                         />
-                        <div className="flex items-center justify-between">
+                        <div className="mt-1 flex items-center justify-between">
                           <span
-                            id={`notes-help-${item.id}`}
+                            id={`mobile-notes-help-${item.id}`}
                             className={`text-[11px] ${
-                              notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                              notesLen >= NOTES_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
-                            {notesLen >= NOTES_MAX ? "Reached 100 character limit" : "\u00A0"}
+                            {notesLen >= NOTES_MAX
+                              ? "Reached 100 character limit"
+                              : "\u00A0"}
                           </span>
                           <span
                             className={`text-[11px] ${
-                              notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
+                              notesLen >= NOTES_MAX
+                                ? "text-rose-300"
+                                : "text-white/60"
                             }`}
                           >
                             {notesLen}/{NOTES_MAX}
@@ -517,258 +818,112 @@ export default function EditOasisPage() {
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="col-span-1 flex items-center justify-end">
+                      {/* Delete Button */}
+                      <div className="flex justify-end">
                         <Button
-                          className="destructive !py-1.5 !px-3 ring-1 ring-white/20 hover:ring-white/40"
+                          className="destructive !py-2 !px-4 ring-1 ring-white/20 hover:ring-white/40"
                           onClick={() => handleDeleteClick(item.id)}
                           aria-label="Delete entry"
-                          title="Delete entry"
                         >
-                          Delete
+                          Delete Entry
                         </Button>
                       </div>
                     </motion.div>
                   );
                 })}
             </div>
-          </motion.div>
 
-          {/* Mobile Card view (visible only on mobile) */}
-          <div className="block md:hidden">
-            {loading && (
-              <div className="space-y-3">
-                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
-                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
-                <div className="h-32 w-full animate-pulse rounded-2xl bg-white/15" />
-              </div>
-            )}
-
-            {!loading && items.length === 0 && (
-              <motion.div
+            {/* AI Suggestions table */}
+            {aiSuggestions.length > 0 && (
+              <motion.section
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-xl text-center"
+                className="mt-6 rounded-3xl border border-white/25 bg-black/65 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.75)] backdrop-blur-2xl"
               >
-                <p className="text-sm text-white/80">
-                  No entries yet. Click <span className="font-semibold">+ Add Entry</span>.
-                </p>
-              </motion.div>
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+                  <h2 className="text-2xl font-semibold tracking-tight text-white">
+                    Suggested words by typed theme
+                  </h2>
+                  <p className="text-sm text-white/80 max-w-xl">
+                    Click <span className="font-semibold">Add</span> to insert a word into your list
+                    (up to {MAX_ITEMS} total). You can remove or edit them after they’re added.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {aiSuggestions.map((s, idx) => {
+                    const handleAdd = () => {
+                      if (items.length >= MAX_ITEMS) {
+                        alert(`You already have ${MAX_ITEMS} items in this list.`);
+                        return;
+                      }
+
+                      const id =
+                        typeof crypto !== "undefined" && crypto.randomUUID
+                          ? crypto.randomUUID()
+                          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+                      setItems((prev) => [
+                        ...prev,
+                        {
+                          id,
+                          target: s.target,
+                          english: s.english,
+                          notes: s.notes ?? "",
+                        },
+                      ]);
+
+                      setAiSuggestions((prev) => prev.filter((_, i) => i !== idx));
+                    };
+
+                    return (
+                      <div
+                        key={`${s.target}-${idx}`}
+                        className="rounded-2xl border border-white/25 bg-white/8 p-4 text-base text-white/95 backdrop-blur-xl shadow-lg"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="text-lg font-semibold leading-tight text-white">
+                              {s.target}
+                            </div>
+                            <div className="text-sm text-white/90">{s.english}</div>
+                          </div>
+                          <Button
+                            onClick={handleAdd}
+                            className="px-4 py-1.5 text-sm ring-1 ring-white/40 bg-white/20 hover:bg-white/35 hover:ring-white/60"
+                          >
+                            Add
+                          </Button>
+                        </div>
+
+                        {s.notes && (
+                          <p className="mt-2 text-xs leading-relaxed text-white/80">
+                            <span className="font-semibold">Note:</span> {s.notes}
+                          </p>
+                        )}
+
+                        {s.reason && (
+                          <p className="mt-2 text-xs leading-relaxed text-white/75">
+                            <span className="font-semibold">Why:</span> {s.reason}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.section>
             )}
 
-            {!loading &&
-              items.map((item) => {
-                const targetLen = item.target?.length ?? 0;
-                const englishLen = item.english?.length ?? 0;
-                const notesLen = item.notes?.length ?? 0;
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mb-3 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
-                  >
-                    {/* Target Language */}
-                    <div className="mb-3">
-                      <label className="mb-1 block text-xs font-semibold text-white/90">
-                        {meta?.language ?? "Target Language"}
-                      </label>
-                      <input
-                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                        placeholder={
-                          meta?.language === "Japanese"
-                            ? "こんにちは"
-                            : meta?.language === "Spanish"
-                            ? "hola"
-                            : meta?.name ?? "Hej"
-                        }
-                        value={item.target}
-                        maxLength={TARGET_MAX}
-                        onChange={(e) => updateField(item.id, "target", e.target.value)}
-                        aria-describedby={`mobile-target-help-${item.id}`}
-                      />
-                      <div className="mt-1 flex items-center justify-between">
-                        <span
-                          id={`mobile-target-help-${item.id}`}
-                          className={`text-[11px] ${
-                            targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {targetLen >= TARGET_MAX ? "Reached 50 character limit" : "\u00A0"}
-                        </span>
-                        <span
-                          className={`text-[11px] ${
-                            targetLen >= TARGET_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {targetLen}/{TARGET_MAX}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* English */}
-                    <div className="mb-3">
-                      <label className="mb-1 block text-xs font-semibold text-white/90">
-                        English
-                      </label>
-                      <input
-                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                        placeholder="hello"
-                        value={item.english}
-                        maxLength={ENGLISH_MAX}
-                        onChange={(e) => updateField(item.id, "english", e.target.value)}
-                        aria-describedby={`mobile-english-help-${item.id}`}
-                      />
-                      <div className="mt-1 flex items-center justify-between">
-                        <span
-                          id={`mobile-english-help-${item.id}`}
-                          className={`text-[11px] ${
-                            englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {englishLen >= ENGLISH_MAX ? "Reached 50 character limit" : "\u00A0"}
-                        </span>
-                        <span
-                          className={`text-[11px] ${
-                            englishLen >= ENGLISH_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {englishLen}/{ENGLISH_MAX}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="mb-3">
-                      <label className="mb-1 block text-xs font-semibold text-white/90">
-                        Notes
-                      </label>
-                      <input
-                        className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-white outline-none ring-1 ring-white/20 transition focus:ring-2 focus:ring-white/60"
-                        placeholder="Any notes (e.g., part of speech, hints)"
-                        value={item.notes ?? ""}
-                        maxLength={NOTES_MAX}
-                        onChange={(e) => updateField(item.id, "notes", e.target.value)}
-                        aria-describedby={`mobile-notes-help-${item.id}`}
-                      />
-                      <div className="mt-1 flex items-center justify-between">
-                        <span
-                          id={`mobile-notes-help-${item.id}`}
-                          className={`text-[11px] ${
-                            notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {notesLen >= NOTES_MAX ? "Reached 100 character limit" : "\u00A0"}
-                        </span>
-                        <span
-                          className={`text-[11px] ${
-                            notesLen >= NOTES_MAX ? "text-rose-300" : "text-white/60"
-                          }`}
-                        >
-                          {notesLen}/{NOTES_MAX}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Delete Button */}
-                    <div className="flex justify-end">
-                      <Button
-                        className="destructive !py-2 !px-4 ring-1 ring-white/20 hover:ring-white/40"
-                        onClick={() => handleDeleteClick(item.id)}
-                        aria-label="Delete entry"
-                      >
-                        Delete Entry
-                      </Button>
-                    </div>
-                  </motion.div>
-                );
-              })}
+            {/* Footer tip */}
+            <p className="mt-4 text-center text-xs text-white/80">
+              Tip: Use{" "}
+              <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
+              <kbd className="rounded bg-white/20 px-1">S</kbd> to save,{" "}
+              <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
+              <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
+            </p>
           </div>
-
-          {/* AI Suggestions table */}
-          {aiSuggestions.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
-            >
-              <h2 className="mb-2 text-lg font-semibold text-white/95">
-                AI suggested words
-              </h2>
-              <p className="mb-3 text-xs text-white/75">
-                Click “Add” to insert a word into your list (up to {MAX_ITEMS} total).
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {aiSuggestions.map((s, idx) => {
-              const handleAdd = () => {
-                if (items.length >= MAX_ITEMS) {
-                  alert(`You already have ${MAX_ITEMS} items in this list.`);
-                  return;
-                }
-
-                const id =
-                  typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-                setItems((prev) => [
-                  ...prev,
-                  {
-                    id,
-                    target: s.target,
-                    english: s.english,
-                    notes: s.notes ?? "",
-                  },
-                ]);
-
-                setAiSuggestions((prev) => prev.filter((_, i) => i !== idx));
-              };
-
-              return (
-                <div
-                  key={`${s.target}-${idx}`}
-                  className="rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white/90"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="font-semibold">{s.target}</div>
-                      <div className="text-xs text-white/80">{s.english}</div>
-                    </div>
-                    <Button
-                      onClick={handleAdd}
-                      className="px-3 py-1 text-xs ring-1 ring-white/30 bg-white/20 hover:bg-white/30"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {s.notes && (
-                    <p className="mt-1 text-[11px] text-white/70">{s.notes}</p>
-                  )}
-                  {s.reason && (
-                    <p className="mt-1 text-[10px] text-white/60">
-                      Why: {s.reason}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-
-              </div>
-            </motion.section>
-          )}
-
-          {/* Footer tip */}
-          <p className="mt-4 text-center text-xs text-white/80">
-            Tip: Use <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
-            <kbd className="rounded bg-white/20 px-1">S</kbd> to save,{" "}
-            <kbd className="rounded bg-white/20 px-1">⌘/Ctrl</kbd>+
-            <kbd className="rounded bg-white/20 px-1">B</kbd> to add an entry.
-          </p>
-        </div>
         </PageBackground>
       </div>
 
