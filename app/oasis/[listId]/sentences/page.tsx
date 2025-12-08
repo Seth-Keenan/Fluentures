@@ -65,6 +65,21 @@ export default function SentencesPage() {
         ...prev,
         [word]: s || " Error generating sentence",
       }));
+      // award XP for a successful sentence generation
+      if (s) {
+        try {
+          const { addXp, dispatchXpToast } = await import("@/app/lib/actions/xpAction");
+          const XP_AMOUNTS = (await import("@/app/config/xp")).default;
+          try {
+            dispatchXpToast(XP_AMOUNTS.sentenceCorrect);
+          } catch {}
+          void addXp(XP_AMOUNTS.sentenceCorrect);
+        } catch (err) {
+          // non-fatal
+          // eslint-disable-next-line no-console
+          console.warn("Could not award sentence XP", err);
+        }
+      }
     } catch (err) {
       console.error("Sentence request failed:", err);
       setSentences((prev) => ({ ...prev, [word]: "Request failed" }));

@@ -15,10 +15,10 @@ export function XPToastPortal() {
       if (!detail) return;
       const id = idCounter++;
       setToasts((t) => [...t, { id, amount: detail.amount }]);
-      // auto-remove after 1200ms
+      // auto-remove after 2200ms (longer so users notice it)
       setTimeout(() => {
         setToasts((t) => t.filter((x) => x.id !== id));
-      }, 1200);
+      }, 5000);
     };
 
     window.addEventListener("xp-toast", h as EventListener);
@@ -35,7 +35,7 @@ export function XPToastPortal() {
               initial={{ opacity: 0, y: 10, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.18 }}
+              transition={{ duration: 0.28 }}
               className="pointer-events-auto"
             >
               <div className="rounded-lg bg-emerald-500 px-3 py-1 text-white font-semibold shadow-md">

@@ -99,6 +99,21 @@ export default function WordMatcher() {
       next.add(id);
       setMatched(next);
       setSelectedId(null);
+      // award XP + show toast (fire-and-forget)
+      void (async () => {
+        try {
+          const { addXp, dispatchXpToast } = await import("@/app/lib/actions/xpAction");
+          const XP_AMOUNTS = (await import("@/app/config/xp")).default;
+          try {
+            dispatchXpToast(XP_AMOUNTS.quizCorrect);
+          } catch {}
+          void addXp(XP_AMOUNTS.quizCorrect);
+        } catch (err) {
+          // non-fatal
+          // eslint-disable-next-line no-console
+          console.warn("Could not award quiz XP", err);
+        }
+      })();
     } else {
       // wrong — shake RIGHT tile
       setWrongKey(`${id}-${Date.now()}`);
