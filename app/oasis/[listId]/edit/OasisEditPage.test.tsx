@@ -142,8 +142,10 @@ vi.mock("@/app/lib/actions/wordlistAction", () => ({
 
 // Mock AI service separately
 const mockGetAiWordlistHelp = vi.fn();
+const mockGetAiThemeSuggestions = vi.fn();
 vi.mock("@/app/lib/actions/aiWordlistRecommendations", () => ({
   getAiWordlistHelp: (...args: unknown[]) => mockGetAiWordlistHelp(...args),
+  getAiThemeSuggestions: (...args: unknown[]) => mockGetAiThemeSuggestions(...args),
 }));
 
 // Mock deserts data
@@ -202,6 +204,12 @@ describe("EditOasisPage", () => {
       data: {
         suggestions: [],
         corrections: [],
+      },
+    });
+    mockGetAiThemeSuggestions.mockResolvedValue({
+      ok: true,
+      data: {
+        suggestions: [],
       },
     });
   });
@@ -497,7 +505,7 @@ describe("EditOasisPage", () => {
         language: "Spanish",
         items: mockWordItems,
       });
-      expect(screen.getByText("AI suggested words")).toBeInTheDocument();
+      expect(screen.getByText("Suggested words by typed theme")).toBeInTheDocument();
       expect(screen.getByText("gracias")).toBeInTheDocument();
       expect(screen.getByText("por favor")).toBeInTheDocument();
     });
@@ -659,6 +667,207 @@ describe("EditOasisPage", () => {
       expect(screen.getByText("0/20 entries")).toBeInTheDocument();
       // Check for the add entry button
       expect(screen.getByTestId("button-+-add-entry")).toBeInTheDocument();
+    });
+  });
+
+  it("renders theme input field when language is set", async () => {
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    const themeInput = screen.getByPlaceholderText(/Theme for suggestions/i);
+    expect(themeInput).toBeInTheDocument();
+    expect(screen.getByTestId("button-ai:-suggest-by-theme")).toBeInTheDocument();
+  });
+
+  it("requests theme-based AI suggestions when theme button is clicked", async () => {
+    const user = userEvent.setup();
+    const mockThemeSuggestions = [
+      {
+        target: "aeropuerto",
+        english: "airport",
+        notes: "place to catch flights",
+        reason: "Essential travel location",
+      },
+      {
+        target: "maleta",
+        english: "suitcase",
+        notes: "luggage item",
+        reason: "Common travel item",
+      },
+    ];
+
+    mockGetAiThemeSuggestions.mockResolvedValue({
+      ok: true,
+      data: {
+        suggestions: mockThemeSuggestions,
+      },
+    });
+
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Enter theme
+    const themeInput = screen.getByPlaceholderText(/Theme for suggestions/i);
+    await user.type(themeInput, "travel");
+
+    // Click theme AI button
+    const themeButton = screen.getByTestId("button-ai:-suggest-by-theme");
+    await user.click(themeButton);
+
+    await waitFor(() => {
+      expect(mockGetAiThemeSuggestions).toHaveBeenCalledWith({
+        language: "Spanish",
+        theme: "travel",
+      });
+      expect(screen.getByText(/AI suggested 2 Spanish words for.*travel/)).toBeInTheDocument();
+      expect(screen.getByText("aeropuerto")).toBeInTheDocument();
+      expect(screen.getByText("maleta")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error when requesting theme suggestions without theme", async () => {
+    const user = userEvent.setup();
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Click theme button without entering theme
+    const themeButton = screen.getByTestId("button-ai:-suggest-by-theme");
+    await user.click(themeButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Enter a theme like "travel"/)).toBeInTheDocument();
+    });
+  });
+
+  it("does not show theme input when language is null", async () => {
+    mockGetWordListMeta.mockResolvedValue({
+      ...mockWordListMeta,
+      language: null,
+    });
+
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Theme input should not exist when language is null
+    expect(screen.queryByPlaceholderText(/Theme for suggestions/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("button-ai:-suggest-by-theme")).not.toBeInTheDocument();
+  });
+
+  it("shows error when theme AI suggestions fail", async () => {
+    const user = userEvent.setup();
+    mockGetAiThemeSuggestions.mockResolvedValue({
+      ok: false,
+      error: "Theme AI service unavailable",
+    });
+
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Enter theme
+    const themeInput = screen.getByPlaceholderText(/Theme for suggestions/i);
+    await user.type(themeInput, "travel");
+
+    // Click theme button
+    const themeButton = screen.getByTestId("button-ai:-suggest-by-theme");
+    await user.click(themeButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Theme AI service unavailable")).toBeInTheDocument();
+    });
+  });
+
+  it("submits theme suggestions on Enter key press", async () => {
+    const user = userEvent.setup();
+    mockGetAiThemeSuggestions.mockResolvedValue({
+      ok: true,
+      data: {
+        suggestions: [
+          {
+            target: "hotel",
+            english: "hotel",
+            notes: "accommodation",
+            reason: "Travel lodging",
+          },
+        ],
+      },
+    });
+
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Enter theme and press Enter
+    const themeInput = screen.getByPlaceholderText(/Theme for suggestions/i);
+    await user.type(themeInput, "travel{Enter}");
+
+    await waitFor(() => {
+      expect(mockGetAiThemeSuggestions).toHaveBeenCalledWith({
+        language: "Spanish",
+        theme: "travel",
+      });
+      const hotelElements = screen.getAllByText("hotel");
+      expect(hotelElements.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("adds theme-suggested word to the list", async () => {
+    const user = userEvent.setup();
+    mockGetAiThemeSuggestions.mockResolvedValue({
+      ok: true,
+      data: {
+        suggestions: [
+          {
+            target: "aeropuerto",
+            english: "airport",
+            notes: "travel location",
+            reason: "Essential for travel",
+          },
+        ],
+      },
+    });
+
+    render(<EditOasisPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByDisplayValue("hola").length).toBeGreaterThan(0);
+    });
+
+    // Enter theme
+    const themeInput = screen.getByPlaceholderText(/Theme for suggestions/i);
+    await user.type(themeInput, "travel");
+
+    // Get theme suggestions
+    const themeButton = screen.getByTestId("button-ai:-suggest-by-theme");
+    await user.click(themeButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("aeropuerto")).toBeInTheDocument();
+    });
+
+    // Add suggestion to list
+    const addButton = screen.getByRole("button", { name: "Add" });
+    await user.click(addButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("3/20 entries")).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue("aeropuerto").length).toBeGreaterThan(0);
     });
   });
 });
