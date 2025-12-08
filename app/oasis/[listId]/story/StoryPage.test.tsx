@@ -43,6 +43,15 @@ vi.mock('@/app/components/PageBackground', () => ({
   ),
 }));
 
+vi.mock('@/app/components/camelIcon', () => ({
+  __esModule: true,
+  default: ({ size, speaking }: { size?: number; speaking?: boolean }) => (
+    <div data-testid="speaking-icon" data-size={size} data-speaking={speaking}>
+      Camel Icon
+    </div>
+  ),
+}));
+
 // Mock hooks
 const mockUseOasisData = vi.fn();
 vi.mock('@/app/lib/hooks/useOasis', () => ({

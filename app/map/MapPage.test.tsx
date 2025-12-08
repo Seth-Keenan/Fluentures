@@ -163,13 +163,12 @@ describe("OasisIndex (Map Page)", () => {
     const wordListChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue(wordListQueryResult),
       maybeSingle: vi.fn().mockReturnThis(),
     };
     
-    // Setup .eq() to return itself first (for user_id), then return result (for language)
-    wordListChain.eq.mockReturnValueOnce(wordListChain); // First .eq() call returns chain
-    wordListChain.eq.mockReturnValueOnce(wordListQueryResult); // Second .eq() call returns result
+    // Setup .eq() to return itself for both calls, then .order() returns the result
+    wordListChain.eq.mockReturnValue(wordListChain);
 
     mockSupabaseClient.from
       .mockReturnValueOnce(settingsChain) // First call for UserSettings
@@ -186,20 +185,8 @@ describe("OasisIndex (Map Page)", () => {
     });
   });
 
-  it("renders all wordlists when no language filter is set", async () => {
+  it("shows language setup prompt when no language is set", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
-    const mockWordLists = [
-      {
-        word_list_id: "list-1",
-        word_list_name: "Spanish Basics",
-        language: "Spanish",
-      },
-      {
-        word_list_id: "list-2",
-        word_list_name: "French Vocabulary", 
-        language: "French",
-      },
-    ];
 
     // Mock successful auth
     mockSupabaseClient.auth.getUser.mockResolvedValue({
@@ -207,14 +194,9 @@ describe("OasisIndex (Map Page)", () => {
       error: null,
     });
 
-    // Mock query chains
+    // Mock query chains - no language setting
     const settingsQueryResult = Promise.resolve({
       data: null,
-      error: null,
-    });
-
-    const wordListQueryResult = Promise.resolve({
-      data: mockWordLists,
       error: null,
     });
 
@@ -225,25 +207,48 @@ describe("OasisIndex (Map Page)", () => {
       order: vi.fn().mockReturnThis(),
     };
 
-    const wordListChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnValue(wordListQueryResult),
-      maybeSingle: vi.fn().mockReturnThis(),
-    };
-
-    mockSupabaseClient.from
-      .mockReturnValueOnce(settingsChain)
-      .mockReturnValueOnce(wordListChain);
+    mockSupabaseClient.from.mockReturnValueOnce(settingsChain);
 
     const component = await OasisIndex();
     render(component);
 
     await waitFor(() => {
-      expect(screen.getByTestId("map-view")).toHaveAttribute("data-selected-language", "null");
-      expect(screen.getByTestId("wordlists-count")).toHaveTextContent("2"); // All wordlists
-      expect(screen.getByTestId("wordlist-0")).toHaveTextContent("Spanish Basics - Spanish");
-      expect(screen.getByTestId("wordlist-1")).toHaveTextContent("French Vocabulary - French");
+      expect(screen.getByRole("heading", { name: /set your language to view your oases/i })).toBeInTheDocument();
+      expect(screen.getByText(/you haven.*t set your language/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/home");
+    });
+  });
+
+  it("shows language setup prompt when language is empty string", async () => {
+    const mockUser = { id: "user-123", email: "test@example.com" };
+
+    // Mock successful auth
+    mockSupabaseClient.auth.getUser.mockResolvedValue({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    // Mock query chains - empty language setting
+    const settingsQueryResult = Promise.resolve({
+      data: { language: "  " }, // Whitespace only
+      error: null,
+    });
+
+    const settingsChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockReturnValue(settingsQueryResult),
+      order: vi.fn().mockReturnThis(),
+    };
+
+    mockSupabaseClient.from.mockReturnValueOnce(settingsChain);
+
+    const component = await OasisIndex();
+    render(component);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /set your language to view your oases/i })).toBeInTheDocument();
+      expect(screen.getByText(/you haven.*t set your language/i)).toBeInTheDocument();
     });
   });
 
@@ -277,13 +282,12 @@ describe("OasisIndex (Map Page)", () => {
     const wordListChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue(wordListQueryResult),
       maybeSingle: vi.fn().mockReturnThis(),
     };
     
-    // Setup .eq() to return itself first (for user_id), then return result (for language)
-    wordListChain.eq.mockReturnValueOnce(wordListChain); // First .eq() call returns chain
-    wordListChain.eq.mockReturnValueOnce(wordListQueryResult); // Second .eq() call returns result
+    // Setup .eq() to return itself for both calls
+    wordListChain.eq.mockReturnValue(wordListChain);
 
     mockSupabaseClient.from
       .mockReturnValueOnce(settingsChain)
@@ -317,7 +321,7 @@ describe("OasisIndex (Map Page)", () => {
 
     // Mock query chains
     const settingsQueryResult = Promise.resolve({
-      data: null,
+      data: { language: "Spanish" },
       error: null,
     });
 
@@ -336,9 +340,12 @@ describe("OasisIndex (Map Page)", () => {
     const wordListChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnValue(wordListQueryResult),
+      order: vi.fn().mockResolvedValue(wordListQueryResult),
       maybeSingle: vi.fn().mockReturnThis(),
     };
+    
+    // Setup .eq() to return itself for both calls
+    wordListChain.eq.mockReturnValue(wordListChain);
 
     mockSupabaseClient.from
       .mockReturnValueOnce(settingsChain)
@@ -364,7 +371,7 @@ describe("OasisIndex (Map Page)", () => {
 
     // Mock query chains with errors
     const settingsQueryResult = Promise.resolve({
-      data: null,
+      data: { language: "Spanish" },
       error: {
         message: "Database connection failed",
         code: "CONNECTION_ERROR",
@@ -393,9 +400,12 @@ describe("OasisIndex (Map Page)", () => {
     const wordListChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnValue(wordListQueryResult),
+      order: vi.fn().mockResolvedValue(wordListQueryResult),
       maybeSingle: vi.fn().mockReturnThis(),
     };
+    
+    // Setup .eq() to return itself for both calls
+    wordListChain.eq.mockReturnValue(wordListChain);
 
     mockSupabaseClient.from
       .mockReturnValueOnce(settingsChain)
@@ -437,7 +447,7 @@ describe("OasisIndex (Map Page)", () => {
       error: null,
     });
 
-    const settingsQueryResult = Promise.resolve({ data: null, error: null });
+    const settingsQueryResult = Promise.resolve({ data: { language: "Spanish" }, error: null });
     const wordListQueryResult = Promise.resolve({ data: [], error: null });
 
     const settingsChain = {
@@ -450,9 +460,12 @@ describe("OasisIndex (Map Page)", () => {
     const wordListChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnValue(wordListQueryResult),
+      order: vi.fn().mockResolvedValue(wordListQueryResult),
       maybeSingle: vi.fn().mockReturnThis(),
     };
+    
+    // Setup .eq() to return itself for both calls
+    wordListChain.eq.mockReturnValue(wordListChain);
 
     mockSupabaseClient.from
       .mockReturnValueOnce(settingsChain)
