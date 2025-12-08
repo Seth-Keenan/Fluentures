@@ -15,6 +15,7 @@ import {
   faBookmark,
   faListUl,
   faChartPie,
+  faFire,
   faHeart,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -462,14 +463,27 @@ export default function LogbookPage() {
           pages={desktopPages}
           showPageControls={desktopPages.length > 1}
           rightExtras={
-            <div className="absolute top-1 left-1/2 -translate-x-1/2">
-              <Link
-                href="/home"
-                className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
-              >
-                Home
-              </Link>
-            </div>
+            <>
+              <div className="absolute top-1 left-1/2 -translate-x-1/2">
+                <Link
+                  href="/home"
+                  className="rounded-xl px-5 py-2 bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30 shadow-md transition focus:outline-none focus:ring-2 focus:ring-white/80"
+                >
+                  Back to Home
+                </Link>
+              </div>
+
+              <div className="absolute top-16 right-24 flex items-center gap-2 z-30">
+                <div className="flex flex-col">
+                  <span className="text-amber-900/80 text-sm font-medium">Streak</span>
+
+                  <span className="text-amber-900/95 text-lg font-semibold flex items-center gap-1">
+                    <FontAwesomeIcon icon={faFire} className="h-4 w-4 text-orange-500" />
+                    {stats.streakDays ?? 0}d
+                  </span>
+                </div>
+              </div>
+            </>
           }
         />
       )}
