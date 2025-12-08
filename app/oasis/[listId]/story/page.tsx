@@ -156,7 +156,7 @@ export default function StoryPage() {
       if (xp !== null) dispatchXpToast(XP_AMOUNTS.storyComplete);
     } catch (err) {
       // non-fatal
-      // console.warn("Could not award story XP", err);
+      console.warn("Could not award story XP", err);
     }
   };
 
