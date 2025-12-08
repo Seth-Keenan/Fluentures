@@ -6,13 +6,13 @@ import Link from "next/link";
 import BookShell from "@/app/logbook/BookShell";
 import { getAllFavoritesForUser, type FavoriteWord } from "@/app/lib/actions/favoritesAction";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBolt, faClock, faBookmark, faListUl, faChartPie, faHeart, faFire } from "@fortawesome/free-solid-svg-icons";
+import { faBolt, faClock, faBookmark, faListUl, faChartPie, faHeart} from "@fortawesome/free-solid-svg-icons";
 
 import StatCard from "@/app/logbook/StatCard";
 import ProgressBar from "@/app/logbook/ProgressBar";
 import RecentList from "@/app/logbook/RecentList";
 import FavoritesPanel from "@/app/logbook/FavoritesPanel";
-// import Leaderboard from "@/app/logbook/Leaderboard";
+//import Leaderboard from "@/app/logbook/Leaderboard";
 import { getLogbookStats } from "@/app/lib/actions/logbookAction";
 import { getRecentlyLearned } from "@/app/lib/actions/logbookAction";
 import { deserts } from "@/app/data/deserts";
@@ -174,15 +174,15 @@ export default function LogbookPage() {
     */}
     <div className="pl-8">
 
-      <h2 className="text-amber-900/90 text-2xl font-semibold">
+      {/*<h2 className="text-amber-900/90 text-2xl font-semibold">
         Leaderboard
       </h2>
 
       <div className="mt-6">
         <Leaderboard names={DATA.leaderboard} />
-      </div>
+      </div>*/}
 
-      <div className="mt-6 h-px w-full bg-amber-900/20" />
+      <div className="mt-50 h-px w-full bg-amber-900/20" />
 
 
       <div className="mt-15 space-y-4">
@@ -202,9 +202,9 @@ export default function LogbookPage() {
       </div>
 
       <div className="mt-6">
-        <button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
+        {/*<button className="inline-flex items-center rounded-full px-4 py-1.5 bg-amber-700 text-amber-50 hover:bg-amber-600 shadow-md ring-1 ring-amber-900/30 transition">
           Socials
-        </button>
+        </button>*/}
       </div>
     </div>
 

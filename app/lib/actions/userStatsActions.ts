@@ -1,7 +1,7 @@
 "use server";
 
 import { getSupabaseServerActionClient } from "@/app/lib/hooks/supabaseServerActionClient";
-import dayjs from "dayjs";
+import dayjs from "dayjs"; 
 
 export async function updateDailyStreak() {
   const supabase = await getSupabaseServerActionClient();
