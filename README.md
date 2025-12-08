@@ -1,32 +1,12 @@
 # Fluentures 🐪
 Oasis-themed language learning app by Team camelCase.
 
-## Getting Started
+## Team Members
+Angela Amaro, Seth Ek, Seth Keenan, Seohyun (Jay) Kim, Kody McNamara, Evie Wilbur
 
-These instructions will get your development environment set up and the app running locally.
 
-### 1. Install Node.js
 
-Make sure you have **Node.js (v18 or higher)** installed.
 
-Download it from the official site:  
-https://nodejs.org/
-
-### 2. Verify node installed and clone the Repository
-
-```bash
-node -v
-
-npm -v
-
-git clone "insert HTTPS here"
-
-cd Fluentures
-
-npm install
-
-npm run dev 
-```
 ## Supabase Documentation
 ### Current Schema:
 Make a request [here](https://docs.google.com/document/d/1ylrXERwUurzHS7x3toWjKsTz1sZfwd6-NzpLQVLlDm0/edit?usp=sharing) for additional tables.
