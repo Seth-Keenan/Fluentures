@@ -330,7 +330,7 @@ describe("LogbookPage", () => {
       render(<LogbookPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/level 13/i)).toBeInTheDocument();
+        expect(screen.getByText(/level 84/i)).toBeInTheDocument();
       });
     });
 
