@@ -200,6 +200,20 @@ export async function saveWordlist(listId: string, items: WordItem[]): Promise<b
         activity_data: { word: word.target, translation: word.english, listId }
       }])
     }
+    // award XP for new words (3 XP per word)
+    try {
+      const { data: row } = await supabase
+        .from("Users")
+        .select("xp")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const current = (row?.xp as number) || 0;
+      const delta = newWords.length * 3;
+      const next = current + delta;
+      await supabase.from("Users").update({ xp: next }).eq("user_id", user.id);
+    } catch (err) {
+      console.error("Failed to award XP for new words:", err);
+    }
   }
   return true;
 }

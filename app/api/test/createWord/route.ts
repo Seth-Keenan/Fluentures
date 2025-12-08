@@ -19,6 +19,15 @@ export async function POST(req: Request) {
       .select()
     
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    // Award a small XP bump for adding a word (test route)
+    try {
+      const { data: userRow } = await supabase.from('Users').select('xp').eq('user_id', user.id).maybeSingle();
+      const current = (userRow?.xp as number) || 0;
+      const next = current + 3;
+      await supabase.from('Users').update({ xp: next }).eq('user_id', user.id);
+    } catch (err) {
+      console.error('Failed to award XP for test createWord:', err);
+    }
 
     return NextResponse.json({ message: 'Word created', word: data[0] })
   } catch (error) {

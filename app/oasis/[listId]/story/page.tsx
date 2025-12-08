@@ -148,6 +148,16 @@ export default function StoryPage() {
     const storyText =
       typeof res === "string" ? res : res?.story ?? "Failed to generate story.";
     setStory(storyText);
+    // award XP for completing a story generation
+    try {
+      const { addXp, dispatchXpToast } = await import("@/app/lib/actions/xpAction");
+      const XP_AMOUNTS = (await import("@/app/config/xp")).default;
+      const xp = await addXp(XP_AMOUNTS.storyComplete);
+      if (xp !== null) dispatchXpToast(XP_AMOUNTS.storyComplete);
+    } catch (err) {
+      // non-fatal
+      // console.warn("Could not award story XP", err);
+    }
   };
 
   // Chat (seeds the story & vocab context on first send)

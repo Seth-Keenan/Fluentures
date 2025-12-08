@@ -12,6 +12,8 @@ import { motion, type Variants, useReducedMotion } from "framer-motion";
 import { Button } from "@/app/components/Button";
 import { useOasisData } from "@/app/lib/hooks/useOasis";
 import { requestQuizSentence } from "@/app/lib/actions/geminiQuizAction";
+import { addXp, dispatchXpToast } from "@/app/lib/actions/xpAction";
+import XP_AMOUNTS from "@/app/config/xp";
 
 type Mode = "en-to-target" | "target-to-en";
 
@@ -125,6 +127,14 @@ export default function WrittenQuiz() {
     setSubmitted(true);
     if (right) setScore((s) => s + 1);
     else setShakeKey((k) => k + 1); // shake on wrong
+    if (right) {
+      // show toast immediately (so UI feedback isn't blocked by cookies/fetch)
+      try {
+        dispatchXpToast(XP_AMOUNTS.quizCorrect);
+      } catch {}
+      // award XP in background
+      void addXp(XP_AMOUNTS.quizCorrect);
+    }
   }, [started, submitted, current, input, correctAnswer]);
 
   const onNext = useCallback(() => {
@@ -167,7 +177,15 @@ export default function WrittenQuiz() {
         word: current.target,
         language: meta?.language ?? undefined,
       });
-      setExample(sentence ?? "No example sentence available.");
+      const text = sentence ?? "No example sentence available.";
+      setExample(text);
+      // award XP for generating a sentence (show toast immediately)
+      if (sentence) {
+        try {
+          dispatchXpToast(XP_AMOUNTS.sentenceCorrect);
+        } catch {}
+        void addXp(XP_AMOUNTS.sentenceCorrect);
+      }
     } catch {
       setExample("Could not generate a sentence right now.");
     } finally {

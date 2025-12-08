@@ -4,6 +4,7 @@ import "./globals.css";
 import SupabaseProvider from '@/app/lib/providers/SupabaseProvider';
 import Navbar from "@/app/components/Navbar";
 import TimeTracker from "@/app/TimeTracker";
+import XPToast from "@/app/components/XPToast";
 
 export const metadata: Metadata = {
   title: "Fluentures",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <SupabaseProvider>
           <TimeTracker intervalMinutes={1} />
           <Navbar/>
+          <XPToast />
           {children}
         </SupabaseProvider>
       </body>
