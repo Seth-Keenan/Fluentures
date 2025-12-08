@@ -87,9 +87,6 @@ export default function LogbookPage() {
   const into = stats.xp % 150;
   const toNext = 150;
 
-  // ------------------------------------------------------------
-  // DATA FETCHING
-  // ------------------------------------------------------------
   useEffect(() => {
     (async () => {
       const result = await getLogbookStats();
