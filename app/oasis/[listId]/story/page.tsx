@@ -9,6 +9,8 @@ import { requestStory, sendStoryChat } from "@/app/lib/actions/geminiStoryAction
 import type { HistoryItem } from "@/app/types/gemini";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
+import SpeakingIcon from "@/app/components/camelIcon";
+
 
 /** typed helpers so role is "user" | "model" */
 const toUser = (text: string): HistoryItem => ({ role: "user", parts: [{ text }] });
@@ -328,7 +330,10 @@ export default function StoryPage() {
             className="relative flex min-h-[24rem] flex-col rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl"
           >
             <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <SpeakingIcon size={50} speaking={isSending} />
               <h2 className="text-lg font-semibold text-white">Chat</h2>
+            </div>
             </div>
 
             <div className="relative flex-1 space-y-2 overflow-y-auto rounded-xl border border-white/15 bg-white/5 p-3">

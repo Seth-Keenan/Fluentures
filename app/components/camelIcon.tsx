@@ -1,61 +1,73 @@
 "use client";
 
-import { useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
-import { useGLTF, OrbitControls } from "@react-three/drei";
+import { motion } from "framer-motion";
+import Image from "next/image";
 
-type CamelMood = "thinking" | "talking" | "mad" | "idle";
+//Centralized image paths here
+const CAMEL_NORMAL = "/Icons/camelNorm.png";
+const CAMEL_THINKING = "/Icons/camelThink.png";
 
-type CamelIconProps = {
-  mood: CamelMood;
+type SpeakingIconProps = {
   size?: number;
+  speaking?: boolean;
 };
 
-function CamelModel({ mood }: { mood: CamelMood }) {
-  const modelPath = useMemo(() => {
-    switch (mood) {
-      case "thinking":
-        return "/blenderModels/camelThink.glb";
-      case "talking":
-        return "/blenderModels/camelTalk.glb";
-      case "mad":
-        return "/blenderModels/camelMad.glb";
-      default:
-        return "/blenderModels/camelIdle.glb";
-    }
-  }, [mood]);
-
-  const { scene } = useGLTF(modelPath);
-
+export default function SpeakingIcon({
+  size = 56,
+  speaking = false,
+}: SpeakingIconProps) {
   return (
-    <primitive
-      object={scene}
-      scale={1.2}
-      position={[0, -0.6, 0]}
-      rotation={[0, Math.PI / 8, 0]}
+    <div className="relative inline-flex items-center">
+      {/* Avatar (image auto-swaps) */}
+      <div
+        className="rounded-full overflow-hidden border-2 border-white shadow-md"
+        style={{ width: size, height: size }}
+      >
+        <Image
+          src={speaking ? CAMEL_THINKING : CAMEL_NORMAL}
+          alt="Chat Guide"
+          width={size}
+          height={size}
+          className="object-cover"
+          priority
+        />
+      </div>
+
+      {/* Speech Bubble (always visible, fixed size) */}
+      <div className="relative -ml-2 -mt-5 bg-white rounded-full px-2 py-2 shadow-md min-w-[36px] flex items-center justify-center">
+
+        {/* Dots always visible */}
+        <div className="flex gap-1 items-center">
+          <Dot delay={0} active={speaking} />
+          <Dot delay={0.2} active={speaking} />
+          <Dot delay={0.4} active={speaking} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dot({
+  delay,
+  active,
+}: {
+  delay: number;
+  active?: boolean;
+}) {
+  return (
+    <motion.span
+      className="w-1.5 h-1.5 bg-gray-700 rounded-full"
+      animate={
+        active
+          ? { opacity: [0.3, 1, 0.3] }
+          : { opacity: 0.6 }
+      }
+      transition={{
+        duration: 1,
+        repeat: active ? Infinity : 0,
+        delay,
+      }}
     />
   );
 }
 
-
-export default function CamelIcon({
-  mood,
-  size = 96,
-}: CamelIconProps) {
-  return (
-    <div
-      className="relative rounded-full overflow-hidden shadow-xl ring-2 ring-amber-700/40 bg-gradient-to-br from-amber-100 to-amber-200"
-      style={{ width: size, height: size }}
-    >
-      <Canvas camera={{ position: [0, 1.3, 3], fov: 35 }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 5, 3]} intensity={1} />
-        <CamelModel mood={mood} />
-        <OrbitControls enableZoom={false} enableRotate={false} />
-      </Canvas>
-
-      {/* Optional glass highlight */}
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-white/10" />
-    </div>
-  );
-}
