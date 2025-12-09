@@ -98,7 +98,7 @@ export default function LogbookPage() {
 
   useEffect(() => {
     (async () => {
-      const recent = await getRecentlyLearned(5);
+      const recent = await getRecentlyLearned(10);
       setRecentWords(recent);
     })();
   }, []);
@@ -145,17 +145,21 @@ export default function LogbookPage() {
       <div className="grid grid-cols-2 gap-50 h-full">
         {/* LEFT PAGE */}
         <div className="pr-8">
-          <h2 className="text-amber-900/90 text-2xl font-semibold">
+          <h2 className="text-amber-900/90 text-xl font-semibold">
             Recently learned
           </h2>
-
+          <div className="h-px w-full bg-amber-900/20" />
           <RecentList items={mappedRecent} />
 
-          <div className="mt-6 h-px w-full bg-amber-900/20" />
+          {/* <div className="mt-6 h-px w-full bg-amber-900/20" /> */}
+        </div>
 
-          <h3 className="mt-5 text-amber-900/90 text-xl font-semibold">
-            My stats
-          </h3>
+        {/* RIGHT PAGE */}
+        <div className="pl-8">
+          {/* <div className="h-px w-full bg-amber-900/20" /> */}
+
+          <h3 className="mt-0 text-amber-900/90 text-xl font-semibold">My Stats</h3>
+          <div className="h-px w-full bg-amber-900/20" />
 
           <div className="mt-3 space-y-4">
             <StatCard
@@ -182,14 +186,7 @@ export default function LogbookPage() {
               }
               hint="Keep collecting vocabulary!"
             />
-          </div>
-        </div>
 
-        {/* RIGHT PAGE */}
-        <div className="pl-8">
-          <div className="mt-50 h-px w-full bg-amber-900/20" />
-
-          <div className="mt-15 space-y-4">
             <StatCard
               label="Time Spent"
               value={`${Math.floor(stats.minutes / 60)}h ${

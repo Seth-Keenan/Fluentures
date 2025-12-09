@@ -54,7 +54,7 @@ export async function getLogbookStats() {
   };
 }
 
-export async function getRecentlyLearned(limit = 5) {
+export async function getRecentlyLearned(limit = 10) {
   const supabase = await getSupabaseServerActionClient();
 
   const {
