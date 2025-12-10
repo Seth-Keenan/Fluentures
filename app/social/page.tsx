@@ -17,6 +17,9 @@ import { LinkAsButton } from "@/app/components/LinkAsButton";
 import { deserts } from "@/app/data/deserts";
 import PageBackground from "@/app/components/PageBackground";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Dropdown} from "@/app/components/dropdown";
+
+
 
 // ==== TYPES ==========================================================
 
@@ -912,15 +915,16 @@ function Filters({
 
         <div className="ml-auto flex items-center gap-2">
           <label className="text-white/70 text-sm">Visibility:</label>
-          <select
+          <Dropdown
             value={visibilityView}
-            onChange={(e) => setVisibilityView(e.target.value as "all" | "public" | "friends")}
-            className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30"
-          >
-            <option value="all">Everyone</option>
-            <option value="friends">Friends only</option>
-            <option value="public">Public only</option>
-          </select>
+            onChange={(v) => setVisibilityView(v as "all" | "public" | "friends")}
+            widthClass="min-w-[115px]"
+            options={[
+                { label: "Everyone", value: "all" },
+                { label: "Friends only", value: "friends" },
+                { label: "Public only", value: "public" },
+            ]}
+            />
         </div>
       </div>
 
@@ -942,6 +946,7 @@ function Filters({
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
+        {/*}
         <select
           className="col-span-2 bg-white/10 text-white px-3 py-1.5 rounded-lg text-sm ring-1 ring-white/30 focus:outline-none"
           value={tagFilter}
@@ -953,7 +958,22 @@ function Filters({
               {t}
             </option>
           ))}
-        </select>
+        </select>*/}
+
+        <div className="col-span-2">
+          <Dropdown
+            value={tagFilter}
+            onChange={setTagFilter}
+            placeholder="All tags"
+            widthClass="min-w-[230px]"
+            options={[
+            { label: "All tags", value: "" },
+              ...allTags.map((t) => ({ label: t, value: t })),
+            ]}
+          />
+        </div>
+
+
 
         <div className="relative">
           <FontAwesomeIcon
