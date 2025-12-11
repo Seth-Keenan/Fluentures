@@ -85,7 +85,6 @@ Connect with other learners through the social feed:
 Customize your learning experience:
 - **Language Selection**: Choose your target language (Japanese, Spanish, etc.)
 - **Difficulty Level**: Set your proficiency level (Beginner, Intermediate, Advanced)
-- **Theme Toggle**: Switch between light and dark modes
 - All settings are saved automatically to your profile
 
 ### Mobile Support
